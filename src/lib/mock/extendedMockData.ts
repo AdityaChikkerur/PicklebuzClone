@@ -1,0 +1,598 @@
+import type { Club, Court, CourtBookingWithDetails } from "@/types/club";
+import type { MatchDetail } from "@/types/match";
+import { DEFAULT_FAULTS } from "@/types/match";
+import type { AppNotification } from "@/types/notification";
+import type { Player } from "@/types/player";
+import type { UpcomingTournament } from "@/types/tournament";
+import { avatarUrl } from "@/lib/utils";
+
+/** Demo match IDs for Phase 2 screens */
+export const DEMO_MATCH_IDS = {
+  live: "m-live",
+  pending: "m-pending",
+  disputed: "m-disputed",
+  verified: "m1",
+} as const;
+
+function buildVerifiedMatch(): MatchDetail {
+  return {
+    id: DEMO_MATCH_IDS.verified,
+    teamAName: "Arjun & Priya",
+    teamBName: "Rohan & Ananya",
+    matchType: "doubles",
+    matchCategory: "friendly",
+    venue: "Smash Arena",
+    city: "Bangalore",
+    status: "verified",
+    winner: "A",
+    createdBy: "current-user",
+    createdAt: "2026-06-20T09:00:00Z",
+    completedAt: "2026-06-20T10:30:00Z",
+    localRules: "",
+    isCurrentUserCreator: true,
+    isCurrentUserOpponent: false,
+    bestPerformer: "Arjun Mehta",
+    hasComeback: false,
+    gameScores: [
+      { gameNumber: 1, scoreA: 11, scoreB: 7, winner: "A" },
+      { gameNumber: 2, scoreA: 11, scoreB: 9, winner: "A" },
+    ],
+    players: [
+      {
+        id: "mp1",
+        playerId: "p1",
+        fullName: "Arjun Mehta",
+        avatarUrl: avatarUrl("arjun"),
+        team: "A",
+        serverNumber: 1,
+      },
+      {
+        id: "mp2",
+        playerId: "p2",
+        fullName: "Priya Sharma",
+        avatarUrl: avatarUrl("priya"),
+        team: "A",
+        serverNumber: 2,
+      },
+      {
+        id: "mp3",
+        playerId: "p3",
+        fullName: "Rohan Desai",
+        avatarUrl: avatarUrl("rohan"),
+        team: "B",
+        serverNumber: 1,
+      },
+      {
+        id: "mp4",
+        playerId: "p4",
+        fullName: "Ananya Iyer",
+        avatarUrl: avatarUrl("ananya"),
+        team: "B",
+        serverNumber: 2,
+      },
+    ],
+    events: [
+      {
+        id: "e1",
+        matchId: DEMO_MATCH_IDS.verified,
+        eventType: "match_win",
+        team: "A",
+        description: "Match won by Team A",
+        scoreA: 11,
+        scoreB: 9,
+        gameNumber: 2,
+        createdAt: "2026-06-20T10:30:00Z",
+      },
+      {
+        id: "e2",
+        matchId: DEMO_MATCH_IDS.verified,
+        eventType: "game_win",
+        team: "A",
+        description: "Game 2 won by Team A",
+        scoreA: 11,
+        scoreB: 9,
+        gameNumber: 2,
+        createdAt: "2026-06-20T10:25:00Z",
+      },
+      {
+        id: "e3",
+        matchId: DEMO_MATCH_IDS.verified,
+        eventType: "point",
+        team: "A",
+        description: "Point for Team A",
+        scoreA: 10,
+        scoreB: 9,
+        gameNumber: 2,
+        createdAt: "2026-06-20T10:24:00Z",
+      },
+    ],
+    stats: {
+      pointsWonA: 22,
+      pointsWonB: 16,
+      faultsA: { kitchen: 2, service: 1, double_bounce: 0, out_of_bounds: 1 },
+      faultsB: { kitchen: 4, service: 2, double_bounce: 1, out_of_bounds: 2 },
+      timeoutsUsedA: 1,
+      timeoutsUsedB: 2,
+      durationMinutes: 52,
+    },
+  };
+}
+
+function buildPendingMatch(): MatchDetail {
+  return {
+    id: DEMO_MATCH_IDS.pending,
+    teamAName: "Arjun Mehta",
+    teamBName: "Rohan Desai",
+    matchType: "singles",
+    matchCategory: "league",
+    venue: "Pickle Park",
+    city: "Bangalore",
+    status: "pending",
+    winner: "A",
+    createdBy: "current-user",
+    createdAt: "2026-06-21T14:00:00Z",
+    completedAt: "2026-06-21T15:10:00Z",
+    localRules: "No coaching between points.",
+    isCurrentUserCreator: true,
+    isCurrentUserOpponent: false,
+    bestPerformer: "Arjun Mehta",
+    hasComeback: true,
+    gameScores: [
+      { gameNumber: 1, scoreA: 11, scoreB: 8, winner: "A" },
+      { gameNumber: 2, scoreA: 9, scoreB: 11, winner: "B" },
+      { gameNumber: 3, scoreA: 11, scoreB: 6, winner: "A" },
+    ],
+    players: [
+      {
+        id: "mp5",
+        playerId: "p1",
+        fullName: "Arjun Mehta",
+        avatarUrl: avatarUrl("arjun"),
+        team: "A",
+        serverNumber: 1,
+      },
+      {
+        id: "mp6",
+        playerId: "p3",
+        fullName: "Rohan Desai",
+        avatarUrl: avatarUrl("rohan"),
+        team: "B",
+        serverNumber: 1,
+      },
+    ],
+    events: [],
+    stats: {
+      pointsWonA: 31,
+      pointsWonB: 25,
+      faultsA: { ...DEFAULT_FAULTS, kitchen: 1 },
+      faultsB: { ...DEFAULT_FAULTS, service: 3 },
+      timeoutsUsedA: 0,
+      timeoutsUsedB: 1,
+      durationMinutes: 70,
+    },
+  };
+}
+
+function buildDisputedMatch(): MatchDetail {
+  return {
+    id: DEMO_MATCH_IDS.disputed,
+    teamAName: "Team Priya",
+    teamBName: "Net Ninjas",
+    matchType: "doubles",
+    matchCategory: "tournament",
+    venue: "Court Central",
+    city: "Mumbai",
+    status: "disputed",
+    winner: "B",
+    createdBy: "opponent-user",
+    createdAt: "2026-06-19T11:00:00Z",
+    completedAt: "2026-06-19T12:20:00Z",
+    localRules: "",
+    isCurrentUserCreator: false,
+    isCurrentUserOpponent: true,
+    bestPerformer: "Vikram Singh",
+    hasComeback: true,
+    gameScores: [
+      { gameNumber: 1, scoreA: 11, scoreB: 9, winner: "A" },
+      { gameNumber: 2, scoreA: 8, scoreB: 11, winner: "B" },
+      { gameNumber: 3, scoreA: 9, scoreB: 11, winner: "B" },
+    ],
+    players: [
+      {
+        id: "mp7",
+        playerId: "p1",
+        fullName: "Arjun Mehta",
+        avatarUrl: avatarUrl("arjun"),
+        team: "B",
+        serverNumber: 2,
+      },
+      {
+        id: "mp8",
+        playerId: "p5",
+        fullName: "Vikram Singh",
+        avatarUrl: avatarUrl("vikram"),
+        team: "B",
+        serverNumber: 1,
+      },
+      {
+        id: "mp9",
+        playerId: "p2",
+        fullName: "Priya Sharma",
+        avatarUrl: avatarUrl("priya"),
+        team: "A",
+        serverNumber: 1,
+      },
+    ],
+    events: [],
+    stats: {
+      pointsWonA: 28,
+      pointsWonB: 31,
+      faultsA: { kitchen: 3, service: 2, double_bounce: 2, out_of_bounds: 1 },
+      faultsB: { kitchen: 2, service: 1, double_bounce: 0, out_of_bounds: 1 },
+      timeoutsUsedA: 2,
+      timeoutsUsedB: 1,
+      durationMinutes: 80,
+    },
+  };
+}
+
+function buildLiveMatch(): MatchDetail {
+  return {
+    id: DEMO_MATCH_IDS.live,
+    teamAName: "Team Smash",
+    teamBName: "Court Crushers",
+    matchType: "doubles",
+    matchCategory: "friendly",
+    venue: "Smash Arena",
+    city: "Bangalore",
+    status: "live",
+    winner: null,
+    createdBy: "current-user",
+    createdAt: new Date().toISOString(),
+    completedAt: null,
+    localRules: "",
+    isCurrentUserCreator: true,
+    isCurrentUserOpponent: false,
+    bestPerformer: "",
+    hasComeback: false,
+    gameScores: [{ gameNumber: 1, scoreA: 11, scoreB: 8, winner: "A" }],
+    players: [
+      {
+        id: "mp10",
+        playerId: "p1",
+        fullName: "Arjun Mehta",
+        avatarUrl: avatarUrl("arjun"),
+        team: "A",
+        serverNumber: 1,
+      },
+      {
+        id: "mp11",
+        playerId: "p2",
+        fullName: "Priya Sharma",
+        avatarUrl: avatarUrl("priya"),
+        team: "A",
+        serverNumber: 2,
+      },
+      {
+        id: "mp12",
+        playerId: "p6",
+        fullName: "Karan Patel",
+        avatarUrl: avatarUrl("karan"),
+        team: "B",
+        serverNumber: 1,
+      },
+      {
+        id: "mp13",
+        playerId: "p7",
+        fullName: "Sneha Reddy",
+        avatarUrl: avatarUrl("sneha"),
+        team: "B",
+        serverNumber: 2,
+      },
+    ],
+    events: [
+      {
+        id: "el1",
+        matchId: DEMO_MATCH_IDS.live,
+        eventType: "point",
+        team: "B",
+        description: "Point for Team B",
+        scoreA: 4,
+        scoreB: 6,
+        gameNumber: 2,
+        createdAt: new Date().toISOString(),
+      },
+    ],
+    stats: {
+      pointsWonA: 15,
+      pointsWonB: 14,
+      faultsA: { ...DEFAULT_FAULTS },
+      faultsB: { ...DEFAULT_FAULTS, kitchen: 1 },
+      timeoutsUsedA: 0,
+      timeoutsUsedB: 0,
+      durationMinutes: 28,
+    },
+  };
+}
+
+export const MATCH_DETAILS: Record<string, MatchDetail> = {
+  [DEMO_MATCH_IDS.verified]: buildVerifiedMatch(),
+  [DEMO_MATCH_IDS.pending]: buildPendingMatch(),
+  [DEMO_MATCH_IDS.disputed]: buildDisputedMatch(),
+  [DEMO_MATCH_IDS.live]: buildLiveMatch(),
+};
+
+export function getMatchDetail(id: string): MatchDetail | null {
+  return MATCH_DETAILS[id] ?? null;
+}
+
+export const EXTENDED_CLUBS: Club[] = [
+  {
+    id: "club-1",
+    ownerId: "club-owner",
+    name: "Smash Arena Bangalore",
+    city: "Bangalore",
+    location: "Indiranagar, 100 Feet Road",
+    amenities: ["indoor", "parking", "showers", "pro shop"],
+    contact: "+91 98765 43210",
+    rating: 4.7,
+    courtCount: 4,
+  },
+  {
+    id: "club-2",
+    ownerId: "club-owner",
+    name: "Pickle Park Mumbai",
+    city: "Mumbai",
+    location: "Bandra West, Linking Road",
+    amenities: ["outdoor", "cafe", "coaching", "night lights"],
+    contact: "+91 98765 43211",
+    rating: 4.5,
+    courtCount: 6,
+  },
+];
+
+export const EXTENDED_COURTS: Court[] = [
+  { id: "court-1", clubId: "club-1", name: "Court 1", surface: "hard", pricePerHour: 800, openFrom: "06:00", openTo: "22:00" },
+  { id: "court-2", clubId: "club-1", name: "Court 2", surface: "hard", pricePerHour: 800, openFrom: "06:00", openTo: "22:00" },
+  { id: "court-3", clubId: "club-1", name: "Court 3", surface: "cushion", pricePerHour: 1000, openFrom: "06:00", openTo: "22:00" },
+  { id: "court-4", clubId: "club-1", name: "Court 4", surface: "cushion", pricePerHour: 1000, openFrom: "06:00", openTo: "22:00" },
+  { id: "court-5", clubId: "club-2", name: "Court A", surface: "hard", pricePerHour: 900, openFrom: "07:00", openTo: "23:00" },
+  { id: "court-6", clubId: "club-2", name: "Court B", surface: "hard", pricePerHour: 900, openFrom: "07:00", openTo: "23:00" },
+];
+
+function tomorrowAt(hour: number, minute = 0): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  d.setHours(hour, minute, 0, 0);
+  return d.toISOString();
+}
+
+function tomorrowEnd(hour: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  d.setHours(hour + 1, 0, 0, 0);
+  return d.toISOString();
+}
+
+function todayAt(hour: number, minute = 0): string {
+  const d = new Date();
+  d.setHours(hour, minute, 0, 0);
+  return d.toISOString();
+}
+
+function todayEnd(hour: number): string {
+  const d = new Date();
+  d.setHours(hour + 1, 0, 0, 0);
+  return d.toISOString();
+}
+
+export const MOCK_CLUB_BOOKINGS: CourtBookingWithDetails[] = [
+  {
+    id: "bk-1",
+    courtId: "court-1",
+    playerId: "player-1",
+    startAt: todayAt(10),
+    endAt: todayEnd(10),
+    status: "confirmed",
+    amount: 800,
+    courtName: "Court 1",
+    clubName: "Smash Arena Bangalore",
+    clubCity: "Bangalore",
+  },
+  {
+    id: "bk-2",
+    courtId: "court-2",
+    playerId: "player-2",
+    startAt: todayAt(14),
+    endAt: todayEnd(14),
+    status: "pending",
+    amount: 800,
+    courtName: "Court 2",
+    clubName: "Smash Arena Bangalore",
+    clubCity: "Bangalore",
+  },
+  {
+    id: "bk-3",
+    courtId: "court-3",
+    playerId: "player-3",
+    startAt: tomorrowAt(18),
+    endAt: tomorrowEnd(18),
+    status: "confirmed",
+    amount: 1000,
+    courtName: "Court 3",
+    clubName: "Smash Arena Bangalore",
+    clubCity: "Bangalore",
+  },
+  {
+    id: "bk-4",
+    courtId: "court-5",
+    playerId: "player-4",
+    startAt: todayAt(16),
+    endAt: todayEnd(16),
+    status: "confirmed",
+    amount: 900,
+    courtName: "Court A",
+    clubName: "Pickle Park Mumbai",
+    clubCity: "Mumbai",
+  },
+];
+
+export const MOCK_COURT_BOOKINGS_RAW = MOCK_CLUB_BOOKINGS.map(
+  ({ courtName: _cn, clubName: _gn, clubCity: _cc, ...booking }) => booking
+);
+
+export const DISCOVERY_PLAYERS: Player[] = [
+  {
+    id: "dp1",
+    fullName: "Meera Nair",
+    avatarUrl: avatarUrl("meera"),
+    city: "Bangalore",
+    skillLevel: "4.0",
+    duprRating: 4.05,
+    wins: 28,
+    losses: 12,
+    winPct: 70,
+    currentStreak: 4,
+    lookingForPartner: true,
+    lookingForMatch: false,
+  },
+  {
+    id: "dp2",
+    fullName: "Aditya Verma",
+    avatarUrl: avatarUrl("aditya"),
+    city: "Mumbai",
+    skillLevel: "3.5",
+    duprRating: 3.72,
+    wins: 15,
+    losses: 10,
+    winPct: 60,
+    currentStreak: 2,
+    lookingForPartner: false,
+    lookingForMatch: true,
+  },
+  {
+    id: "dp3",
+    fullName: "Divya Krishnan",
+    avatarUrl: avatarUrl("divya"),
+    city: "Chennai",
+    skillLevel: "4.5",
+    duprRating: 4.38,
+    wins: 42,
+    losses: 18,
+    winPct: 70,
+    currentStreak: 6,
+    lookingForPartner: true,
+    lookingForMatch: true,
+  },
+  {
+    id: "dp4",
+    fullName: "Harsh Joshi",
+    avatarUrl: avatarUrl("harsh"),
+    city: "Pune",
+    skillLevel: "3.0",
+    duprRating: 3.15,
+    wins: 8,
+    losses: 12,
+    winPct: 40,
+    currentStreak: 0,
+    lookingForPartner: false,
+    lookingForMatch: true,
+  },
+  {
+    id: "dp5",
+    fullName: "Lakshmi Rao",
+    avatarUrl: avatarUrl("lakshmi"),
+    city: "Hyderabad",
+    skillLevel: "3.5",
+    duprRating: 3.55,
+    wins: 20,
+    losses: 15,
+    winPct: 57,
+    currentStreak: 3,
+    lookingForPartner: true,
+    lookingForMatch: false,
+  },
+];
+
+export const EXTENDED_NOTIFICATIONS: AppNotification[] = [
+  {
+    id: "n1",
+    userId: "current-user",
+    icon: "trophy",
+    text: "Your registration for Bangalore Summer League was approved.",
+    link: "/tournament/t-rr-1",
+    read: false,
+    createdAt: "2026-06-22T08:00:00Z",
+    type: "registration_approved",
+  },
+  {
+    id: "n2",
+    userId: "current-user",
+    icon: "clipboard",
+    text: "Rohan Desai submitted a match result — please confirm.",
+    link: `/match/${DEMO_MATCH_IDS.pending}`,
+    read: false,
+    createdAt: "2026-06-21T15:15:00Z",
+    type: "result_confirmation",
+  },
+  {
+    id: "n3",
+    userId: "current-user",
+    icon: "exclamation",
+    text: "A dispute was raised on your match vs Net Ninjas.",
+    link: `/match/${DEMO_MATCH_IDS.disputed}`,
+    read: true,
+    createdAt: "2026-06-19T13:00:00Z",
+    type: "dispute_raised",
+  },
+  {
+    id: "n4",
+    userId: "current-user",
+    icon: "calendar",
+    text: "Court booking confirmed at Smash Arena — Court 2, tomorrow 6 PM.",
+    link: "/club/club-1",
+    read: true,
+    createdAt: "2026-06-18T10:00:00Z",
+    type: "court_booking",
+  },
+];
+
+export const EXTENDED_TOURNAMENTS: UpcomingTournament[] = [
+  {
+    id: "t-rr-1",
+    name: "Bangalore Summer League",
+    city: "Bangalore",
+    venue: "Smash Arena",
+    startDate: "2026-07-06",
+    endDate: "2026-07-13",
+    registrationDeadline: "2026-06-29",
+    maxParticipants: 32,
+    registeredCount: 24,
+    status: "upcoming",
+    format: "round_robin",
+  },
+  {
+    id: "t-ko-1",
+    name: "Mumbai Knockout Open",
+    city: "Mumbai",
+    venue: "Pickle Park",
+    startDate: "2026-07-22",
+    endDate: "2026-07-24",
+    registrationDeadline: "2026-07-12",
+    maxParticipants: 64,
+    registeredCount: 41,
+    status: "upcoming",
+    format: "knockout",
+  },
+];
+
+export const LIVE_MATCH_CARDS = [
+  {
+    id: DEMO_MATCH_IDS.live,
+    teamA: "Team Smash",
+    teamB: "Court Crushers",
+    score: "11-8, 4-6",
+    venue: "Smash Arena",
+    city: "Bangalore",
+  },
+];

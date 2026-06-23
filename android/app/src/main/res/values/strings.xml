@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">PickleBuzz</string>
+    <string name="title_activity_main">PickleBuzz</string>
+    <string name="package_name">com.picklebuzz.app</string>
+    <string name="custom_url_scheme">com.picklebuzz.app</string>
+</resources>

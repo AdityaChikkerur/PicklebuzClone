@@ -1,0 +1,724 @@
+// -----------------------------------------------------------------------------
+// Persistence layer for live scoring.
+//
+// Responsibilities:
+//   1. Create the match row + match_rules + match_players when a match starts.
+//   2. Stream every scoring action as a match_events insert (drives realtime +
+//      /spectate/[id], which already subscribe via useRealtimeMatch).
+//   3. On end-match, write match_game_scores and flip matches.status -> 'pending'
+//      so the verification workflow (confirm/dispute) takes over.
+//   4. Reads for /match/[id] and /spectate/[id].
+//
+// Conventions (per the project brief, section 12):
+//   - isSupabaseConfigured() gate: in mock mode every write is a no-op that
+//     resolves successfully, so the UI behaves identically with or without a DB.
+//   - try/catch on every Supabase call; callers surface errors via Sonner.
+//   - No `any`. Uses createClient() from @/lib/supabase (browser client).
+// -----------------------------------------------------------------------------
+
+import { createClient } from "@/lib/supabase";
+import { isSupabaseConfigured } from "@/lib/auth/isSupabaseConfigured";
+import { isUuid } from "@/lib/db/config";
+import type {
+  DbMatchRules,
+  FaultType,
+  GameScore,
+  MatchCategory,
+  MatchDetail,
+  MatchEvent,
+  MatchRules,
+  MatchSetupState,
+  MatchState,
+  MatchStatus,
+  MatchStats,
+  MatchType,
+  Team,
+} from "@/types/match";
+import { DEFAULT_FAULTS } from "@/types/match";
+import {
+  mapDbGameScore,
+  mapDbMatchEvent,
+  mapDbMatchRules,
+  type DbGameScoreRow,
+  type DbMatchEventRow,
+  type DbMatchRow,
+} from "./mappers";
+
+// -----------------------------------------------------------------------------
+// Result helper — every function returns this shape so callers can toast on error
+// without try/catch at the call site.
+// -----------------------------------------------------------------------------
+export type DbResult<T> =
+  | { data: T; error: null }
+  | { data: null; error: string };
+
+const ok = <T>(data: T): DbResult<T> => ({ data, error: null });
+const fail = (error: unknown): DbResult<never> => ({
+  data: null,
+  error: error instanceof Error ? error.message : String(error),
+});
+
+// Mock-mode sentinel: callers can detect "we didn't actually hit the DB".
+export const MOCK_OK = Symbol("mock-ok");
+
+function isMockMatchId(matchId: string): boolean {
+  return matchId.startsWith("mock-");
+}
+
+/** True when we should hit Supabase for a given match id. */
+function shouldPersist(matchId: string): boolean {
+  return isSupabaseConfigured() && !isMockMatchId(matchId) && isUuid(matchId);
+}
+
+function parseLocalRules(localRules: string): Record<string, unknown> {
+  const trimmed = localRules.trim();
+  return trimmed ? { notes: trimmed } : {};
+}
+
+// -----------------------------------------------------------------------------
+// Row shapes (what we insert/select). Kept local so this file is self-contained.
+// -----------------------------------------------------------------------------
+interface MatchRow {
+  id: string;
+  created_by: string;
+  match_type: string;
+  match_category: string | null;
+  team_a_name: string;
+  team_b_name: string;
+  venue: string | null;
+  court_number: string | null;
+  city: string | null;
+  scoring_type: string;
+  target_points: number;
+  best_of: number;
+  win_by: number;
+  max_timeouts: number;
+  timeout_duration: number;
+  is_public: boolean;
+  status: string;
+  winner: string | null;
+  created_at: string;
+  completed_at: string | null;
+  local_rules?: Record<string, unknown>;
+  has_referee?: boolean;
+}
+
+interface MatchEventRow {
+  match_id: string;
+  event_type: string;
+  team: string | null;
+  description: string | null;
+  score_a: number;
+  score_b: number;
+  game_number: number;
+  created_at?: string;
+}
+
+export interface LoadedMatchState {
+  match: DbMatchRow;
+  rules: MatchRules;
+  events: ReturnType<typeof mapDbMatchEvent>[];
+  gameScores: ReturnType<typeof mapDbGameScore>[];
+}
+
+function countTimeoutsUsed(events: DbMatchEventRow[], team: Team): number {
+  return events.filter((e) => e.event_type === "timeout" && e.team === team)
+    .length;
+}
+
+function buildMatchState(
+  match: DbMatchRow,
+  rules: MatchRules,
+  events: DbMatchEventRow[],
+  gameScores: ReturnType<typeof mapDbGameScore>[]
+): Partial<MatchState> {
+  const mappedEvents = events.map(mapDbMatchEvent).reverse();
+  const latest = events[0];
+  const timeoutsUsedA = countTimeoutsUsed(events, "A");
+  const timeoutsUsedB = countTimeoutsUsed(events, "B");
+
+  const isComplete =
+    match.status === "completed" ||
+    match.status === "verified" ||
+    match.status === "pending" ||
+    match.status === "disputed";
+
+  return {
+    matchId: match.id,
+    teamAName: match.team_a_name,
+    teamBName: match.team_b_name,
+    matchType: match.match_type,
+    scoringType: rules.scoringType,
+    targetPoints: rules.targetPoints,
+    bestOf: rules.bestOf,
+    winBy: rules.winBy as 1 | 2,
+    maxTimeouts: rules.maxTimeouts,
+    timeoutDuration: rules.timeoutDuration,
+    scoreA: latest?.score_a ?? 0,
+    scoreB: latest?.score_b ?? 0,
+    currentGame: latest?.game_number ?? gameScores.length + 1,
+    gameScores,
+    timeoutsA: Math.max(0, rules.maxTimeouts - timeoutsUsedA),
+    timeoutsB: Math.max(0, rules.maxTimeouts - timeoutsUsedB),
+    events: mappedEvents,
+    isMatchComplete: isComplete,
+    matchWinner: match.winner,
+  };
+}
+
+// =============================================================================
+// 1. CREATE — called when the user finishes /match-setup and enters /live-scoring
+// =============================================================================
+export interface CreateMatchInput {
+  createdBy: string;
+  setup: MatchSetupState;
+  teamAPlayerIds?: string[];
+  teamBPlayerIds?: string[];
+  tournamentId?: string;
+}
+
+/**
+ * Creates matches + match_rules + match_players and returns the new match id.
+ * In mock mode returns a synthetic id so the scorer can run unpersisted.
+ */
+export async function createMatch(
+  input: CreateMatchInput
+): Promise<DbResult<{ id: string; mock: boolean }>> {
+  const {
+    createdBy,
+    setup,
+    teamAPlayerIds = [],
+    teamBPlayerIds = [],
+    tournamentId,
+  } = input;
+
+  if (!isSupabaseConfigured()) {
+    const id = `mock-${Date.now()}`;
+    return ok({ id, mock: true });
+  }
+
+  try {
+    const supabase = createClient();
+    const localRules = parseLocalRules(setup.localRules);
+
+    const insertRow = {
+      created_by: createdBy,
+      match_type: setup.matchType,
+      match_category: setup.matchCategory,
+      team_a_name: setup.teamAName,
+      team_b_name: setup.teamBName,
+      venue: setup.venue ?? null,
+      court_number: setup.courtNumber ?? null,
+      city: setup.city ?? null,
+      scoring_type: setup.scoringType,
+      target_points: setup.targetPoints,
+      best_of: setup.bestOf,
+      win_by: setup.winBy,
+      max_timeouts: setup.maxTimeouts,
+      timeout_duration: setup.timeoutDuration,
+      is_public: setup.isPublic ?? true,
+      has_referee: setup.hasReferee,
+      local_rules: localRules,
+      tournament_id: tournamentId ?? null,
+      status: "live",
+      winner: null,
+    };
+
+    const { data: match, error: matchErr } = await supabase
+      .from("matches")
+      .insert(insertRow)
+      .select("id")
+      .single();
+
+    if (matchErr) throw matchErr;
+    const matchId = (match as { id: string }).id;
+
+    const { error: rulesErr } = await supabase.from("match_rules").insert({
+      match_id: matchId,
+      scoring_type: setup.scoringType,
+      target_points: setup.targetPoints,
+      win_by: setup.winBy,
+      best_of: setup.bestOf,
+      doubles: setup.matchType !== "singles",
+      max_timeouts: setup.maxTimeouts,
+      timeout_duration: setup.timeoutDuration,
+      local_rules: localRules,
+    });
+    if (rulesErr) throw rulesErr;
+
+    const playerRows = [
+      ...teamAPlayerIds.map((pid, i) => ({
+        match_id: matchId,
+        player_id: pid,
+        team: "A" as const,
+        server_number: i + 1,
+      })),
+      ...teamBPlayerIds.map((pid, i) => ({
+        match_id: matchId,
+        player_id: pid,
+        team: "B" as const,
+        server_number: i + 1,
+      })),
+    ];
+    if (playerRows.length > 0) {
+      const { error: playersErr } = await supabase
+        .from("match_players")
+        .insert(playerRows);
+      if (playersErr) throw playersErr;
+    }
+
+    return ok({ id: matchId, mock: false });
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+// =============================================================================
+// 2. STREAM EVENTS — one insert per scoring action.
+//    Call from matchStore AFTER the in-memory state updates so score_a/score_b
+//    reflect the post-action score.
+// =============================================================================
+export type PersistableEventType = "point" | "fault" | "side_out" | "timeout";
+
+export interface LogEventInput {
+  matchId: string;
+  eventType: PersistableEventType;
+  team: Team | null;
+  scoreA: number;
+  scoreB: number;
+  gameNumber: number;
+  faultType?: FaultType;
+  description?: string;
+}
+
+export async function logMatchEvent(
+  input: LogEventInput
+): Promise<DbResult<typeof MOCK_OK | true>> {
+  if (!isSupabaseConfigured() || isMockMatchId(input.matchId)) {
+    return ok(MOCK_OK);
+  }
+
+  try {
+    const supabase = createClient();
+    const row: MatchEventRow = {
+      match_id: input.matchId,
+      event_type: input.eventType,
+      team: input.team,
+      description:
+        input.description ??
+        defaultEventDescription(input.eventType, input.team, input.faultType),
+      score_a: input.scoreA,
+      score_b: input.scoreB,
+      game_number: input.gameNumber,
+    };
+
+    const { error } = await supabase.from("match_events").insert(row);
+    if (error) throw error;
+    return ok(true);
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+function defaultEventDescription(
+  type: LogEventInput["eventType"],
+  team: Team | null,
+  faultType?: FaultType
+): string {
+  switch (type) {
+    case "point":
+      return `Point — Team ${team}`;
+    case "fault":
+      return `${faultType ?? "Fault"} — Team ${team}`;
+    case "side_out":
+      return `Side-out — Team ${team} serves`;
+    case "timeout":
+      return `Timeout — Team ${team}`;
+    default:
+      return "Event";
+  }
+}
+
+// =============================================================================
+// 3. END MATCH — write per-game finals, set winner + completed_at, status->pending
+// =============================================================================
+export interface EndMatchInput {
+  matchId: string;
+  gameScores: GameScore[];
+  matchWinner: Team | null;
+}
+
+export async function endMatch(
+  input: EndMatchInput
+): Promise<DbResult<{ status: string; mock: boolean }>> {
+  if (!isSupabaseConfigured() || isMockMatchId(input.matchId)) {
+    return ok({ status: "pending", mock: true });
+  }
+
+  try {
+    const supabase = createClient();
+
+    if (input.gameScores.length > 0) {
+      const gameRows = input.gameScores.map((g) => ({
+        match_id: input.matchId,
+        game_number: g.gameNumber,
+        score_a: g.scoreA,
+        score_b: g.scoreB,
+        winner: g.winner,
+      }));
+      const { error: gErr } = await supabase
+        .from("match_game_scores")
+        .insert(gameRows);
+      if (gErr) throw gErr;
+    }
+
+    const { error: mErr } = await supabase
+      .from("matches")
+      .update({
+        status: "pending",
+        winner: input.matchWinner,
+        completed_at: new Date().toISOString(),
+      })
+      .eq("id", input.matchId);
+    if (mErr) throw mErr;
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    const currentUserId = user?.id;
+
+    const { data: players } = await supabase
+      .from("match_players")
+      .select("player_id")
+      .eq("match_id", input.matchId);
+
+    const opponentIds = (players ?? [])
+      .map((row) => row.player_id as string)
+      .filter((playerId) => playerId !== currentUserId);
+
+    if (opponentIds.length > 0) {
+      const { createNotifications } = await import("@/lib/db/notifications");
+      await createNotifications(
+        opponentIds.map((userId) => ({
+          userId,
+          icon: "✅",
+          text: "Confirm the result of your last match",
+          link: `/match/${input.matchId}`,
+        }))
+      );
+    }
+
+    return ok({ status: "pending", mock: false });
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+// =============================================================================
+// 4. VERIFICATION — opponent confirms or disputes (used by /match/[id]).
+//    Only 'verified' matches should be counted by stats/rankings queries.
+// =============================================================================
+export async function confirmMatchResult(
+  matchId: string
+): Promise<DbResult<true>> {
+  if (!isSupabaseConfigured() || isMockMatchId(matchId)) return ok(true);
+
+  try {
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("matches")
+      .update({ status: "verified" })
+      .eq("id", matchId)
+      .eq("status", "pending");
+    if (error) throw error;
+
+    const { syncFixtureFromMatch } = await import("@/lib/db/fixtures");
+    await syncFixtureFromMatch(matchId);
+
+    return ok(true);
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function disputeMatchResult(
+  matchId: string,
+  raisedBy: string,
+  reason: string
+): Promise<DbResult<true>> {
+  if (!isSupabaseConfigured() || isMockMatchId(matchId)) return ok(true);
+
+  try {
+    const supabase = createClient();
+    const { error: dErr } = await supabase.from("disputes").insert({
+      match_id: matchId,
+      raised_by: raisedBy,
+      reason,
+      status: "open",
+    });
+    if (dErr) throw dErr;
+
+    const { error: mErr } = await supabase
+      .from("matches")
+      .update({ status: "disputed" })
+      .eq("id", matchId);
+    if (mErr) throw mErr;
+
+    return ok(true);
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+// =============================================================================
+// 5. READS — for /match/[id] and /spectate/[id]
+// =============================================================================
+export interface FullMatch {
+  match: MatchRow;
+  events: MatchEvent[];
+  gameScores: GameScore[];
+}
+
+function localRulesNotes(localRules: Record<string, unknown> | undefined): string {
+  const notes = localRules?.notes;
+  return typeof notes === "string" ? notes : "";
+}
+
+function statsFromEvents(events: MatchEvent[]): MatchStats {
+  const faultsA = { ...DEFAULT_FAULTS };
+  const faultsB = { ...DEFAULT_FAULTS };
+  let pointsWonA = 0;
+  let pointsWonB = 0;
+  let timeoutsUsedA = 0;
+  let timeoutsUsedB = 0;
+
+  for (const event of events) {
+    if (event.eventType === "point") {
+      if (event.team === "A") pointsWonA += 1;
+      if (event.team === "B") pointsWonB += 1;
+    }
+    if (event.eventType === "timeout") {
+      if (event.team === "A") timeoutsUsedA += 1;
+      if (event.team === "B") timeoutsUsedB += 1;
+    }
+  }
+
+  return {
+    pointsWonA,
+    pointsWonB,
+    faultsA,
+    faultsB,
+    timeoutsUsedA,
+    timeoutsUsedB,
+    durationMinutes: 0,
+  };
+}
+
+/** Map a DB row bundle to the UI `MatchDetail` shape. */
+export function mapFullMatchToDetail(
+  full: FullMatch,
+  currentUserId?: string | null
+): MatchDetail {
+  const { match, events, gameScores } = full;
+
+  return {
+    id: match.id,
+    teamAName: match.team_a_name,
+    teamBName: match.team_b_name,
+    matchType: match.match_type as MatchType,
+    matchCategory: (match.match_category ?? "friendly") as MatchCategory,
+    venue: match.venue ?? "",
+    city: match.city ?? "",
+    status: match.status as MatchStatus,
+    winner: match.winner as Team | null,
+    createdBy: match.created_by,
+    createdAt: match.created_at,
+    completedAt: match.completed_at,
+    gameScores,
+    players: [],
+    events,
+    stats: statsFromEvents(events),
+    localRules: localRulesNotes(match.local_rules),
+    isCurrentUserCreator: Boolean(
+      currentUserId && currentUserId === match.created_by
+    ),
+    isCurrentUserOpponent: false,
+    bestPerformer: "",
+    hasComeback: false,
+  };
+}
+
+export async function getMatchById(
+  matchId: string
+): Promise<DbResult<FullMatch | null>> {
+  if (!isSupabaseConfigured() || isMockMatchId(matchId)) {
+    return ok(null);
+  }
+
+  try {
+    const supabase = createClient();
+
+    const { data: match, error: mErr } = await supabase
+      .from("matches")
+      .select("*")
+      .eq("id", matchId)
+      .single();
+    if (mErr) throw mErr;
+
+    const { data: events, error: eErr } = await supabase
+      .from("match_events")
+      .select("*")
+      .eq("match_id", matchId)
+      .order("created_at", { ascending: false });
+    if (eErr) throw eErr;
+
+    const { data: games, error: gErr } = await supabase
+      .from("match_game_scores")
+      .select("*")
+      .eq("match_id", matchId)
+      .order("game_number", { ascending: true });
+    if (gErr) throw gErr;
+
+    return ok({
+      match: match as MatchRow,
+      events: ((events ?? []) as DbMatchEventRow[]).map(mapDbMatchEvent),
+      gameScores: ((games ?? []) as DbGameScoreRow[]).map(mapDbGameScore),
+    });
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** Fetch match metadata, rules, events, and game scores from Supabase. */
+export async function fetchMatchState(
+  matchId: string
+): Promise<LoadedMatchState | null> {
+  if (!shouldPersist(matchId)) return null;
+
+  const supabase = createClient();
+
+  const { data: match, error: matchError } = await supabase
+    .from("matches")
+    .select("id, match_type, team_a_name, team_b_name, status, winner")
+    .eq("id", matchId)
+    .maybeSingle();
+
+  if (matchError || !match) return null;
+
+  const { data: rulesRow, error: rulesError } = await supabase
+    .from("match_rules")
+    .select("*")
+    .eq("match_id", matchId)
+    .maybeSingle();
+
+  if (rulesError) return null;
+
+  const rules = rulesRow
+    ? mapDbMatchRules(rulesRow as DbMatchRules)
+    : mapDbMatchRules({
+        match_id: matchId,
+        scoring_type: "side-out",
+        target_points: 11,
+        win_by: 2,
+        best_of: 3,
+        doubles: match.match_type !== "singles",
+        max_timeouts: 2,
+        timeout_duration: 60,
+        local_rules: {},
+      });
+
+  const [eventsResult, gameScoresResult] = await Promise.all([
+    supabase
+      .from("match_events")
+      .select(
+        "id, match_id, event_type, team, description, score_a, score_b, game_number, created_at"
+      )
+      .eq("match_id", matchId)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("match_game_scores")
+      .select("game_number, score_a, score_b, winner")
+      .eq("match_id", matchId)
+      .order("game_number", { ascending: true }),
+  ]);
+
+  if (eventsResult.error || gameScoresResult.error) return null;
+
+  const events = (eventsResult.data ?? []) as DbMatchEventRow[];
+  const gameScores = ((gameScoresResult.data ?? []) as DbGameScoreRow[]).map(
+    mapDbGameScore
+  );
+
+  return {
+    match: match as DbMatchRow,
+    rules,
+    events: events.map(mapDbMatchEvent).reverse(),
+    gameScores,
+  };
+}
+
+/** Build a `MatchState` partial from Supabase rows (for zustand `resetMatch`). */
+export async function fetchMatchStateOverrides(
+  matchId: string
+): Promise<Partial<MatchState> | null> {
+  const loaded = await fetchMatchState(matchId);
+  if (!loaded) return null;
+
+  const eventsDesc = [...loaded.events]
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    )
+    .map((e) => ({
+      id: e.id,
+      match_id: e.matchId,
+      event_type: e.eventType,
+      team: e.team,
+      description: e.description,
+      score_a: e.scoreA,
+      score_b: e.scoreB,
+      game_number: e.gameNumber,
+      created_at: e.createdAt,
+    })) as DbMatchEventRow[];
+
+  return {
+    ...buildMatchState(
+      loaded.match,
+      loaded.rules,
+      eventsDesc,
+      loaded.gameScores
+    ),
+    faultsA: { ...DEFAULT_FAULTS },
+    faultsB: { ...DEFAULT_FAULTS },
+  };
+}
+
+/** Upsert scoring rules for a match (called after match creation). */
+export async function upsertMatchRules(
+  matchId: string,
+  rules: Partial<MatchRules> & { scoringType: MatchRules["scoringType"] }
+): Promise<MatchRules | null> {
+  if (!shouldPersist(matchId)) return null;
+
+  const supabase = createClient();
+  const row = {
+    match_id: matchId,
+    scoring_type: rules.scoringType,
+    target_points: rules.targetPoints ?? 11,
+    win_by: rules.winBy ?? 2,
+    best_of: rules.bestOf ?? 3,
+    doubles: rules.doubles ?? false,
+    max_timeouts: rules.maxTimeouts ?? 2,
+    timeout_duration: rules.timeoutDuration ?? 60,
+    local_rules: rules.localRules ?? {},
+  };
+
+  const { data, error } = await supabase
+    .from("match_rules")
+    .upsert(row, { onConflict: "match_id" })
+    .select("*")
+    .single();
+
+  if (error || !data) return null;
+  return mapDbMatchRules(data as DbMatchRules);
+}
