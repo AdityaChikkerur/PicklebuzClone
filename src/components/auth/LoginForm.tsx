@@ -5,8 +5,9 @@ import { useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { createClient } from "@/lib/supabase";
+import { signInWithEmail } from "@/lib/auth/emailAuth";
 import { isSupabaseConfigured } from "@/lib/auth/isSupabaseConfigured";
+import { createClient } from "@/lib/supabase";
 import { useAuthStore } from "@/store/authStore";
 import { cn } from "@/lib/utils";
 import { clearDemoSession } from "@/lib/auth/demoSession";
@@ -48,23 +49,23 @@ export function LoginForm({ className }: LoginFormProps) {
     setSubmitting(true);
 
     try {
-      const supabase = createClient();
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: values.email,
-        password: values.password,
-      });
+      const { user, error } = await signInWithEmail(
+        values.email,
+        values.password
+      );
 
-      if (error) throw error;
+      if (error) throw new Error(error);
 
-      if (data.user) {
+      if (user) {
         clearDemoSession();
-        setUser(data.user);
+        setUser(user);
         setLoading(false);
 
+        const supabase = createClient();
         const { data: profileData, error: profileError } = await supabase
           .from("profiles")
           .select("*")
-          .eq("id", data.user.id)
+          .eq("id", user.id)
           .single();
 
         if (profileError || !profileData) {

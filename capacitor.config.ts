@@ -44,6 +44,11 @@ const config: CapacitorConfig = {
   appId: "com.picklebuzz.app",
   appName: "PickleBuzz",
   webDir: "public",
+  plugins: {
+    CapacitorHttp: {
+      enabled: true,
+    },
+  },
   android: {
     allowMixedContent: useCleartext,
   },

@@ -5,13 +5,13 @@ import { useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { createClient } from "@/lib/supabase";
+import { signUpWithEmail } from "@/lib/auth/emailAuth";
 import { isSupabaseConfigured } from "@/lib/auth/isSupabaseConfigured";
 import { useAuthStore } from "@/store/authStore";
 import { cn } from "@/lib/utils";
 import { clearDemoSession } from "@/lib/auth/demoSession";
 import { sanitizeRedirectPath } from "@/lib/auth/routeGuards";
-import { buildMockUser, buildSignupProfile } from "./authHelpers";
+import { buildSignupProfile } from "./authHelpers";
 import { signupSchema, type SignupFormValues } from "./schemas";
 
 interface SignupFormProps {
@@ -53,30 +53,19 @@ export function SignupForm({ className }: SignupFormProps) {
     const profile = buildSignupProfile(values.email, values.fullName);
 
     try {
-      const supabase = createClient();
-      const { data, error } = await supabase.auth.signUp({
+      const { user, error } = await signUpWithEmail({
         email: values.email,
         password: values.password,
-        options: {
-          data: {
-            full_name: values.fullName,
-            role: "player",
-          },
-        },
+        fullName: values.fullName,
       });
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw new Error(error);
 
-      if (!data.session) {
-        throw new Error(
-          "Check your email to confirm your account, or disable email confirmation in Supabase Auth settings."
-        );
+      if (!user) {
+        throw new Error("Could not create account. Try again.");
       }
 
       clearDemoSession();
-      const user = data.user ?? buildMockUser(values.email, profile.id);
       setUser(user);
       setProfile({ ...profile, id: user.id });
       setLoading(false);
