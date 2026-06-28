@@ -9,6 +9,8 @@ import { avatarUrl } from "@/lib/utils";
 /** Demo match IDs for Phase 2 screens */
 export const DEMO_MATCH_IDS = {
   live: "m-live",
+  live2: "m-live-2",
+  live3: "m-live-3",
   pending: "m-pending",
   disputed: "m-disputed",
   verified: "m1",
@@ -236,6 +238,63 @@ function buildDisputedMatch(): MatchDetail {
   };
 }
 
+function buildLiveMatchBase(
+  id: string,
+  teamAName: string,
+  teamBName: string,
+  matchType: MatchDetail["matchType"],
+  venue: string,
+  city: string,
+  gameScores: MatchDetail["gameScores"],
+  scoreA: number,
+  scoreB: number,
+  gameNumber: number
+): MatchDetail {
+  return {
+    id,
+    teamAName,
+    teamBName,
+    matchType,
+    matchCategory: "friendly",
+    venue,
+    city,
+    status: "live",
+    winner: null,
+    createdBy: "current-user",
+    createdAt: new Date().toISOString(),
+    completedAt: null,
+    localRules: "",
+    isCurrentUserCreator: false,
+    isCurrentUserOpponent: false,
+    bestPerformer: "",
+    hasComeback: false,
+    gameScores,
+    players: [],
+    events: [
+      {
+        id: `el-${id}`,
+        matchId: id,
+        eventType: "point",
+        team: scoreA >= scoreB ? "A" : "B",
+        description: "Latest point",
+        scoreA,
+        scoreB,
+        gameNumber,
+        createdAt: new Date().toISOString(),
+      },
+    ],
+    stats: {
+      pointsWonA: scoreA + gameScores.reduce((sum, g) => sum + g.scoreA, 0),
+      pointsWonB: scoreB + gameScores.reduce((sum, g) => sum + g.scoreB, 0),
+      faultsA: { ...DEFAULT_FAULTS },
+      faultsB: { ...DEFAULT_FAULTS },
+      timeoutsUsedA: 0,
+      timeoutsUsedB: 0,
+      durationMinutes: 20 + gameScores.length * 15,
+    },
+  };
+}
+
 function buildLiveMatch(): MatchDetail {
   return {
     id: DEMO_MATCH_IDS.live,
@@ -315,11 +374,46 @@ function buildLiveMatch(): MatchDetail {
   };
 }
 
+function buildLiveMatch2(): MatchDetail {
+  return buildLiveMatchBase(
+    DEMO_MATCH_IDS.live2,
+    "Net Ninjas",
+    "Dink Masters",
+    "doubles",
+    "Pickle Park",
+    "Mumbai",
+    [],
+    7,
+    5,
+    1
+  );
+}
+
+function buildLiveMatch3(): MatchDetail {
+  return buildLiveMatchBase(
+    DEMO_MATCH_IDS.live3,
+    "Rohan Desai",
+    "Karan Patel",
+    "singles",
+    "Court Central",
+    "Bangalore",
+    [
+      { gameNumber: 1, scoreA: 11, scoreB: 8, winner: "A" },
+      { gameNumber: 2, scoreA: 8, scoreB: 11, winner: "B" },
+    ],
+    10,
+    9,
+    3
+  );
+}
+
 export const MATCH_DETAILS: Record<string, MatchDetail> = {
   [DEMO_MATCH_IDS.verified]: buildVerifiedMatch(),
   [DEMO_MATCH_IDS.pending]: buildPendingMatch(),
   [DEMO_MATCH_IDS.disputed]: buildDisputedMatch(),
   [DEMO_MATCH_IDS.live]: buildLiveMatch(),
+  [DEMO_MATCH_IDS.live2]: buildLiveMatch2(),
+  [DEMO_MATCH_IDS.live3]: buildLiveMatch3(),
 };
 
 export function getMatchDetail(id: string): MatchDetail | null {

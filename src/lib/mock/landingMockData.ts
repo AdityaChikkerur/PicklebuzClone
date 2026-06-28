@@ -32,39 +32,12 @@ function matchToLandingCard(match: MatchDetail): LandingLiveMatch {
   };
 }
 
-const EXTRA_LIVE_MATCHES: LandingLiveMatch[] = [
-  {
-    id: "m-live-2",
-    teamAName: "Net Ninjas",
-    teamBName: "Dink Masters",
-    scoreA: 7,
-    scoreB: 5,
-    gameNumber: 1,
-    venue: "Pickle Park",
-    city: "Mumbai",
-    matchType: "doubles",
-  },
-  {
-    id: "m-live-3",
-    teamAName: "Rohan Desai",
-    teamBName: "Karan Patel",
-    scoreA: 10,
-    scoreB: 9,
-    gameNumber: 3,
-    venue: "Court Central",
-    city: "Bangalore",
-    matchType: "singles",
-  },
-];
-
 export function getFeaturedTournamentsForLanding(): AdminTournamentRow[] {
   return buildAdminTournamentRows().filter((t) => t.featured && !t.archived);
 }
 
 export function getLandingLiveMatches(): LandingLiveMatch[] {
-  const liveFromMocks = Object.values(MATCH_DETAILS)
+  return Object.values(MATCH_DETAILS)
     .filter((match) => match.status === "live")
     .map(matchToLandingCard);
-
-  return [...liveFromMocks, ...EXTRA_LIVE_MATCHES];
 }
