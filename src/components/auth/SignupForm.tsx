@@ -10,7 +10,6 @@ import { isSupabaseConfigured } from "@/lib/auth/isSupabaseConfigured";
 import { useAuthStore } from "@/store/authStore";
 import { cn } from "@/lib/utils";
 import { clearDemoSession } from "@/lib/auth/demoSession";
-import { persistDemoAuth } from "@/lib/auth/persistDemoAuth";
 import { sanitizeRedirectPath } from "@/lib/auth/routeGuards";
 import { buildMockUser, buildSignupProfile } from "./authHelpers";
 import { signupSchema, type SignupFormValues } from "./schemas";
@@ -44,6 +43,11 @@ export function SignupForm({ className }: SignupFormProps) {
   const postLoginPath = sanitizeRedirectPath(searchParams.get("redirect"));
 
   const onSubmit = handleSubmit(async (values) => {
+    if (!isSupabaseConfigured()) {
+      toast.error("Sign-up is unavailable. Please try again later.");
+      return;
+    }
+
     setSubmitting(true);
 
     const profile = buildSignupProfile(values.email, values.fullName);
@@ -73,32 +77,9 @@ export function SignupForm({ className }: SignupFormProps) {
       toast.success("Account created! Complete your profile to continue.");
       window.location.assign(postLoginPath);
     } catch (err) {
-      if (isSupabaseConfigured()) {
-        const message =
-          err instanceof Error ? err.message : "Could not create account. Try again.";
-        toast.error(message);
-        return;
-      }
-
-      const res = await fetch("/api/auth/demo-session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ role: "player" }),
-        credentials: "same-origin",
-      });
-
-      if (!res.ok) {
-        toast.error("Could not create account. Try again.");
-        return;
-      }
-
-      const user = buildMockUser(values.email, profile.id);
-      persistDemoAuth(user, profile);
-      setUser(user);
-      setProfile({ ...profile, profileComplete: true });
-      setLoading(false);
-      toast.success("Account created! Welcome to PickleBuzz.");
-      window.location.assign(postLoginPath);
+      const message =
+        err instanceof Error ? err.message : "Could not create account. Try again.";
+      toast.error(message);
     } finally {
       setSubmitting(false);
     }

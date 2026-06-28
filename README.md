@@ -10,7 +10,7 @@ Mobile-first pickleball app for match scoring, tournaments, and player rankings.
 |-------|-------------|
 | `/` | Public landing — hero, live matches, featured tournaments |
 | `/rules` | Basic pickleball rules (accordion + diagrams) |
-| `/auth` | Login & signup (email/password, demo accounts, Google SSO UI) |
+| `/auth` | Login & signup (email/password, Google SSO) |
 | `/dashboard` | Player dashboard — KPIs, form strip, charts, recent matches |
 | `/match-setup` | 4-step match creation wizard |
 | `/live-scoring` | Fullscreen live scorer with rally scoring, faults, timeouts |
@@ -63,7 +63,7 @@ NEXT_PUBLIC_APP_NAME=PickleBuzz
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
-> **Tip:** Leave Supabase values as placeholders to use demo/mock mode. Auth and dashboard screens still work with the built-in demo credentials.
+> **Tip:** Supabase env vars are required for sign-in and sign-up. Without them, auth screens show an unavailable message while other routes can still use inline mock data.
 
 ### 3. Run the dev server
 
@@ -128,18 +128,6 @@ In the Supabase dashboard under **Authentication → Providers**:
 1. Sign up at `/auth` with a real email/password.
 2. Check **Table Editor → profiles** — a row should appear for the new user.
 3. Log in again — the dashboard should load the profile from Supabase.
-
-## Demo credentials
-
-Use these on `/auth` when Supabase is unavailable or auth fails (falls back to mock mode):
-
-| Role | Email | Password |
-|------|-------|----------|
-| Player | `player@picklebuzz.demo` | `demo1234` |
-| Organizer | `organizer@picklebuzz.demo` | `demo1234` |
-| Referee | `referee@picklebuzz.demo` | `demo1234` |
-| Club Owner | `club@picklebuzz.demo` | `demo1234` |
-| Admin | `admin@picklebuzz.demo` | `demo1234` |
 
 ## Scripts
 
