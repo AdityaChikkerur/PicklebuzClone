@@ -32,6 +32,18 @@ export function LandingFooter() {
             >
               Clubs
             </Link>
+            <Link
+              href="/privacy"
+              className="text-muted-foreground transition-colors hover:text-primary"
+            >
+              Privacy Policy
+            </Link>
+            <Link
+              href="/terms"
+              className="text-muted-foreground transition-colors hover:text-primary"
+            >
+              Terms of Service
+            </Link>
           </nav>
         </div>
 

@@ -1,6 +1,6 @@
 import type { UserRole } from "@/types/player";
 
-const PUBLIC_EXACT = new Set(["/", "/auth", "/rules", "/clubs"]);
+const PUBLIC_EXACT = new Set(["/", "/auth", "/rules", "/clubs", "/privacy", "/terms"]);
 
 export interface RoleRouteRule {
   pattern: RegExp;
