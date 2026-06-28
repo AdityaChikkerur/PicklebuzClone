@@ -80,7 +80,7 @@ export function AuthBrandPanel() {
               scoreboard.&rdquo;
             </p>
             <p className="mt-3 text-xs font-semibold text-muted-foreground">
-              Marcus T., Club Organizer · Denver, CO
+              Priya S., Club Organizer · Mumbai, MH
             </p>
           </div>
         </div>
