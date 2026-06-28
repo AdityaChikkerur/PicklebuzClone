@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabaseServer";
+import { createAuthenticatedSupabaseClient } from "@/lib/supabaseServer";
 import { createPaymentServer } from "@/lib/db/paymentsServer";
 import { isRazorpayConfigured } from "@/lib/payments/isRazorpayConfigured";
 import { getRazorpayClient, toPaise } from "@/lib/payments/razorpayServer";
@@ -21,7 +21,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = await createAuthenticatedSupabaseClient(request);
     const {
       data: { user },
     } = await supabase.auth.getUser();

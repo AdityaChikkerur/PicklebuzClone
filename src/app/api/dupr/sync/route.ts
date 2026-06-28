@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabaseServer";
+import { createAuthenticatedSupabaseClient } from "@/lib/supabaseServer";
 import { fetchDuprPlayer } from "@/lib/dupr/duprClient";
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = await createAuthenticatedSupabaseClient(request);
     const {
       data: { user },
     } = await supabase.auth.getUser();

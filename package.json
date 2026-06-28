@@ -16,7 +16,9 @@
     "cap:sync": "cap sync android",
     "android:icons": "node scripts/generate-android-icons.mjs && npx capacitor-assets generate --android",
     "android:prepare": "node scripts/write-capacitor-server.mjs",
+    "android:prepare:dev": "node scripts/write-capacitor-server.mjs --dev",
     "android:debug": "npm run android:prepare && npm run android:icons && cap sync android && scripts\\android-build.cmd assembleDebug",
+    "android:debug:dev": "npm run android:prepare:dev && npm run android:icons && cap sync android && scripts\\android-build.cmd assembleDebug",
     "android:release": "npm run android:prepare && npm run android:icons && cap sync android && scripts\\android-build.cmd bundleRelease",
     "android:apk": "npm run android:debug",
     "android:server": "npm run build && npm run start:mobile"

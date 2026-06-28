@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabaseServer";
+import { createAuthenticatedSupabaseClient } from "@/lib/supabaseServer";
 import {
   getPaymentByOrderIdServer,
   markPaymentPaidServer,
@@ -16,7 +16,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = await createAuthenticatedSupabaseClient(request);
     const {
       data: { user },
     } = await supabase.auth.getUser();

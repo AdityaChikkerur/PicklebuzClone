@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { authFetch } from "@/lib/auth/clientFetch";
 import { fetchRefereeMatches, type RefereeMatch } from "@/lib/db/referee";
 import { isSupabaseConfigured } from "@/lib/db/config";
 
@@ -58,10 +59,9 @@ export function useDuprSync() {
   const syncDupr = useCallback(async (duprId: string) => {
     setSyncing(true);
     try {
-      const res = await fetch("/api/dupr/sync", {
+      const res = await authFetch("/api/dupr/sync", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
         body: JSON.stringify({ duprId }),
       });
 

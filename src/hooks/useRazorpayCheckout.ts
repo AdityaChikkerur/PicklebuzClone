@@ -1,5 +1,6 @@
 "use client";
 
+import { authFetch } from "@/lib/auth/clientFetch";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import type { PaymentKind } from "@/types/payment";
@@ -64,10 +65,9 @@ export function useRazorpayCheckout() {
       try {
         await loadRazorpayScript();
 
-        const orderRes = await fetch("/api/payments/razorpay/create-order", {
+        const orderRes = await authFetch("/api/payments/razorpay/create-order", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          credentials: "same-origin",
           body: JSON.stringify({
             kind: input.kind,
             refId: input.refId,
@@ -100,10 +100,9 @@ export function useRazorpayCheckout() {
             prefill: input.prefill,
             theme: { color: "#16a34a" },
             handler: async (response: RazorpayHandlerResponse) => {
-              const verifyRes = await fetch("/api/payments/razorpay/verify", {
+              const verifyRes = await authFetch("/api/payments/razorpay/verify", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                credentials: "same-origin",
                 body: JSON.stringify(response),
               });
 

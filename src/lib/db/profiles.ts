@@ -1,3 +1,6 @@
+import { Capacitor } from "@capacitor/core";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { authFetch } from "@/lib/auth/clientFetch";
 import { createClient } from "@/lib/supabase";
 import { isSupabaseConfigured } from "@/lib/auth/isSupabaseConfigured";
 import { computePlayerRating } from "@/lib/ratings/computePlayerRating";
@@ -32,8 +35,20 @@ function ok<T>(data: T): ProfileResult<T> {
 function fail(error: unknown): ProfileResult<never> {
   return {
     data: null,
-    error: error instanceof Error ? error.message : String(error),
+    error: formatProfileError(error),
   };
+}
+
+function formatProfileError(error: unknown): string {
+  if (error instanceof TypeError && error.message === "Failed to fetch") {
+    return "Network error — check your internet connection and try again.";
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return String(error);
 }
 
 function avatarExtension(mime: string): string {
@@ -43,14 +58,7 @@ function avatarExtension(mime: string): string {
   return "jpg";
 }
 
-export async function uploadProfileAvatar(
-  userId: string,
-  file: File
-): Promise<ProfileResult<string>> {
-  if (!isSupabaseConfigured()) {
-    return fail("Supabase is not configured");
-  }
-
+function validateAvatarFile(file: File): ProfileResult<true> {
   if (!ALLOWED_AVATAR_TYPES.has(file.type)) {
     return fail("Use a JPG, PNG, or WebP image");
   }
@@ -59,8 +67,21 @@ export async function uploadProfileAvatar(
     return fail("Image must be 5 MB or smaller");
   }
 
+  return ok(true);
+}
+
+/** Upload avatar using an authenticated Supabase client (browser or server). */
+export async function uploadProfileAvatarWithClient(
+  supabase: SupabaseClient,
+  userId: string,
+  file: File
+): Promise<ProfileResult<string>> {
+  const valid = validateAvatarFile(file);
+  if (valid.error) {
+    return fail(valid.error);
+  }
+
   try {
-    const supabase = createClient();
     const ext = avatarExtension(file.type);
     const path = `${userId}/avatar.${ext}`;
 
@@ -81,6 +102,17 @@ export async function uploadProfileAvatar(
   }
 }
 
+export async function uploadProfileAvatar(
+  userId: string,
+  file: File
+): Promise<ProfileResult<string>> {
+  if (!isSupabaseConfigured()) {
+    return fail("Supabase is not configured");
+  }
+
+  return uploadProfileAvatarWithClient(createClient(), userId, file);
+}
+
 export interface CompleteProfileInput {
   userId: string;
   phone: string;
@@ -90,29 +122,21 @@ export interface CompleteProfileInput {
   fullName?: string;
 }
 
-export async function completePlayerProfile(
-  input: CompleteProfileInput
-): Promise<ProfileResult<Profile>> {
-  if (!isSupabaseConfigured()) {
-    return fail("Supabase is not configured");
-  }
-
+export async function applyProfileCompletion(
+  supabase: SupabaseClient,
+  input: CompleteProfileInput,
+  avatarUrl: string
+): Promise<ProfileResult<DbProfileRow>> {
   if (!ONBOARDING_ROLES.includes(input.role)) {
     return fail("Invalid role selected");
   }
 
-  const uploaded = await uploadProfileAvatar(input.userId, input.avatarFile);
-  if (uploaded.error || !uploaded.data) {
-    return fail(uploaded.error ?? "Could not upload photo");
-  }
-
   try {
-    const supabase = createClient();
     const updateRow: Record<string, unknown> = {
       phone: input.phone.trim(),
       city: input.city.trim(),
       role: input.role,
-      avatar_url: uploaded.data,
+      avatar_url: avatarUrl,
       profile_complete: true,
     };
 
@@ -129,7 +153,91 @@ export async function completePlayerProfile(
 
     if (error) throw error;
 
-    return ok(mapDbProfile(data as DbProfileRow));
+    return ok(data as DbProfileRow);
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+async function completePlayerProfileDirect(
+  input: CompleteProfileInput
+): Promise<ProfileResult<Profile>> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user || user.id !== input.userId) {
+    return fail("Your session expired. Please sign in again.");
+  }
+
+  const uploaded = await uploadProfileAvatarWithClient(
+    supabase,
+    input.userId,
+    input.avatarFile
+  );
+
+  if (uploaded.error || !uploaded.data) {
+    return fail(uploaded.error ?? "Could not upload photo");
+  }
+
+  const completed = await applyProfileCompletion(supabase, input, uploaded.data);
+
+  if (completed.error || !completed.data) {
+    return fail(completed.error ?? "Could not save profile");
+  }
+
+  return ok(mapDbProfile(completed.data));
+}
+
+/** Saves onboarding — direct Supabase on native; API route on web. */
+export async function completePlayerProfile(
+  input: CompleteProfileInput
+): Promise<ProfileResult<Profile>> {
+  if (!isSupabaseConfigured()) {
+    return fail("Supabase is not configured");
+  }
+
+  if (!ONBOARDING_ROLES.includes(input.role)) {
+    return fail("Invalid role selected");
+  }
+
+  if (typeof window !== "undefined" && Capacitor.isNativePlatform()) {
+    try {
+      return await completePlayerProfileDirect(input);
+    } catch (e) {
+      return fail(e);
+    }
+  }
+
+  try {
+    const formData = new FormData();
+    formData.append("avatar", input.avatarFile);
+    formData.append("phone", input.phone);
+    formData.append("city", input.city);
+    formData.append("role", input.role);
+    if (input.fullName?.trim()) {
+      formData.append("fullName", input.fullName.trim());
+    }
+
+    const response = await authFetch("/api/profile/complete", {
+      method: "POST",
+      body: formData,
+    });
+
+    const payload = (await response.json().catch(() => null)) as
+      | { profile?: DbProfileRow; error?: string }
+      | null;
+
+    if (!response.ok) {
+      return fail(payload?.error ?? "Could not save profile");
+    }
+
+    if (!payload?.profile) {
+      return fail("Could not save profile");
+    }
+
+    return ok(mapDbProfile(payload.profile));
   } catch (e) {
     return fail(e);
   }

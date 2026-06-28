@@ -69,6 +69,12 @@ export function SignupForm({ className }: SignupFormProps) {
         throw error;
       }
 
+      if (!data.session) {
+        throw new Error(
+          "Check your email to confirm your account, or disable email confirmation in Supabase Auth settings."
+        );
+      }
+
       clearDemoSession();
       const user = data.user ?? buildMockUser(values.email, profile.id);
       setUser(user);
