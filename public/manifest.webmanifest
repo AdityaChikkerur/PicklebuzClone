@@ -1,17 +1,31 @@
 {
-  "name": "PickleBuzz",
+  "name": "PickleBuzz — India's Pickleball App",
   "short_name": "PickleBuzz",
-  "description": "Play. Connect. Compete. Pickleball match scoring, tournaments, and rankings.",
-  "start_url": "/dashboard",
+  "description": "India's #1 pickleball app for live scoring, tournaments, rankings, and club bookings.",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#0a0a0b",
   "theme_color": "#c8ff00",
   "orientation": "portrait-primary",
+  "lang": "en-IN",
+  "categories": ["sports", "social"],
   "icons": [
     {
       "src": "/icons/icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/apple-icon",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon",
+      "sizes": "32x32",
+      "type": "image/png",
       "purpose": "any"
     }
   ]

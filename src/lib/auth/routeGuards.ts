@@ -1,6 +1,15 @@
 import type { UserRole } from "@/types/player";
+import { PUBLIC_MARKETING_PATHS } from "@/lib/seo/constants";
 
-const PUBLIC_EXACT = new Set(["/", "/auth", "/rules", "/clubs", "/privacy", "/terms"]);
+const PUBLIC_EXACT = new Set([
+  "/",
+  "/auth",
+  "/rules",
+  "/clubs",
+  "/privacy",
+  "/terms",
+  ...PUBLIC_MARKETING_PATHS,
+]);
 
 export interface RoleRouteRule {
   pattern: RegExp;
@@ -43,6 +52,7 @@ export function isPublicPath(pathname: string): boolean {
   if (/^\/club\/[^/]+$/.test(pathname)) return true;
   if (/^\/tournament\/[^/]+$/.test(pathname)) return true;
   if (/^\/spectate\/[^/]+$/.test(pathname)) return true;
+  if (/^\/pickleball-in-[a-z0-9-]+$/.test(pathname)) return true;
 
   return false;
 }

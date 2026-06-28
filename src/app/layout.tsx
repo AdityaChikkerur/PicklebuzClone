@@ -7,8 +7,13 @@ import { AccessDeniedToast } from "@/components/auth/AccessDeniedToast";
 import { AppProviders } from "@/components/providers/AppProviders";
 import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
 import { CapacitorSplash } from "@/components/pwa/CapacitorSplash";
+import { JsonLd } from "@/components/seo/JsonLd";
+import {
+  buildPageMetadata,
+  organizationJsonLd,
+  webSiteJsonLd,
+} from "@/lib/seo";
 import "@/styles/globals.css";
-import { APP_NAME } from "@/lib/utils";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -26,19 +31,22 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: {
-    default: APP_NAME,
-    template: `%s | ${APP_NAME}`,
+  ...buildPageMetadata(),
+  icons: {
+    icon: [
+      { url: "/icon", type: "image/png", sizes: "32x32" },
+      { url: "/icons/icon.svg", type: "image/svg+xml" },
+    ],
+    apple: [{ url: "/apple-icon", type: "image/png", sizes: "180x180" }],
+    shortcut: ["/icon"],
   },
-  description:
-    "Play. Connect. Compete. Pickleball match scoring, tournaments, and rankings for players and clubs.",
-  applicationName: APP_NAME,
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
-    title: APP_NAME,
+    title: "PickleBuzz",
     statusBarStyle: "black-translucent",
   },
+  category: "sports",
 };
 
 export const viewport: Viewport = {
@@ -57,11 +65,12 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="en-IN"
       className={`dark ${inter.variable} ${montserrat.variable}`}
       suppressHydrationWarning
     >
       <body className={`${inter.className} min-h-screen font-sans antialiased`}>
+        <JsonLd data={[organizationJsonLd(), webSiteJsonLd()]} />
         <AuthHydration />
         <ProfileOnboardingGate />
         <AccessDeniedToast />
