@@ -14,12 +14,9 @@ export function LiveNowStrip({ matches }: LiveNowStripProps) {
         <SignalIcon className="h-5 w-5 text-danger live-pulse" aria-hidden="true" />
         <h2 className="font-display text-lg font-black italic text-foreground">Live now</h2>
         {matches.length > 0 && (
-          <>
-            <Badge variant="secondary">Demo</Badge>
-            <Badge variant="live" dot>
-              {matches.length}
-            </Badge>
-          </>
+          <Badge variant="live" dot>
+            {matches.length}
+          </Badge>
         )}
       </div>
 
