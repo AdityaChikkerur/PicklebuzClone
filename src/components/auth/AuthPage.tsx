@@ -1,12 +1,9 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense } from "react";
 import { AppLogo } from "@/components/ui/AppLogo";
 import { AuthBrandPanel } from "./AuthBrandPanel";
-import { AuthTabs, type AuthTab } from "./AuthTabs";
 import { GoogleSSOButton } from "./GoogleSSOButton";
-import { LoginForm } from "./LoginForm";
-import { SignupForm } from "./SignupForm";
 
 function AuthFormFallback() {
   return (
@@ -20,8 +17,6 @@ function AuthFormFallback() {
 }
 
 export function AuthPage() {
-  const [tab, setTab] = useState<AuthTab>("login");
-
   return (
     <div className="relative flex min-h-screen bg-background">
       <div className="pointer-events-none absolute inset-0" aria-hidden="true">
@@ -38,30 +33,18 @@ export function AuthPage() {
 
           <div className="card-glow p-6 sm:p-8">
             <div className="relative z-10">
-              <AuthTabs active={tab} onChange={setTab} />
-
-              <div className="mt-6">
-                <Suspense fallback={<AuthFormFallback />}>
-                  <GoogleSSOButton />
-                </Suspense>
+              <div className="mb-6 text-center">
+                <h1 className="font-display text-2xl font-black italic tracking-tight text-foreground">
+                  Sign in to PickleBuzz
+                </h1>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Use your Google account to get started.
+                </p>
               </div>
 
-              <div className="relative my-6">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-border" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase tracking-wider">
-                  <span className="bg-card/80 px-3 font-semibold text-muted-foreground backdrop-blur-sm">
-                    or continue with email
-                  </span>
-                </div>
-              </div>
-
-              <div key={tab} className="fade-in">
-                <Suspense fallback={<AuthFormFallback />}>
-                  {tab === "login" ? <LoginForm /> : <SignupForm />}
-                </Suspense>
-              </div>
+              <Suspense fallback={<AuthFormFallback />}>
+                <GoogleSSOButton />
+              </Suspense>
             </div>
           </div>
         </div>

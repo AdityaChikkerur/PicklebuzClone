@@ -71,7 +71,7 @@ export function GoogleSSOButton({ className }: GoogleSSOButtonProps) {
           fill="#EA4335"
         />
       </svg>
-      Continue with Google
+      Sign in with Google
     </button>
   );
 }
