@@ -1,6 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import { createClient } from "@/lib/supabase";
 import { isSupabaseConfigured } from "@/lib/db/config";
 import {
@@ -13,6 +21,7 @@ import {
   getMockNotifications,
   markAllMockNotificationsRead,
   markMockNotificationRead,
+  NOTIFICATIONS_UPDATED_EVENT,
 } from "@/lib/notifications/mockNotifications";
 import { useAuthStore } from "@/store/authStore";
 import type { AppNotification, DbNotification } from "@/types/notification";
@@ -28,7 +37,9 @@ export interface UseNotificationsResult {
   reload: () => void;
 }
 
-export function useNotifications(): UseNotificationsResult {
+const NotificationsContext = createContext<UseNotificationsResult | null>(null);
+
+export function NotificationsProvider({ children }: { children: ReactNode }) {
   const user = useAuthStore((s) => s.user);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,7 +58,7 @@ export function useNotifications(): UseNotificationsResult {
 
       if (!isSupabaseConfigured() || !user?.id) {
         if (!cancelled) {
-          setNotifications(getMockNotifications());
+          setNotifications(getMockNotifications(user?.id));
           setSource("mock");
           setLoading(false);
         }
@@ -78,6 +89,14 @@ export function useNotifications(): UseNotificationsResult {
       cancelled = true;
     };
   }, [user?.id, reloadToken]);
+
+  useEffect(() => {
+    if (isSupabaseConfigured() && user?.id) return;
+
+    const onUpdated = () => reload();
+    window.addEventListener(NOTIFICATIONS_UPDATED_EVENT, onUpdated);
+    return () => window.removeEventListener(NOTIFICATIONS_UPDATED_EVENT, onUpdated);
+  }, [user?.id, reload]);
 
   useEffect(() => {
     if (!isSupabaseConfigured() || !user?.id || source !== "supabase") return;
@@ -150,7 +169,7 @@ export function useNotifications(): UseNotificationsResult {
   const markAllRead = useCallback(async () => {
     if (source === "mock" || !isSupabaseConfigured() || !user?.id) {
       markAllMockNotificationsRead();
-      setNotifications(getMockNotifications());
+      setNotifications(getMockNotifications(user?.id));
       return;
     }
 
@@ -165,14 +184,42 @@ export function useNotifications(): UseNotificationsResult {
     [notifications]
   );
 
-  return {
-    notifications,
-    unreadCount,
-    loading,
-    error,
-    source,
-    markRead,
-    markAllRead,
-    reload,
-  };
+  const value = useMemo(
+    () => ({
+      notifications,
+      unreadCount,
+      loading,
+      error,
+      source,
+      markRead,
+      markAllRead,
+      reload,
+    }),
+    [
+      notifications,
+      unreadCount,
+      loading,
+      error,
+      source,
+      markRead,
+      markAllRead,
+      reload,
+    ]
+  );
+
+  return (
+    <NotificationsContext.Provider value={value}>
+      {children}
+    </NotificationsContext.Provider>
+  );
+}
+
+export function useNotifications(): UseNotificationsResult {
+  const ctx = useContext(NotificationsContext);
+  if (!ctx) {
+    throw new Error(
+      "useNotifications must be used within NotificationsProvider"
+    );
+  }
+  return ctx;
 }

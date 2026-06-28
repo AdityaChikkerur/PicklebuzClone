@@ -4,7 +4,9 @@ import { getDemoRoleFromCookie } from "@/lib/auth/demoSession";
 import { isSupabaseConfigured } from "@/lib/auth/isSupabaseConfigured";
 import {
   buildAuthRedirectUrl,
+  getDefaultHomeForRole,
   getRoleRuleForPath,
+  isPlayerOnlyPath,
   isPublicPath,
   isRoleAllowed,
   sanitizeRedirectPath,
@@ -93,16 +95,21 @@ export async function middleware(request: NextRequest) {
 
   const demoRole = getDemoRoleFromCookie(request.headers.get("cookie"));
   const isAuthenticated = Boolean(userId || demoRole);
+  const role = isAuthenticated
+    ? await resolveUserRole(request, userId)
+    : null;
+  const roleHome = getDefaultHomeForRole(role);
 
   if (pathname === "/auth" && isAuthenticated) {
     const redirect = sanitizeRedirectPath(
-      request.nextUrl.searchParams.get("redirect")
+      request.nextUrl.searchParams.get("redirect"),
+      role
     );
     return NextResponse.redirect(new URL(redirect, request.url));
   }
 
   if (pathname === "/" && isAuthenticated) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    return NextResponse.redirect(new URL(roleHome, request.url));
   }
 
   if (!isPublicPath(pathname) && !isAuthenticated) {
@@ -110,11 +117,17 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(authUrl, request.url));
   }
 
+  if (isAuthenticated && role && isPlayerOnlyPath(pathname) && role !== "player") {
+    const staffHome = new URL(roleHome, request.url);
+    if (pathname !== roleHome) {
+      return NextResponse.redirect(staffHome);
+    }
+  }
+
   const roleRule = getRoleRuleForPath(pathname);
   if (roleRule && isAuthenticated) {
-    const role = await resolveUserRole(request, userId);
     if (!isRoleAllowed(role, roleRule.roles)) {
-      const deniedUrl = new URL("/dashboard", request.url);
+      const deniedUrl = new URL(roleHome, request.url);
       deniedUrl.searchParams.set("access", "denied");
       return NextResponse.redirect(deniedUrl);
     }

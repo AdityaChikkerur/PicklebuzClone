@@ -39,12 +39,6 @@ const ADMIN_SECTIONS = [
     description: "Review matches flagged for suspicious scores.",
     icon: ShieldCheckIcon,
   },
-  {
-    href: "/admin/tournaments",
-    title: "Sponsors & featured",
-    description: "Toggle featured tournament slots on the landing page.",
-    icon: TrophyIcon,
-  },
 ] as const;
 
 export function AdminDashboardPage() {

@@ -16,13 +16,13 @@ export function MatchInfoBar({ matchState }: MatchInfoBarProps) {
   const winsB = countGameWins(gameScores, "B");
 
   return (
-    <div className="border-b border-slate-700/80 px-4 py-3">
+    <div className="border-b border-arena-border px-4 py-3">
       <div className="mb-2 flex items-center justify-between text-sm">
-        <span className="truncate font-semibold text-slate-200">{teamAName}</span>
-        <span className="shrink-0 px-2 font-bold text-slate-400">
+        <span className="truncate font-semibold text-foreground">{teamAName}</span>
+        <span className="shrink-0 px-2 font-bold text-primary tabular-nums">
           {winsA} – {winsB}
         </span>
-        <span className="truncate text-right font-semibold text-slate-200">
+        <span className="truncate text-right font-semibold text-foreground">
           {teamBName}
         </span>
       </div>
@@ -31,13 +31,13 @@ export function MatchInfoBar({ matchState }: MatchInfoBarProps) {
         {gameScores.map((game) => (
           <span
             key={game.gameNumber}
-            className="rounded-lg bg-slate-800 px-2 py-0.5 text-xs font-medium text-slate-300"
+            className="rounded-lg bg-arena-surface px-2 py-0.5 text-xs font-medium text-muted-foreground"
           >
             G{game.gameNumber}: {game.scoreA}–{game.scoreB}
           </span>
         ))}
         {!matchState.isMatchComplete && (
-          <span className="rounded-lg border border-primary/50 bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+          <span className="rounded-lg border border-primary/50 bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary glow-neon-sm">
             G{currentGame}: {matchState.scoreA}–{matchState.scoreB}
           </span>
         )}
@@ -59,7 +59,7 @@ export function MatchInfoBar({ matchState }: MatchInfoBarProps) {
                       ? "bg-primary"
                       : isCurrent
                         ? "bg-primary/40 ring-1 ring-primary"
-                        : "bg-slate-700"
+                        : "bg-muted"
                   )}
                   aria-hidden="true"
                 />
@@ -67,21 +67,21 @@ export function MatchInfoBar({ matchState }: MatchInfoBarProps) {
                   className={cn(
                     "h-2 w-2 rounded-full",
                     completed?.winner === "B"
-                      ? "bg-secondary"
+                      ? "bg-foreground"
                       : isCurrent
-                        ? "bg-secondary/40 ring-1 ring-secondary"
-                        : "bg-slate-700"
+                        ? "bg-foreground/40 ring-1 ring-foreground"
+                        : "bg-muted"
                   )}
                   aria-hidden="true"
                 />
               </div>
-              <span className="text-[10px] text-slate-500">
+              <span className="text-[10px] text-muted-foreground">
                 {completed ? "done" : isCurrent ? "live" : ""}
               </span>
             </div>
           );
         })}
-        <span className="ml-1 text-[10px] text-slate-500">
+        <span className="ml-1 text-[10px] text-muted-foreground">
           ({gamesNeeded} to win)
         </span>
       </div>

@@ -27,7 +27,7 @@ export function LiveScoringPage() {
 
   return (
     <AppLayout hideNav>
-      <div className="fixed inset-0 mx-auto flex max-w-lg flex-col bg-foreground text-slate-100">
+      <div className="fixed inset-0 mx-auto flex max-w-lg flex-col arena-bg">
         <LiveScoringHeader
           matchState={matchState}
           onEndMatch={() => setEndModalOpen(true)}
@@ -43,16 +43,16 @@ export function LiveScoringPage() {
           <TimeoutBar />
           <FaultCounters matchState={matchState} />
           {showTimeline && (
-            <div className="slide-up border-t border-slate-700/80">
+            <div className="slide-up border-t border-arena-border">
               <MatchEventsFeed events={matchState.events} />
             </div>
           )}
         </div>
 
-        <div className="border-t border-slate-700/80 px-4 py-2 text-center">
+        <div className="border-t border-arena-border px-4 py-2 text-center">
           <Link
             href="/match-setup"
-            className="text-[11px] font-semibold text-slate-500 hover:text-primary"
+            className="text-[11px] font-semibold text-muted-foreground hover:text-primary transition-colors"
           >
             New match setup →
           </Link>

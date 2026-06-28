@@ -52,11 +52,11 @@ export function OrganizerDashboardPage() {
             Organizer access only
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Sign in with the organizer demo account to manage tournaments and
-            registrations.
+            This area is for tournament organizers. Choose Organizer during
+            profile setup, or contact support if you need access changed.
           </p>
-          <Link href="/auth" className="btn-primary mt-6 inline-block">
-            Sign in
+          <Link href="/profile" className="btn-primary mt-6 inline-block">
+            View profile
           </Link>
         </div>
       </AppLayout>

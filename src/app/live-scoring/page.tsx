@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { LiveScoringPage } from "@/components/scoring";
+import { LiveMatchesPage } from "@/components/scoring";
 
 export const metadata: Metadata = {
-  title: "Live Scoring",
+  title: "Live Matches",
 };
 
 export default function LiveScoringRoutePage() {
-  return <LiveScoringPage />;
+  return <LiveMatchesPage />;
 }

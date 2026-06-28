@@ -32,6 +32,14 @@ export const USER_ROLES: { value: UserRole; label: string }[] = [
   { value: "admin", label: "Admin" },
 ];
 
+/** Roles users may pick during onboarding (admin is staff-assigned only). */
+export const ONBOARDING_ROLES: { value: UserRole; label: string; description: string }[] = [
+  { value: "player", label: "Player", description: "Score matches, climb rankings" },
+  { value: "organizer", label: "Organizer", description: "Run tournaments & events" },
+  { value: "referee", label: "Referee", description: "Officiate assigned matches" },
+  { value: "club_owner", label: "Club Owner", description: "Manage courts & bookings" },
+];
+
 export interface Profile {
   id: string;
   fullName: string;
@@ -39,7 +47,12 @@ export interface Profile {
   city: string;
   role: UserRole;
   skillLevel: SkillLevel;
+  /** PickleBuzz rating — computed from verified match results. */
+  playerRating: number;
+  /** @deprecated Use playerRating — kept for DB column mapping */
   duprRating: number;
+  phone: string;
+  profileComplete: boolean;
   duprId?: string | null;
   duprSyncedAt?: string | null;
   createdAt: string;

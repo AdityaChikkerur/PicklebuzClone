@@ -24,10 +24,18 @@ export function PlayerCard({ player, className }: PlayerCardProps) {
   const { isFollowing, toggleFollow } = useFollows(userId);
   const following = isFollowing(player.id);
 
-  const handleInvite = () => {
-    toast.success(`Invite sent to ${player.fullName}`, {
-      description: "They'll be notified when match invites are wired up.",
+  const profile = useAuthStore((s) => s.profile);
+  const senderName = profile?.fullName ?? "A player";
+
+  const handleInvite = async () => {
+    const { sendNotification } = await import("@/lib/notifications/sendNotification");
+    await sendNotification({
+      userId: player.id,
+      icon: "match_invite",
+      text: `${senderName} invited you to a match`,
+      link: "/discover",
     });
+    toast.success(`Invite sent to ${player.fullName}`);
   };
 
   return (

@@ -7,7 +7,7 @@ export const loginSchema = z.object({
 
 export type LoginFormValues = z.infer<typeof loginSchema>;
 
-export const signupStep1Schema = z
+export const signupSchema = z
   .object({
     fullName: z.string().min(2, "Name must be at least 2 characters"),
     email: z.string().email("Enter a valid email address"),
@@ -21,12 +21,16 @@ export const signupStep1Schema = z
     path: ["confirmPassword"],
   });
 
-export type SignupStep1Values = z.infer<typeof signupStep1Schema>;
+export type SignupFormValues = z.infer<typeof signupSchema>;
 
-export const signupStep2Schema = z.object({
-  role: z.enum(["player", "organizer", "referee", "club_owner", "admin"]),
-  skillLevel: z.enum(["2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0+"]),
+export const onboardingSchema = z.object({
+  phone: z
+    .string()
+    .min(10, "Enter a valid phone number")
+    .max(15, "Phone number is too long")
+    .regex(/^\+?[0-9\s-]{10,15}$/, "Enter a valid phone number"),
   city: z.string().min(2, "Enter your city"),
+  role: z.enum(["player", "organizer", "referee", "club_owner"]),
 });
 
-export type SignupStep2Values = z.infer<typeof signupStep2Schema>;
+export type OnboardingFormValues = z.infer<typeof onboardingSchema>;

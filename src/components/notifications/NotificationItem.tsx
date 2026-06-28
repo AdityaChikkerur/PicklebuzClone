@@ -87,7 +87,7 @@ export function NotificationEmptyState({ filter }: NotificationEmptyStateProps) 
       <p className="mt-1 text-sm text-muted-foreground">
         {filter === "unread"
           ? "No unread notifications right now."
-          : "Match invites, results, and bookings will show up here."}
+          : "Follow requests, match invites, results, and bookings will show up here."}
       </p>
       <Link href="/discover" className="btn-outline mt-4 inline-block text-sm">
         Find players

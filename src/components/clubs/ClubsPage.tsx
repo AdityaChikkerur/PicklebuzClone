@@ -72,7 +72,7 @@ export function ClubsPage() {
 
         {error && (
           <p className="rounded-xl border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-warning">
-            {error} — showing demo clubs.
+            {error}. Showing demo clubs.
           </p>
         )}
 

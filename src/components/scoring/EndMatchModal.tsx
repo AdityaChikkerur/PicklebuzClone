@@ -70,7 +70,7 @@ export function EndMatchModal({
     toast.success(
       result.data?.mock
         ? "Match saved (demo mode)"
-        : "Match saved — awaiting opponent confirmation"
+        : "Match saved. Awaiting opponent confirmation"
     );
 
     onClose();
@@ -91,37 +91,37 @@ export function EndMatchModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="end-match-title"
-        className="relative z-10 w-full max-w-md rounded-t-2xl border border-slate-700 bg-slate-900 p-5 shadow-xl sm:rounded-2xl"
+        className="relative z-10 w-full max-w-md rounded-t-3xl glass-strong border border-border p-5 shadow-[0_-16px_48px_rgba(0,0,0,0.6)] sm:rounded-2xl scale-in"
       >
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
             <h2
               id="end-match-title"
-              className="text-lg font-bold text-slate-100"
+              className="font-display text-lg font-black italic text-foreground"
             >
               End match
             </h2>
-            <p className="text-sm text-slate-400">Review the score summary</p>
+            <p className="text-sm text-muted-foreground">Review the score summary</p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="rounded-lg p-2 text-muted-foreground hover:bg-muted/60 hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             aria-label="Close"
           >
             <XMarkIcon className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="mb-4 rounded-2xl border border-slate-700 bg-slate-800/80 p-4">
+        <div className="mb-4 rounded-2xl border border-border bg-arena-surface p-4">
           <div className="mb-3 flex items-center justify-between">
             <span className="font-semibold text-primary">
               {matchState.teamAName}
             </span>
-            <span className="text-2xl font-bold text-slate-100">
+            <span className="font-display text-2xl font-black italic tabular-nums text-foreground">
               {winsA} – {winsB}
             </span>
-            <span className="font-semibold text-secondary">
+            <span className="font-semibold text-foreground">
               {matchState.teamBName}
             </span>
           </div>
@@ -131,13 +131,13 @@ export function EndMatchModal({
               {matchState.gameScores.map((game) => (
                 <li
                   key={game.gameNumber}
-                  className="flex justify-between text-sm text-slate-300"
+                  className="flex justify-between text-sm text-muted-foreground"
                 >
                   <span>Game {game.gameNumber}</span>
                   <span className="font-medium">
                     {game.scoreA} – {game.scoreB}
                     {game.winner && (
-                      <span className="ml-2 text-xs text-slate-500">
+                      <span className="ml-2 text-xs text-muted-foreground/70">
                         (Team {game.winner})
                       </span>
                     )}
@@ -146,14 +146,14 @@ export function EndMatchModal({
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-muted-foreground">
               Current game: {matchState.scoreA} – {matchState.scoreB}
             </p>
           )}
 
           {!matchState.isMatchComplete && (
             <p className="mt-3 text-xs text-warning">
-              Match not finished — needs {gamesNeeded} game wins to complete.
+              Match not finished. Needs {gamesNeeded} game wins to complete.
             </p>
           )}
 
@@ -172,7 +172,7 @@ export function EndMatchModal({
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 rounded-xl border border-slate-600 py-3 text-sm font-semibold text-slate-300 transition-colors hover:bg-slate-800"
+            className="flex-1 rounded-xl border border-border py-3 text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted/60"
           >
             Keep Scoring
           </button>

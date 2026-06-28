@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { createMatch } from "@/lib/db/matches";
+import { isSupabaseConfigured } from "@/lib/auth/isSupabaseConfigured";
 import { createInitialMatchState, useMatchStore } from "@/store/matchStore";
 import { useAuthStore } from "@/store/authStore";
 import { INITIAL_MATCH_SETUP, type MatchSetupState } from "@/types/match";
@@ -54,6 +55,18 @@ export function MatchSetupWizard() {
 
     setStarting(true);
 
+    if (isSupabaseConfigured() && !useAuthStore.getState().profile?.profileComplete) {
+      setStarting(false);
+      toast.error("Complete your profile before creating a match.");
+      return;
+    }
+
+    if (isSupabaseConfigured() && !userId) {
+      setStarting(false);
+      toast.error("Sign in to create a match.");
+      return;
+    }
+
     const teamAPlayerIds = setup.players
       .filter((p) => p.team === "A")
       .map((p) => p.playerId);
@@ -93,8 +106,8 @@ export function MatchSetupWizard() {
 
     resetMatch(matchState);
     setCurrentMatchId(persistedId);
-    toast.success("Match ready — let's score!");
-    router.push("/live-scoring");
+    toast.success("Match ready. Let's score!");
+    router.push(persistedId ? `/live-scoring/${persistedId}` : "/live-scoring/local");
   };
 
   const canContinue = isStepValid(setup.step, setup);

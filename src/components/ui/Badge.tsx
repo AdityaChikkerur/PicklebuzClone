@@ -21,14 +21,14 @@ interface BadgeProps {
 
 const variantStyles: Record<BadgeVariant, string> = {
   default: "bg-muted text-muted-foreground",
-  primary: "bg-primary/10 text-primary",
-  secondary: "bg-secondary/10 text-secondary",
-  success: "bg-success/10 text-success",
-  warning: "bg-warning/10 text-warning",
-  danger: "bg-danger/10 text-danger",
-  live: "bg-danger text-white",
-  win: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400",
-  loss: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400",
+  primary: "bg-green-light text-primary border border-primary/20",
+  secondary: "bg-muted text-foreground border border-border",
+  success: "bg-green-light text-primary",
+  warning: "bg-amber-light text-amber-brand",
+  danger: "bg-red-light text-red-brand",
+  live: "bg-red-brand text-white shadow-[0_0_12px_rgba(255,71,87,0.4)]",
+  win: "bg-green-light text-primary",
+  loss: "bg-red-light text-red-brand",
   outline: "border border-border text-muted-foreground bg-transparent",
 };
 
@@ -50,7 +50,7 @@ export function Badge({
         <span
           className={cn(
             "h-1.5 w-1.5 rounded-full",
-            variant === "live" ? "bg-white animate-pulse" : "bg-current"
+            variant === "live" ? "bg-white live-pulse" : "bg-current"
           )}
           aria-hidden="true"
         />

@@ -16,14 +16,6 @@ export function AuthHydration() {
     let cancelled = false;
 
     async function hydrate() {
-      const persisted = readPersistedDemoAuth();
-      if (persisted) {
-        setUser(persisted.user);
-        setProfile(persisted.profile);
-        setLoading(false);
-        return;
-      }
-
       if (isSupabaseConfigured()) {
         const session = await hydrateSupabaseSession();
         if (cancelled) return;
@@ -32,6 +24,17 @@ export function AuthHydration() {
           setUser(session.user);
           setProfile(session.profile);
         }
+
+        if (!cancelled) setLoading(false);
+        return;
+      }
+
+      const persisted = readPersistedDemoAuth();
+      if (persisted) {
+        setUser(persisted.user);
+        setProfile(persisted.profile);
+        setLoading(false);
+        return;
       }
 
       if (!cancelled) setLoading(false);

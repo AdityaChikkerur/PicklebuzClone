@@ -16,20 +16,20 @@ export function ClubHeader({ club }: ClubHeaderProps) {
   return (
     <div className="card-base overflow-hidden">
       <div className="bg-gradient-to-br from-primary/20 via-primary/10 to-secondary/10 px-5 py-6 sm:px-6">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0 flex-1">
             <Badge variant="primary" className="mb-2">
               {club.city}
             </Badge>
-            <h1 className="text-2xl font-bold text-foreground sm:text-3xl">
+            <h1 className="break-words text-2xl font-bold leading-tight text-foreground sm:text-3xl">
               {club.name}
             </h1>
-            <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
-              <MapPinIcon className="h-4 w-4 shrink-0 text-primary" />
-              {club.location}
+            <p className="mt-2 flex items-start gap-1.5 text-sm text-muted-foreground">
+              <MapPinIcon className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+              <span className="break-words">{club.location}</span>
             </p>
           </div>
-          <div className="flex items-center gap-1.5 rounded-xl bg-card px-3 py-2 shadow-sm">
+          <div className="flex shrink-0 items-center gap-1.5 rounded-xl bg-card px-3 py-2 shadow-sm">
             <StarIcon className="h-5 w-5 text-warning" aria-hidden="true" />
             <span className="text-lg font-bold text-foreground">
               {club.rating.toFixed(1)}
@@ -45,16 +45,16 @@ export function ClubHeader({ club }: ClubHeaderProps) {
           ))}
         </div>
 
-        <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
           <span className="font-semibold text-foreground">
-            {club.courtCount ?? "—"} courts available
+            {club.courtCount ?? "-"} courts available
           </span>
           {club.contact && (
             <a
               href={`tel:${club.contact.replace(/\s/g, "")}`}
-              className="flex items-center gap-1 hover:text-primary"
+              className="flex min-w-0 items-center gap-1 break-all hover:text-primary"
             >
-              <PhoneIcon className="h-4 w-4" aria-hidden="true" />
+              <PhoneIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
               {club.contact}
             </a>
           )}

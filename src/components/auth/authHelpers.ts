@@ -1,5 +1,6 @@
 import type { User } from "@supabase/supabase-js";
 import { avatarUrl, generateId } from "@/lib/utils";
+import { STARTING_RATING } from "@/lib/ratings/computePlayerRating";
 import type {
   DemoCredential,
   Profile,
@@ -7,21 +8,12 @@ import type {
   UserRole,
 } from "@/types/player";
 
-const SKILL_TO_DUPR: Record<SkillLevel, number> = {
-  "2.0": 2.0,
-  "2.5": 2.5,
-  "3.0": 3.0,
-  "3.5": 3.5,
-  "4.0": 4.0,
-  "4.5": 4.5,
-  "5.0+": 5.0,
-};
-
 export function buildDemoProfile(
   cred: DemoCredential,
   overrides?: Partial<Pick<Profile, "fullName" | "city" | "skillLevel">>
 ): Profile {
-  const skillLevel = overrides?.skillLevel ?? "3.5";
+  const skillLevel = overrides?.skillLevel ?? "3.0";
+  const rating = STARTING_RATING;
   return {
     id: generateId(),
     fullName: overrides?.fullName ?? cred.label,
@@ -29,7 +21,10 @@ export function buildDemoProfile(
     city: overrides?.city ?? "Bangalore",
     role: cred.role,
     skillLevel,
-    duprRating: SKILL_TO_DUPR[skillLevel],
+    playerRating: rating,
+    duprRating: rating,
+    phone: "",
+    profileComplete: true,
     createdAt: new Date().toISOString(),
   };
 }
@@ -37,18 +32,21 @@ export function buildDemoProfile(
 export function buildSignupProfile(
   email: string,
   fullName: string,
-  role: UserRole,
-  skillLevel: SkillLevel,
-  city: string
+  role: UserRole = "player",
+  city = ""
 ): Profile {
+  const rating = STARTING_RATING;
   return {
     id: generateId(),
     fullName,
-    avatarUrl: avatarUrl(email),
+    avatarUrl: null,
     city,
     role,
-    skillLevel,
-    duprRating: SKILL_TO_DUPR[skillLevel],
+    skillLevel: "3.0",
+    playerRating: rating,
+    duprRating: rating,
+    phone: "",
+    profileComplete: false,
     createdAt: new Date().toISOString(),
   };
 }

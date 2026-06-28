@@ -1,5 +1,6 @@
 import { isSupabaseConfigured } from "@/lib/auth/isSupabaseConfigured";
 import { createClient } from "@/lib/supabase";
+import { sendNotification } from "@/lib/notifications/sendNotification";
 
 const FOLLOWS_KEY = "pb_player_follows";
 
@@ -38,7 +39,8 @@ export async function fetchFollowingIds(userId: string): Promise<Set<string>> {
 
 export async function followPlayer(
   followerId: string,
-  followingId: string
+  followingId: string,
+  followerName?: string
 ): Promise<boolean> {
   if (followerId === followingId) return false;
 
@@ -46,6 +48,12 @@ export async function followPlayer(
     const set = readMockFollows(followerId);
     set.add(followingId);
     writeMockFollows(followerId, set);
+    await sendNotification({
+      userId: followingId,
+      icon: "invite",
+      text: `${followerName ?? "Someone"} started following you`,
+      link: "/discover",
+    });
     return true;
   }
 
@@ -54,6 +62,15 @@ export async function followPlayer(
     follower_id: followerId,
     following_id: followingId,
   });
+
+  if (!error) {
+    await sendNotification({
+      userId: followingId,
+      icon: "invite",
+      text: `${followerName ?? "Someone"} started following you`,
+      link: "/discover",
+    });
+  }
 
   return !error;
 }

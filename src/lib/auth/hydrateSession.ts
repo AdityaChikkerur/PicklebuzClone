@@ -1,29 +1,8 @@
 import { createClient } from "@/lib/supabase";
 import { isSupabaseConfigured } from "@/lib/auth/isSupabaseConfigured";
+import { mapDbProfile, type DbProfileRow } from "@/lib/db/profileMapper";
 import type { Profile } from "@/types/player";
 import type { User } from "@supabase/supabase-js";
-
-function mapProfile(row: {
-  id: string;
-  full_name: string;
-  avatar_url: string | null;
-  city: string;
-  role: Profile["role"];
-  skill_level: Profile["skillLevel"];
-  dupr_rating: number;
-  created_at: string;
-}): Profile {
-  return {
-    id: row.id,
-    fullName: row.full_name,
-    avatarUrl: row.avatar_url,
-    city: row.city,
-    role: row.role,
-    skillLevel: row.skill_level,
-    duprRating: Number(row.dupr_rating),
-    createdAt: row.created_at,
-  };
-}
 
 export async function hydrateSupabaseSession(): Promise<{
   user: User;
@@ -44,5 +23,5 @@ export async function hydrateSupabaseSession(): Promise<{
 
   if (error || !profileData) return null;
 
-  return { user, profile: mapProfile(profileData) };
+  return { user, profile: mapDbProfile(profileData as DbProfileRow) };
 }

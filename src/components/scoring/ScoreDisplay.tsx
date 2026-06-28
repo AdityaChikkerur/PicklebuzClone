@@ -13,6 +13,8 @@ interface ScorePanelProps {
   serverNumber?: 1 | 2;
   side: "left" | "right";
   disabled: boolean;
+  readOnly?: boolean;
+  isMatchComplete?: boolean;
   onTap: () => void;
 }
 
@@ -25,6 +27,8 @@ function ScorePanel({
   serverNumber,
   side,
   disabled,
+  readOnly = false,
+  isMatchComplete = false,
   onTap,
 }: ScorePanelProps) {
   return (
@@ -35,28 +39,28 @@ function ScorePanel({
       className={cn(
         "score-panel min-h-[180px] sm:min-h-[200px]",
         serving
-          ? "border-amber-brand/60 bg-amber-brand/10 shadow-score"
+          ? "border-primary/60 bg-primary/10 shadow-score glow-neon-sm"
           : side === "left"
-            ? "border-primary/30 bg-slate-800/60"
-            : "border-secondary/30 bg-slate-800/60",
+            ? "border-primary/20 bg-arena-surface"
+            : "border-border bg-arena-surface",
         disabled && "cursor-not-allowed opacity-50"
       )}
       aria-label={`Add point for ${teamName}`}
     >
       {serving && (
-        <span className="rounded-full bg-amber-brand/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-brand">
+        <span className="rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary">
           Serving{serverNumber ? ` · S${serverNumber}` : ""}
         </span>
       )}
       <span
         className={cn(
           "max-w-full truncate text-sm font-bold",
-          side === "left" ? "text-primary" : "text-secondary"
+          side === "left" ? "text-primary" : "text-foreground"
         )}
       >
         {teamName}
       </span>
-      <span className="text-hero-xl text-slate-50">{score}</span>
+      <span className="text-hero-xl text-foreground">{score}</span>
       <div className="flex gap-1">
         {Array.from({ length: bestOf }).map((_, i) => (
           <span
@@ -65,16 +69,19 @@ function ScorePanel({
               "h-2 w-2 rounded-full",
               i < gamesWon
                 ? side === "left"
-                  ? "bg-primary"
-                  : "bg-secondary"
-                : "bg-slate-600"
+                  ? "bg-primary glow-neon-sm"
+                  : "bg-foreground"
+                : "bg-muted"
             )}
             aria-hidden="true"
           />
         ))}
       </div>
-      {!disabled && (
-        <span className="text-[10px] font-semibold text-slate-500">Tap to add point</span>
+      {!disabled && !readOnly && (
+        <span className="text-[10px] font-semibold text-muted-foreground">Tap to add point</span>
+      )}
+      {readOnly && !isMatchComplete && (
+        <span className="text-[10px] font-semibold text-muted-foreground">Watch only</span>
       )}
     </button>
   );
@@ -86,9 +93,10 @@ function countGameWins(matchState: MatchState, team: "A" | "B"): number {
 
 interface ScoreDisplayProps {
   matchState: MatchState;
+  readOnly?: boolean;
 }
 
-export function ScoreDisplay({ matchState }: ScoreDisplayProps) {
+export function ScoreDisplay({ matchState, readOnly = false }: ScoreDisplayProps) {
   const addPoint = useMatchStore((s) => s.addPoint);
   const {
     scoreA,
@@ -103,7 +111,7 @@ export function ScoreDisplay({ matchState }: ScoreDisplayProps) {
   } = matchState;
 
   const isDoubles = matchType === "doubles" || matchType === "mixed";
-  const disabled = isMatchComplete;
+  const disabled = isMatchComplete || readOnly;
 
   return (
     <div className="relative flex items-stretch gap-2 px-4 py-3 sm:gap-3">
@@ -116,10 +124,12 @@ export function ScoreDisplay({ matchState }: ScoreDisplayProps) {
         serverNumber={servingTeam === "A" && isDoubles ? serverNumber : undefined}
         side="left"
         disabled={disabled}
+        readOnly={readOnly}
+        isMatchComplete={isMatchComplete}
         onTap={() => addPoint("A")}
       />
       <div className="flex shrink-0 items-center">
-        <span className="text-xs font-extrabold uppercase tracking-widest text-slate-500">
+        <span className="text-xs font-extrabold uppercase tracking-widest text-muted-foreground">
           VS
         </span>
       </div>
@@ -132,6 +142,8 @@ export function ScoreDisplay({ matchState }: ScoreDisplayProps) {
         serverNumber={servingTeam === "B" && isDoubles ? serverNumber : undefined}
         side="right"
         disabled={disabled}
+        readOnly={readOnly}
+        isMatchComplete={isMatchComplete}
         onTap={() => addPoint("B")}
       />
     </div>
@@ -150,12 +162,12 @@ export function ServeIndicator({ matchState }: ServeIndicatorProps) {
   if (matchState.isMatchComplete) return null;
 
   return (
-    <div className="flex items-center justify-center gap-2 py-2 text-sm text-slate-300">
-      <span className="h-2.5 w-2.5 live-pulse rounded-full bg-primary" aria-hidden="true" />
+    <div className="flex items-center justify-center gap-2 py-2 text-sm text-muted-foreground">
+      <span className="h-2.5 w-2.5 live-pulse rounded-full bg-primary glow-neon-sm" aria-hidden="true" />
       <span>
-        Serving: <span className="font-semibold text-slate-100">{teamName}</span>
+        Serving: <span className="font-semibold text-foreground">{teamName}</span>
         {isDoubles && (
-          <span className="ml-1 rounded bg-slate-800 px-1.5 py-0.5 text-xs font-bold text-amber-brand">
+          <span className="ml-1 rounded bg-arena-surface px-1.5 py-0.5 text-xs font-bold text-primary">
             S{serverNumber}
           </span>
         )}

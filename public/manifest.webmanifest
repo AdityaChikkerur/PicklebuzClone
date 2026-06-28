@@ -1,11 +1,11 @@
 {
   "name": "PickleBuzz",
   "short_name": "PickleBuzz",
-  "description": "Score. Compete. Improve. Pickleball match scoring, tournaments, and rankings.",
+  "description": "Play. Connect. Compete. Pickleball match scoring, tournaments, and rankings.",
   "start_url": "/dashboard",
   "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#16a34a",
+  "background_color": "#0a0a0b",
+  "theme_color": "#c8ff00",
   "orientation": "portrait-primary",
   "icons": [
     {

@@ -15,22 +15,22 @@ const podiumStyles = [
   {
     place: 2,
     height: "h-24 sm:h-28",
-    medal: "bg-slate-300 text-slate-800 dark:bg-slate-400 dark:text-slate-900",
-    ring: "ring-slate-300 dark:ring-slate-400",
+    medal: "bg-muted text-muted-foreground border border-border",
+    ring: "ring-muted-foreground/30",
     label: "2nd",
   },
   {
     place: 1,
     height: "h-32 sm:h-36",
-    medal: "bg-amber-400 text-amber-950",
-    ring: "ring-amber-400",
+    medal: "gradient-neon text-primary-foreground glow-neon-sm",
+    ring: "ring-primary",
     label: "1st",
   },
   {
     place: 3,
     height: "h-20 sm:h-24",
-    medal: "bg-amber-700 text-amber-50",
-    ring: "ring-amber-700",
+    medal: "bg-amber-light text-amber-brand border border-amber-brand/20",
+    ring: "ring-amber-brand/50",
     label: "3rd",
   },
 ];
@@ -40,9 +40,9 @@ export function Podium({ players, category }: PodiumProps) {
   if (topThree.length < 3) return null;
 
   return (
-    <div className="card-base p-4 sm:p-6">
-      <div className="mb-4 text-center">
-        <h2 className="text-sm font-bold text-foreground">Top 3</h2>
+    <div className="card-glow p-4 sm:p-6">
+      <div className="relative z-10 mb-4 text-center">
+        <h2 className="font-display text-sm font-black italic text-foreground">Top 3</h2>
         <p className="text-xs text-muted-foreground">City leaderboard podium</p>
       </div>
 

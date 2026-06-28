@@ -58,7 +58,7 @@ export function LiveTab({ fixtures }: LiveTabProps) {
                   Spectate
                 </Link>
                 <Link
-                  href={`/live-scoring`}
+                  href={`/live-scoring/${fixture.matchId}`}
                   className="btn-outline text-sm"
                 >
                   Score
@@ -66,7 +66,7 @@ export function LiveTab({ fixtures }: LiveTabProps) {
               </>
             ) : (
               <Link href="/live-scoring" className="btn-primary text-sm">
-                Open scorer
+                Browse live matches
               </Link>
             )}
           </div>

@@ -8,6 +8,8 @@ import { toast } from "sonner";
 import { AppLayout } from "@/components/layout";
 import { Badge } from "@/components/ui/Badge";
 import { useMatchDetail } from "@/hooks/useMatchDetail";
+import { getDefaultHomeForRole } from "@/lib/auth/routeGuards";
+import { useAuthStore } from "@/store/authStore";
 import { AIReportCard } from "./AIReportCard";
 import { GameScoreChips } from "./GameScoreChips";
 import { MatchStatsTiles } from "./MatchStatsTiles";
@@ -39,6 +41,8 @@ function statusBadgeVariant(
 
 export function MatchDetailPage({ matchId }: MatchDetailPageProps) {
   const router = useRouter();
+  const profile = useAuthStore((s) => s.profile);
+  const homeHref = getDefaultHomeForRole(profile?.role);
   const { match: loaded, loading, error, reload } = useMatchDetail(matchId);
   const [match, setMatch] = useState<MatchDetail | null>(null);
 
@@ -77,10 +81,10 @@ export function MatchDetailPage({ matchId }: MatchDetailPageProps) {
           </p>
           <button
             type="button"
-            onClick={() => router.push("/dashboard")}
+            onClick={() => router.push(homeHref)}
             className="btn-primary mt-6"
           >
-            Back to Dashboard
+            Back to home
           </button>
         </div>
       </AppLayout>

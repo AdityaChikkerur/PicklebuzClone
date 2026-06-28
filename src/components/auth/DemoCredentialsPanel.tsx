@@ -33,7 +33,7 @@ export function DemoCredentialsPanel({
       <div className="mb-3 flex items-center gap-2">
         <InformationCircleIcon className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
         <p className="text-xs font-bold text-muted-foreground">
-          Demo Accounts — click to autofill
+          Demo Accounts (click to autofill)
         </p>
       </div>
       <div className="flex flex-col gap-2">

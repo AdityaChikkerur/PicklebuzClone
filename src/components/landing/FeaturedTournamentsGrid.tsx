@@ -17,18 +17,23 @@ interface FeaturedTournamentsGridProps {
 export function FeaturedTournamentsGrid({
   tournaments,
 }: FeaturedTournamentsGridProps) {
-  if (tournaments.length === 0) return null;
-
   return (
     <section id="featured-tournaments" className="scroll-mt-20">
-      <div className="mb-4">
-        <h2 className="text-lg font-bold text-foreground">Featured tournaments</h2>
-        <p className="text-sm text-muted-foreground">
+      <div className="mb-5">
+        <h2 className="font-display text-lg font-black italic text-foreground">
+          Featured tournaments
+        </h2>
+        <p className="mt-1 text-sm text-muted-foreground">
           Curated events from organizers across India
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      {tournaments.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          Featured events will appear here once organizers publish tournaments.
+        </p>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2">
         {tournaments.map((tournament) => {
           const fillPct = Math.round(
             (tournament.registeredCount / tournament.maxParticipants) * 100
@@ -38,10 +43,10 @@ export function FeaturedTournamentsGrid({
             <Link
               key={tournament.id}
               href={`/tournament/${tournament.id}`}
-              className="card-base group overflow-hidden transition-colors hover:border-primary/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="card-glow group overflow-hidden transition-all duration-300 hover:shadow-card-hover hover:border-primary/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <div className="relative h-24 bg-gradient-to-br from-primary/30 via-secondary/20 to-accent/20">
-                <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMSIgZmlsbD0id2hpdGUiIGZpbGwtb3BhY2l0eT0iMC4xIi8+PC9jaXJjbGU+PC9zdmc+')] opacity-60" />
+              <div className="relative h-24 bg-gradient-to-br from-primary/20 via-arena-surface to-background">
+                <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMSIgZmlsbD0iI2M4ZmYwMCIgZmlsbC1vcGFjaXR5PSIwLjE1Ii8+PC9jaXJjbGU+PC9zdmc+')] opacity-80" />
                 <div className="absolute bottom-3 left-3 flex items-center gap-2">
                   <TrophyIcon
                     className="h-5 w-5 text-primary"
@@ -51,9 +56,9 @@ export function FeaturedTournamentsGrid({
                 </div>
               </div>
 
-              <div className="p-4">
+              <div className="relative z-10 p-4">
                 <div className="mb-2 flex items-start justify-between gap-2">
-                  <h3 className="font-bold text-foreground group-hover:text-primary">
+                  <h3 className="font-bold text-foreground transition-colors group-hover:text-primary">
                     {tournament.name}
                   </h3>
                   <Badge variant="primary">{tournament.status}</Badge>
@@ -90,7 +95,7 @@ export function FeaturedTournamentsGrid({
 
                 <div className="h-1.5 overflow-hidden rounded-full bg-muted">
                   <div
-                    className="h-full rounded-full bg-primary transition-all"
+                    className="h-full rounded-full gradient-neon transition-all"
                     style={{ width: `${fillPct}%` }}
                     role="progressbar"
                     aria-valuenow={fillPct}
@@ -103,7 +108,8 @@ export function FeaturedTournamentsGrid({
             </Link>
           );
         })}
-      </div>
+        </div>
+      )}
     </section>
   );
 }

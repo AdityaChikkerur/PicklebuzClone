@@ -58,7 +58,7 @@ export function ActionButtons({ disabled = false }: ActionButtonsProps) {
           type="button"
           disabled={isDisabled}
           onClick={callSideOut}
-          className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-600 bg-slate-800 py-2.5 text-xs font-semibold text-slate-200 transition-colors hover:bg-slate-700 disabled:opacity-40"
+          className="flex items-center justify-center gap-1.5 rounded-xl border border-border bg-arena-surface py-2.5 text-xs font-semibold text-foreground transition-colors hover:bg-muted disabled:opacity-40"
         >
           <ArrowsRightLeftIcon className="h-4 w-4" aria-hidden="true" />
           Side-out
@@ -68,7 +68,7 @@ export function ActionButtons({ disabled = false }: ActionButtonsProps) {
           type="button"
           disabled={history.length === 0 || isDisabled}
           onClick={undoLastAction}
-          className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-600 bg-slate-800 py-2.5 text-xs font-semibold text-slate-200 transition-colors hover:bg-slate-700 disabled:opacity-40"
+          className="flex items-center justify-center gap-1.5 rounded-xl border border-border bg-arena-surface py-2.5 text-xs font-semibold text-foreground transition-colors hover:bg-muted disabled:opacity-40"
         >
           <ArrowUturnLeftIcon className="h-4 w-4" aria-hidden="true" />
           Undo
@@ -82,7 +82,7 @@ export function ActionButtons({ disabled = false }: ActionButtonsProps) {
             "flex items-center justify-center gap-1.5 rounded-xl border py-2.5 text-xs font-semibold transition-colors disabled:opacity-40",
             faultOpen
               ? "border-warning bg-warning/20 text-warning"
-              : "border-slate-600 bg-slate-800 text-slate-200 hover:bg-slate-700"
+              : "border-border bg-arena-surface text-foreground hover:bg-muted"
           )}
         >
           <ExclamationTriangleIcon className="h-4 w-4" aria-hidden="true" />
@@ -92,13 +92,13 @@ export function ActionButtons({ disabled = false }: ActionButtonsProps) {
 
       {faultOpen && (
         <div
-          className="mt-3 rounded-2xl border border-slate-600 bg-slate-800 p-3"
+          className="mt-3 rounded-2xl border border-border bg-arena-surface p-3"
           role="dialog"
           aria-label="Record fault"
         >
           {faultStep === "type" ? (
             <>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Fault type
               </p>
               <div className="grid grid-cols-2 gap-2">
@@ -107,7 +107,7 @@ export function ActionButtons({ disabled = false }: ActionButtonsProps) {
                     key={value}
                     type="button"
                     onClick={() => selectFaultType(value)}
-                    className="rounded-xl border border-slate-600 bg-slate-900 px-3 py-2 text-left text-xs font-medium text-slate-200 hover:border-warning hover:bg-slate-700"
+                    className="rounded-xl border border-border bg-arena-bg px-3 py-2 text-left text-xs font-medium text-foreground hover:border-primary hover:bg-muted"
                   >
                     {label}
                   </button>
@@ -116,21 +116,21 @@ export function ActionButtons({ disabled = false }: ActionButtonsProps) {
             </>
           ) : (
             <>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Which team committed the fault?
               </p>
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
                   onClick={() => commitFault("A")}
-                  className="rounded-xl border border-slate-600 bg-slate-900 py-2.5 text-sm font-semibold text-primary hover:bg-slate-700"
+                  className="rounded-xl border border-border bg-arena-bg py-2.5 text-sm font-semibold text-primary hover:bg-muted"
                 >
                   {matchState.teamAName}
                 </button>
                 <button
                   type="button"
                   onClick={() => commitFault("B")}
-                  className="rounded-xl border border-slate-600 bg-slate-900 py-2.5 text-sm font-semibold text-secondary hover:bg-slate-700"
+                  className="rounded-xl border border-border bg-arena-bg py-2.5 text-sm font-semibold text-foreground hover:bg-muted"
                 >
                   {matchState.teamBName}
                 </button>
@@ -141,7 +141,7 @@ export function ActionButtons({ disabled = false }: ActionButtonsProps) {
           <button
             type="button"
             onClick={closeFaultMenu}
-            className="mt-2 w-full py-1.5 text-xs text-slate-500 hover:text-slate-300"
+            className="mt-2 w-full py-1.5 text-xs text-muted-foreground hover:text-foreground"
           >
             Cancel
           </button>

@@ -75,7 +75,7 @@ export function RefereeDashboardPage() {
                 <div className="mt-3 flex gap-2">
                   {match.status === "live" && (
                     <Link
-                      href={`/live-scoring?matchId=${match.id}`}
+                      href={`/live-scoring/${match.id}`}
                       className="btn-primary flex-1 text-center text-sm"
                     >
                       Open scorer

@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { PhoneIcon } from "@heroicons/react/24/outline";
 import { AppLayout } from "@/components/layout";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { ProfileBoostCard } from "@/components/monetization";
-import { DuprSyncCard } from "@/components/profile/DuprSyncCard";
+import { AccountSection } from "@/components/profile/AccountSection";
 import { useAuthStore } from "@/store/authStore";
 import { useProfileBoost } from "@/hooks/useProfileBoost";
 import { formatDupr } from "@/lib/utils";
@@ -13,7 +14,6 @@ import { USER_ROLES } from "@/types/player";
 
 export function ProfilePage() {
   const profile = useAuthStore((s) => s.profile);
-  const setProfile = useAuthStore((s) => s.setProfile);
   const userId = useAuthStore((s) => s.user?.id ?? s.profile?.id);
   const { boosted } = useProfileBoost(userId);
 
@@ -34,6 +34,7 @@ export function ProfilePage() {
 
   const roleLabel =
     USER_ROLES.find((r) => r.value === profile.role)?.label ?? profile.role;
+  const rating = profile.playerRating ?? profile.duprRating;
 
   return (
     <AppLayout title="Profile">
@@ -53,24 +54,25 @@ export function ProfilePage() {
               {boosted && <Badge variant="warning">Boosted</Badge>}
             </div>
             <p className="mt-1 text-sm text-muted-foreground">{profile.city}</p>
+            {profile.phone ? (
+              <p className="mt-1 flex items-center justify-center gap-1.5 text-sm text-muted-foreground">
+                <PhoneIcon className="h-4 w-4" aria-hidden="true" />
+                {profile.phone}
+              </p>
+            ) : null}
           </div>
           <div className="flex flex-wrap justify-center gap-2">
-            <Badge variant="primary">{profile.skillLevel}</Badge>
+            <Badge variant="primary">Rating {formatDupr(rating)}</Badge>
             <Badge variant="outline">{roleLabel}</Badge>
-            <Badge variant="secondary">DUPR {formatDupr(profile.duprRating)}</Badge>
           </div>
+          <p className="text-xs text-muted-foreground">
+            Rating updates automatically after verified matches.
+          </p>
         </div>
 
-        <DuprSyncCard
-          duprRating={profile.duprRating}
-          duprId={profile.duprId}
-          syncedAt={profile.duprSyncedAt}
-          onSynced={(rating) =>
-            setProfile({ ...profile, duprRating: rating })
-          }
-        />
-
         <ProfileBoostCard />
+
+        <AccountSection />
 
         <Link href="/dashboard" className="btn-outline text-center text-sm">
           Back to dashboard

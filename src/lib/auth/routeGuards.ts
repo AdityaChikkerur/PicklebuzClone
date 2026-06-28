@@ -12,7 +12,29 @@ export const ROLE_ROUTE_RULES: RoleRouteRule[] = [
   { pattern: /^\/organizer(?:\/|$)/, roles: ["organizer", "admin"] },
   { pattern: /^\/club-dashboard(?:\/|$)/, roles: ["club_owner", "admin"] },
   { pattern: /^\/admin(?:\/|$)/, roles: ["admin"] },
+  { pattern: /^\/create-tournament(?:\/|$)/, roles: ["organizer", "admin"] },
 ];
+
+/** Default landing page after login / onboarding per role. */
+export function getDefaultHomeForRole(role: UserRole | null | undefined): string {
+  switch (role) {
+    case "organizer":
+      return "/organizer";
+    case "referee":
+      return "/referee";
+    case "club_owner":
+      return "/club-dashboard";
+    case "admin":
+      return "/admin";
+    case "player":
+    default:
+      return "/dashboard";
+  }
+}
+
+export function isPlayerRole(role: UserRole | null | undefined): boolean {
+  return !role || role === "player";
+}
 
 export function isPublicPath(pathname: string): boolean {
   if (PUBLIC_EXACT.has(pathname)) return true;
@@ -44,10 +66,28 @@ export function buildAuthRedirectUrl(pathname: string, search: string): string {
 }
 
 export function sanitizeRedirectPath(
-  redirect: string | null | undefined
+  redirect: string | null | undefined,
+  role?: UserRole | null
 ): string {
+  const fallback = getDefaultHomeForRole(role);
+
   if (!redirect || !redirect.startsWith("/") || redirect.startsWith("//")) {
-    return "/dashboard";
+    return fallback;
   }
+
+  // Generic post-login targets should resolve to the role home.
+  if (redirect === "/dashboard" && role && role !== "player") {
+    return fallback;
+  }
+
   return redirect;
+}
+
+/** Paths that are player-centric; staff roles get redirected to their home. */
+export function isPlayerOnlyPath(pathname: string): boolean {
+  return (
+    pathname === "/dashboard" ||
+    pathname === "/stats" ||
+    pathname === "/discover"
+  );
 }

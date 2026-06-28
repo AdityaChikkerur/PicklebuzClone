@@ -14,6 +14,9 @@ const ICON_MAP: Record<string, ComponentType<SVGProps<SVGSVGElement>>> = {
   exclamation: ExclamationTriangleIcon,
   calendar: CalendarDaysIcon,
   invite: UserPlusIcon,
+  match_invite: UserPlusIcon,
+  follow: UserPlusIcon,
+  result_confirmation: ClipboardDocumentCheckIcon,
   bell: BellIcon,
 };
 

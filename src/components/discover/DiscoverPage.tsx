@@ -57,7 +57,7 @@ export function DiscoverPage() {
             Find players
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Browse players by city and skill — invite partners or set up a
+            Browse players by city and skill. Invite partners or set up a
             friendly match.
           </p>
         </div>
@@ -143,7 +143,7 @@ export function DiscoverPage() {
 
         {error && (
           <p className="rounded-xl border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-warning">
-            {error} — showing demo players.
+            {error}. Showing demo players.
           </p>
         )}
 

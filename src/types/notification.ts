@@ -1,5 +1,6 @@
 export type NotificationType =
   | "match_invite"
+  | "follow"
   | "registration_approved"
   | "result_confirmation"
   | "dispute_raised"

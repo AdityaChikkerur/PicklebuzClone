@@ -11,6 +11,7 @@ import {
   confirmMatchResult,
   disputeMatchResult,
 } from "@/lib/db/matches";
+import { fetchProfileById } from "@/lib/db/profiles";
 import { useAuthStore } from "@/store/authStore";
 import type { MatchDetail, MatchStatus } from "@/types/match";
 import { cn } from "@/lib/utils";
@@ -27,6 +28,7 @@ export function VerificationPanel({
   className,
 }: VerificationPanelProps) {
   const userId = useAuthStore((s) => s.user?.id ?? s.profile?.id);
+  const setProfile = useAuthStore((s) => s.setProfile);
   const [busy, setBusy] = useState<"confirm" | "dispute" | null>(null);
 
   const handleConfirm = async () => {
@@ -39,7 +41,14 @@ export function VerificationPanel({
       return;
     }
 
-    toast.success("Result confirmed — stats will update");
+    if (userId) {
+      const refreshed = await fetchProfileById(userId);
+      if (refreshed.data) {
+        setProfile(refreshed.data);
+      }
+    }
+
+    toast.success("Result confirmed. Rating and stats updated");
     onStatusChange?.("verified");
   };
 
@@ -57,7 +66,7 @@ export function VerificationPanel({
       return;
     }
 
-    toast.error("Dispute raised — admin will review");
+    toast.error("Dispute raised. Admin will review");
     onStatusChange?.("disputed");
   };
 

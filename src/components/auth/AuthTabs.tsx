@@ -12,7 +12,7 @@ interface AuthTabsProps {
 export function AuthTabs({ active, onChange }: AuthTabsProps) {
   return (
     <div
-      className="flex rounded-xl bg-muted p-1"
+      className="flex rounded-xl glass p-1"
       role="tablist"
       aria-label="Authentication mode"
     >
@@ -29,9 +29,9 @@ export function AuthTabs({ active, onChange }: AuthTabsProps) {
           aria-selected={active === tab.id}
           onClick={() => onChange(tab.id)}
           className={cn(
-            "flex-1 rounded-lg px-4 py-2.5 text-sm font-bold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            "flex-1 rounded-lg px-4 py-2.5 text-sm font-bold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
             active === tab.id
-              ? "bg-card text-foreground shadow-sm"
+              ? "bg-primary text-primary-foreground shadow-neon-sm"
               : "text-muted-foreground hover:text-foreground"
           )}
         >

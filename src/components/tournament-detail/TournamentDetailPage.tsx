@@ -18,7 +18,9 @@ import { TournamentTabBar } from "./TournamentTabBar";
 import { useTournamentCompetition } from "@/hooks/useTournamentCompetition";
 import { useTournamentDetail } from "@/hooks/useTournamentDetail";
 import { updateRegistrationStatus } from "@/lib/db/tournaments";
+import { getDefaultHomeForRole } from "@/lib/auth/routeGuards";
 import { APP_URL, copyToClipboard } from "@/lib/utils";
+import { useAuthStore } from "@/store/authStore";
 import { createInitialMatchState, useMatchStore } from "@/store/matchStore";
 import type { TournamentTab } from "@/types/tournament";
 import { CATEGORY_TYPE_LABELS } from "@/types/tournament";
@@ -36,6 +38,8 @@ function defaultTab(format: string | undefined): TournamentTab {
 
 export function TournamentDetailPage({ tournamentId }: TournamentDetailPageProps) {
   const router = useRouter();
+  const profile = useAuthStore((s) => s.profile);
+  const homeHref = getDefaultHomeForRole(profile?.role);
   const resetMatch = useMatchStore((s) => s.resetMatch);
   const setCurrentMatchId = useMatchStore((s) => s.setCurrentMatchId);
 
@@ -125,7 +129,7 @@ export function TournamentDetailPage({ tournamentId }: TournamentDetailPageProps
       })
     );
     setCurrentMatchId(matchId);
-    router.push("/live-scoring");
+    router.push(`/live-scoring/${matchId}`);
   };
 
   if (loading) {
@@ -156,10 +160,10 @@ export function TournamentDetailPage({ tournamentId }: TournamentDetailPageProps
           </p>
           <button
             type="button"
-            onClick={() => router.push("/dashboard")}
+            onClick={() => router.push(homeHref)}
             className="btn-primary mt-6"
           >
-            Back to Dashboard
+            Back to home
           </button>
         </div>
       </AppLayout>

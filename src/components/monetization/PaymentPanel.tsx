@@ -52,7 +52,7 @@ export function PaymentPanel({
                 : "bg-warning/10 text-warning"
             )}
           >
-            {gatewayLive ? "Razorpay checkout" : "Placeholder — no real charge"}
+            {gatewayLive ? "Razorpay checkout" : "Free during trial"}
           </p>
         </div>
       </div>

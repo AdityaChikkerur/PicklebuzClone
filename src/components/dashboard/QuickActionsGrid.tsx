@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { toast } from "sonner";
 import {
   PlusCircleIcon,
   SignalIcon,
@@ -15,27 +14,29 @@ const ACTIONS = [
     label: "Create Match",
     href: "/match-setup",
     icon: PlusCircleIcon,
-    gradient: "gradient-green",
+    gradient: "gradient-neon",
+    glow: "shadow-neon-sm",
   },
   {
-    label: "Live Score",
+    label: "Live matches",
     href: "/live-scoring",
     icon: SignalIcon,
     gradient: "gradient-amber",
+    glow: "shadow-md",
   },
   {
     label: "Find Partner",
     href: "/discover",
     icon: UserGroupIcon,
     gradient: "gradient-sky",
-    comingSoon: false,
+    glow: "shadow-md",
   },
   {
     label: "Book Court",
     href: "/clubs",
     icon: BuildingStorefrontIcon,
-    gradient: "bg-secondary",
-    comingSoon: false,
+    gradient: "glass-strong",
+    glow: "",
   },
 ] as const;
 
@@ -49,10 +50,10 @@ export function QuickActionsGrid() {
             <>
               <span
                 className={cn(
-                  "flex h-14 w-14 items-center justify-center rounded-full text-white shadow-lg transition-transform active:scale-95",
+                  "flex h-14 w-14 items-center justify-center rounded-2xl text-primary-foreground transition-all duration-200 active:scale-95 hover:scale-105",
                   action.gradient,
-                  action.gradient === "bg-secondary" && "shadow-secondary/30",
-                  action.gradient.startsWith("gradient") && "shadow-primary/25"
+                  action.glow,
+                  action.gradient === "glass-strong" && "text-primary border border-primary/20"
                 )}
               >
                 <Icon className="h-6 w-6" aria-hidden="true" />
@@ -63,24 +64,11 @@ export function QuickActionsGrid() {
             </>
           );
 
-          if ("comingSoon" in action && action.comingSoon) {
-            return (
-              <button
-                key={action.label}
-                type="button"
-                onClick={() => toast.info("Coming soon!")}
-                className="flex flex-col items-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-xl"
-              >
-                {content}
-              </button>
-            );
-          }
-
           return (
             <Link
               key={action.href}
               href={action.href}
-              className="flex flex-col items-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-xl"
+              className="group flex flex-col items-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-xl"
             >
               {content}
             </Link>

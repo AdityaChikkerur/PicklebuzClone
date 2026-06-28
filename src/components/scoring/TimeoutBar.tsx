@@ -32,8 +32,8 @@ export function TimeoutBar({ disabled = false }: TimeoutBarProps) {
           isActive
             ? "border-warning bg-warning/20 text-warning"
             : canCall
-              ? "border-slate-600 bg-slate-800 text-slate-200 hover:bg-slate-700"
-              : "border-slate-700 bg-slate-900 text-slate-500"
+              ? "border-border bg-arena-surface text-foreground hover:bg-muted"
+              : "border-arena-border bg-arena-bg text-muted-foreground"
         )}
         aria-label={`${label} timeout, ${remaining} remaining`}
       >
@@ -46,8 +46,8 @@ export function TimeoutBar({ disabled = false }: TimeoutBarProps) {
   };
 
   return (
-    <div className="border-t border-slate-700/80 px-4 py-3">
-      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+    <div className="border-t border-arena-border px-4 py-3">
+      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         Timeouts
       </p>
 
@@ -60,11 +60,11 @@ export function TimeoutBar({ disabled = false }: TimeoutBarProps) {
         <div className="mt-3">
           <div className="mb-1 flex justify-between text-xs text-warning">
             <span>
-              Timeout — Team {activeTimeout}
+              Timeout: Team {activeTimeout}
             </span>
             <span>{remaining}s</span>
           </div>
-          <div className="h-2 overflow-hidden rounded-full bg-slate-800">
+          <div className="h-2 overflow-hidden rounded-full bg-arena-surface">
             <div
               className="h-full rounded-full bg-warning transition-all duration-200"
               style={{ width: `${progress}%` }}

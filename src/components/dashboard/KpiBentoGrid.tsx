@@ -27,8 +27,8 @@ function KpiCard({ label, value, subtext, icon, className, hero, alert }: KpiCar
   return (
     <div
       className={cn(
-        "card-base flex flex-col justify-between p-4 sm:p-5 transition-shadow hover:shadow-card-hover",
-        hero && "gradient-green border-0 text-white shadow-score",
+        "card-glow flex flex-col justify-between p-4 sm:p-5 transition-all duration-300 hover:shadow-card-hover",
+        hero && "gradient-neon border-0 text-primary-foreground shadow-score",
         alert && "border-red-brand/30 bg-red-light/50",
         className
       )}
@@ -37,7 +37,7 @@ function KpiCard({ label, value, subtext, icon, className, hero, alert }: KpiCar
         <p
           className={cn(
             "text-[11px] font-bold uppercase tracking-wider",
-            hero ? "text-white/80" : alert ? "text-red-brand" : "text-muted-foreground"
+            hero ? "text-primary-foreground/80" : alert ? "text-red-brand" : "text-muted-foreground"
           )}
         >
           {label}
@@ -45,7 +45,7 @@ function KpiCard({ label, value, subtext, icon, className, hero, alert }: KpiCar
         <span
           className={cn(
             "rounded-lg p-1.5",
-            hero ? "bg-white/15 text-white" : alert ? "bg-red-brand/10 text-red-brand" : "bg-muted text-muted-foreground"
+            hero ? "bg-primary-foreground/15 text-primary-foreground" : alert ? "bg-red-brand/10 text-red-brand" : "bg-muted text-muted-foreground"
           )}
         >
           {icon}
@@ -64,7 +64,7 @@ function KpiCard({ label, value, subtext, icon, className, hero, alert }: KpiCar
           <p
             className={cn(
               "mt-1 text-xs font-medium",
-              hero ? "text-white/80" : alert ? "text-red-brand/80" : "text-muted-foreground"
+              hero ? "text-primary-foreground/80" : alert ? "text-red-brand/80" : "text-muted-foreground"
             )}
           >
             {subtext}
@@ -78,16 +78,18 @@ function KpiCard({ label, value, subtext, icon, className, hero, alert }: KpiCar
 export function KpiBentoGrid() {
   const profile = useAuthStore((s) => s.profile);
   const { kpis, loading, source } = usePlayerStats();
-  const dupr = profile?.duprRating ?? kpis.duprRating;
+  const rating = profile?.playerRating ?? profile?.duprRating ?? kpis.duprRating;
   const seasonYear = getCurrentSeasonYear();
   const cityLabel = profile?.city ?? "Your city";
 
   const changeSubtext =
-    kpis.duprChange > 0
-      ? `+${kpis.duprChange.toFixed(2)} this month`
+    kpis.duprChange !== 0
+      ? `${kpis.duprChange > 0 ? "+" : ""}${kpis.duprChange.toFixed(2)} after last match`
       : source === "supabase"
-        ? "From your profile"
-        : `+${kpis.duprChange.toFixed(2)} this month`;
+        ? kpis.matchesPlayed > 0
+          ? "From verified matches"
+          : "Starts at 3.00. Play to rank up"
+        : "Demo stats";
 
   if (loading) {
     return (
@@ -116,8 +118,8 @@ export function KpiBentoGrid() {
   return (
     <section>
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-extrabold tracking-tight text-foreground">Your Stats</h2>
-        <span className="rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-bold text-muted-foreground">
+        <h2 className="font-display text-sm font-black italic tracking-tight text-foreground">Your Stats</h2>
+        <span className="rounded-full glass px-2.5 py-0.5 text-[11px] font-bold text-primary">
           Season {seasonYear}
         </span>
       </div>
@@ -126,8 +128,8 @@ export function KpiBentoGrid() {
         <KpiCard
           hero
           className="col-span-2 min-h-[140px] md:row-span-2 md:min-h-[180px]"
-          label="DUPR Rating"
-          value={formatDupr(dupr)}
+          label="PickleBuzz Rating"
+          value={formatDupr(rating)}
           subtext={`${changeSubtext} · ${cityLabel}`}
           icon={<ArrowTrendingUpIcon className="h-5 w-5" aria-hidden="true" />}
         />
@@ -162,7 +164,7 @@ export function KpiBentoGrid() {
           value={`${kpis.faultRate}%`}
           subtext={
             faultElevated
-              ? "Elevated — may be affecting win rate"
+              ? "Elevated. May be affecting win rate"
               : "Per match average"
           }
           icon={<ExclamationTriangleIcon className="h-4 w-4" aria-hidden="true" />}

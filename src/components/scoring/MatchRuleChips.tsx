@@ -20,7 +20,7 @@ export function MatchRuleChips({ matchState }: MatchRuleChipsProps) {
       {chips.map((chip) => (
         <span
           key={chip}
-          className="shrink-0 rounded-full border border-slate-600/80 bg-slate-800/60 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-300"
+          className="shrink-0 rounded-full border border-border bg-arena-surface px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground"
         >
           {chip}
         </span>

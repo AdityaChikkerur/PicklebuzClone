@@ -267,6 +267,20 @@ export async function createMatch(
       if (playersErr) throw playersErr;
     }
 
+    const allPlayerIds = [...teamAPlayerIds, ...teamBPlayerIds].filter(
+      (id) => id !== createdBy
+    );
+    if (allPlayerIds.length > 0) {
+      const { sendNotifications } = await import(
+        "@/lib/notifications/sendNotification"
+      );
+      await sendNotifications(allPlayerIds, {
+        icon: "match_invite",
+        text: `Your match ${setup.teamAName} vs ${setup.teamBName} is live`,
+        link: `/spectate/${matchId}`,
+      });
+    }
+
     return ok({ id: matchId, mock: false });
   } catch (e) {
     return fail(e);
@@ -434,6 +448,40 @@ export async function confirmMatchResult(
 
     const { syncFixtureFromMatch } = await import("@/lib/db/fixtures");
     await syncFixtureFromMatch(matchId);
+
+    const { updateRatingsForMatch } = await import("@/lib/db/profiles");
+    await updateRatingsForMatch(matchId);
+
+    const { data: players } = await supabase
+      .from("match_players")
+      .select("player_id")
+      .eq("match_id", matchId);
+
+    const { data: matchRow } = await supabase
+      .from("matches")
+      .select("team_a_name, team_b_name, winner")
+      .eq("id", matchId)
+      .maybeSingle();
+
+    if (players && matchRow) {
+      const { sendNotifications } = await import(
+        "@/lib/notifications/sendNotification"
+      );
+      const winnerLabel =
+        matchRow.winner === "A"
+          ? matchRow.team_a_name
+          : matchRow.winner === "B"
+            ? matchRow.team_b_name
+            : "Tie";
+      await sendNotifications(
+        players.map((row) => row.player_id as string),
+        {
+          icon: "result_confirmation",
+          text: `Match result verified: ${matchRow.team_a_name} vs ${matchRow.team_b_name}. Winner: ${winnerLabel}`,
+          link: `/match/${matchId}`,
+        }
+      );
+    }
 
     return ok(true);
   } catch (e) {
@@ -721,4 +769,114 @@ export async function upsertMatchRules(
 
   if (error || !data) return null;
   return mapDbMatchRules(data as DbMatchRules);
+}
+
+// =============================================================================
+// 6. LIVE MATCHES — list for /live-scoring browse view
+// =============================================================================
+export interface LiveMatchSummary {
+  id: string;
+  teamAName: string;
+  teamBName: string;
+  scoreA: number;
+  scoreB: number;
+  gameNumber: number;
+  venue: string;
+  city: string;
+  matchType: string;
+  createdAt: string;
+}
+
+export interface FetchLiveMatchesResult {
+  data: LiveMatchSummary[];
+  source: "supabase" | "mock";
+  error: string | null;
+}
+
+export async function fetchLiveMatches(): Promise<FetchLiveMatchesResult> {
+  if (!isSupabaseConfigured()) {
+    const { getLandingLiveMatches } = await import(
+      "@/lib/mock/landingMockData"
+    );
+    const mock = getLandingLiveMatches();
+    return {
+      data: mock.map((m) => ({
+        ...m,
+        createdAt: new Date().toISOString(),
+      })),
+      source: "mock",
+      error: null,
+    };
+  }
+
+  try {
+    const supabase = createClient();
+
+    const { data: rows, error } = await supabase
+      .from("matches")
+      .select(
+        "id, team_a_name, team_b_name, venue, city, match_type, created_at"
+      )
+      .eq("status", "live")
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    if (error) throw error;
+
+    const summaries: LiveMatchSummary[] = [];
+
+    for (const row of rows ?? []) {
+      const matchId = row.id as string;
+      const { data: latestEvent } = await supabase
+        .from("match_events")
+        .select("score_a, score_b, game_number")
+        .eq("match_id", matchId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      summaries.push({
+        id: matchId,
+        teamAName: row.team_a_name as string,
+        teamBName: row.team_b_name as string,
+        scoreA: latestEvent?.score_a ?? 0,
+        scoreB: latestEvent?.score_b ?? 0,
+        gameNumber: latestEvent?.game_number ?? 1,
+        venue: (row.venue as string) ?? "",
+        city: (row.city as string) ?? "",
+        matchType: row.match_type as string,
+        createdAt: row.created_at as string,
+      });
+    }
+
+    if (summaries.length === 0) {
+      const { getLandingLiveMatches } = await import(
+        "@/lib/mock/landingMockData"
+      );
+      const mock = getLandingLiveMatches();
+      return {
+        data: mock.map((m) => ({
+          ...m,
+          createdAt: new Date().toISOString(),
+        })),
+        source: "mock",
+        error: null,
+      };
+    }
+
+    return { data: summaries, source: "supabase", error: null };
+  } catch (e) {
+    const { getLandingLiveMatches } = await import(
+      "@/lib/mock/landingMockData"
+    );
+    const mock = getLandingLiveMatches();
+    return {
+      data: mock.map((m) => ({
+        ...m,
+        createdAt: new Date().toISOString(),
+      })),
+      source: "mock",
+      error: e instanceof Error ? e.message : "Could not load live matches",
+    };
+  }
 }

@@ -102,16 +102,16 @@ export function SpectatePage({ matchId }: SpectatePageProps) {
 
   if (useDb && dbLoading) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-[#0f172a] px-6 text-slate-100">
-        <p className="text-lg font-semibold">Loading match…</p>
+      <div className="flex min-h-screen flex-col items-center justify-center arena-bg px-6">
+        <p className="font-display text-lg font-black italic text-foreground">Loading match…</p>
       </div>
     );
   }
 
   if (!detail) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-[#0f172a] px-6 text-slate-100">
-        <p className="text-lg font-semibold">
+      <div className="flex min-h-screen flex-col items-center justify-center arena-bg px-6">
+        <p className="font-display text-lg font-black italic text-foreground">
           {dbError ?? "Match not found"}
         </p>
         <Link href="/" className="mt-4 text-primary underline">
@@ -129,18 +129,18 @@ export function SpectatePage({ matchId }: SpectatePageProps) {
     detail.status === "disputed";
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-[#0f172a] text-slate-100">
-      <header className="flex items-center justify-between border-b border-slate-700 px-4 py-3">
+    <div className="fixed inset-0 flex flex-col arena-bg">
+      <header className="flex items-center justify-between border-b border-arena-border px-4 py-3 glass">
         <div>
-          <p className="text-xs text-slate-400">Spectating</p>
-          <p className="font-semibold">
+          <p className="tagline text-primary/70">Spectating</p>
+          <p className="font-display font-black italic text-foreground">
             {detail.teamAName} vs {detail.teamBName}
           </p>
         </div>
         {isLive && !ended ? (
           <span className="badge-live">LIVE</span>
         ) : (
-          <span className="rounded-full bg-slate-700 px-2.5 py-0.5 text-xs font-semibold">
+          <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">
             ENDED
           </span>
         )}
@@ -148,11 +148,20 @@ export function SpectatePage({ matchId }: SpectatePageProps) {
 
       <div className="flex min-h-0 flex-1 flex-col overflow-auto">
         <MatchInfoBar matchState={displayState} />
-        <ScoreDisplay matchState={displayState} />
+        <ScoreDisplay matchState={displayState} readOnly />
         <ServeIndicator matchState={displayState} />
 
+        <div className="mx-4 mb-4 rounded-xl border border-border bg-arena-surface px-4 py-3 text-center">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Spectator mode
+          </p>
+          <p className="mt-1 text-sm text-foreground">
+            Scores update live. Only players and referees can edit the scoreboard.
+          </p>
+        </div>
+
         <div className="px-4 py-4">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Games
           </p>
           <GameScoreChips
@@ -163,8 +172,8 @@ export function SpectatePage({ matchId }: SpectatePageProps) {
         </div>
 
         {ended && (
-          <div className="mx-4 mb-6 rounded-xl border border-slate-600 bg-slate-800/50 p-4 text-center">
-            <p className="font-semibold">Match ended</p>
+          <div className="mx-4 mb-6 rounded-xl border border-border bg-arena-surface p-4 text-center">
+            <p className="font-display font-black italic text-foreground">Match ended</p>
             <Link
               href={`/match/${detail.id}`}
               className="mt-2 inline-block text-sm text-primary underline"
