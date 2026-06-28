@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920">
+  <defs>
+    <linearGradient id="neon" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E8FF66"/>
+      <stop offset="50%" stop-color="#C8FF00"/>
+      <stop offset="100%" stop-color="#9ED600"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="42%" r="48%">
+      <stop offset="0%" stop-color="#C8FF00" stop-opacity="0.12"/>
+      <stop offset="55%" stop-color="#C8FF00" stop-opacity="0.03"/>
+      <stop offset="100%" stop-color="#0A0A0B" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vignette" cx="50%" cy="50%" r="72%">
+      <stop offset="55%" stop-color="#0A0A0B" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.55"/>
+    </radialGradient>
+    <linearGradient id="icon-border" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#C8FF00" stop-opacity="0.4"/>
+      <stop offset="50%" stop-color="#C8FF00" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="#C8FF00" stop-opacity="0.28"/>
+    </linearGradient>
+    <filter id="soft-glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="18" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="1080" height="1920" fill="#0A0A0B"/>
+  <rect width="1080" height="1920" fill="url(#glow)"/>
+  <rect width="1080" height="1920" fill="url(#vignette)"/>
+
+  <!-- Subtle court grid -->
+  <g opacity="0.035" stroke="#C8FF00" stroke-width="2" fill="none">
+    <rect x="140" y="280" width="800" height="1360" rx="24"/>
+    <line x1="140" y1="960" x2="940" y2="960"/>
+    <rect x="340" y="280" width="400" height="680"/>
+    <rect x="340" y="960" width="400" height="680"/>
+  </g>
+
+  <!-- Icon container -->
+  <g transform="translate(540 720)">
+    <rect x="-148" y="-148" width="296" height="296" rx="68" fill="#0A0A0B" stroke="url(#icon-border)" stroke-width="2"/>
+    <rect x="-148" y="-148" width="296" height="296" rx="68" fill="#C8FF00" opacity="0.04"/>
+    <g filter="url(#soft-glow)">
+      <path d="M-92 8h-26M-92 36h-20M-92 64h-16" stroke="#C8FF00" stroke-width="8" stroke-linecap="round" opacity="0.45"/>
+      <circle cx="-68" cy="36" r="30" fill="#C8FF00"/>
+      <circle cx="-78" cy="26" r="4.2" fill="#0A0A0B" opacity="0.65"/>
+      <circle cx="-58" cy="32" r="4.2" fill="#0A0A0B" opacity="0.65"/>
+      <circle cx="-68" cy="46" r="4.2" fill="#0A0A0B" opacity="0.65"/>
+      <circle cx="-54" cy="46" r="3.4" fill="#0A0A0B" opacity="0.45"/>
+      <path
+        d="M-16 -52v168M-16 -52h62c22 0 38 14 38 36s-16 36-38 36h-30c22 0 38 14 38 36s-16 36-38 36H-16"
+        stroke="url(#neon)"
+        stroke-width="20"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        fill="none"
+      />
+    </g>
+  </g>
+
+  <!-- Wordmark -->
+  <text
+    x="540"
+    y="980"
+    text-anchor="middle"
+    font-family="system-ui, -apple-system, 'Segoe UI', sans-serif"
+    font-size="72"
+    font-weight="900"
+    font-style="italic"
+    letter-spacing="-2"
+    fill="#FAFAFA"
+  >Pickle<tspan fill="#C8FF00">Buzz</tspan></text>
+
+  <!-- Tagline -->
+  <text
+    x="540"
+    y="1048"
+    text-anchor="middle"
+    font-family="system-ui, -apple-system, 'Segoe UI', sans-serif"
+    font-size="22"
+    font-weight="600"
+    letter-spacing="6"
+    fill="#8A8A8E"
+  >PLAY " CONNECT " COMPETE</text>
+
+  <!-- Loading indicator -->
+  <rect x="390" y="1180" width="300" height="3" rx="1.5" fill="#FFFFFF" opacity="0.08"/>
+  <rect x="390" y="1180" width="120" height="3" rx="1.5" fill="#C8FF00" opacity="0.7"/>
+</svg>
