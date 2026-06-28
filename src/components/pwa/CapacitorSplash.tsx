@@ -72,7 +72,7 @@ export function CapacitorSplash() {
 
       <div className="relative flex flex-col items-center gap-6 px-8 text-center">
         <div className="animate-float">
-          <AppIcon size={88} />
+          <AppIcon size={96} />
         </div>
         <div>
           <p className="font-display text-4xl font-black italic leading-none tracking-tight">

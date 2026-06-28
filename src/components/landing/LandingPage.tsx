@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { AppLogo } from "@/components/ui/AppLogo";
 import { useLandingPage } from "@/hooks/useLandingPage";
 import { getDefaultHomeForRole } from "@/lib/auth/routeGuards";
-import { createClient } from "@/lib/supabase";
 import { useAuthStore } from "@/store/authStore";
 import { ExploreSection } from "./ExploreSection";
 import { FeaturedTournamentsGrid } from "./FeaturedTournamentsGrid";
@@ -18,42 +17,21 @@ import { LiveNowStrip } from "./LiveNowStrip";
 export function LandingPage() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
+  const loading = useAuthStore((s) => s.loading);
+  const user = useAuthStore((s) => s.user);
+  const profile = useAuthStore((s) => s.profile);
   const { liveMatches, featuredTournaments } = useLandingPage();
 
   useEffect(() => {
-    let cancelled = false;
+    if (loading) return;
 
-    async function checkAuth() {
-      const storeUser = useAuthStore.getState().user;
-      const storeProfile = useAuthStore.getState().profile;
-
-      if (storeUser || storeProfile) {
-        router.replace(getDefaultHomeForRole(storeProfile?.role));
-        return;
-      }
-
-      try {
-        const supabase = createClient();
-        const { data } = await supabase.auth.getSession();
-        if (cancelled) return;
-
-        if (data.session?.user) {
-          const profile = useAuthStore.getState().profile;
-          router.replace(getDefaultHomeForRole(profile?.role));
-          return;
-        }
-      } catch {
-        // Mock mode — show the public landing page
-      }
-
-      if (!cancelled) setReady(true);
+    if (user && profile) {
+      router.replace(getDefaultHomeForRole(profile.role));
+      return;
     }
 
-    void checkAuth();
-    return () => {
-      cancelled = true;
-    };
-  }, [router]);
+    setReady(true);
+  }, [loading, user, profile, router]);
 
   if (!ready) {
     return (

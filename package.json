@@ -14,7 +14,7 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "cap:sync": "cap sync android",
-    "android:icons": "node scripts/generate-android-icons.mjs && npx capacitor-assets generate --android --splashBackgroundColor \"#0A0A0B\" --splashBackgroundColorDark \"#0A0A0B\" --iconBackgroundColor \"#0A0A0B\" --iconBackgroundColorDark \"#0A0A0B\"",
+    "android:icons": "node scripts/generate-android-icons.mjs && npx capacitor-assets generate --android --splashBackgroundColor \"#0A0A0B\" --splashBackgroundColorDark \"#0A0A0B\" --iconBackgroundColor \"#0A0A0B\" --iconBackgroundColorDark \"#0A0A0B\" && node scripts/fix-android-icon-inset.mjs",
     "android:prepare": "node scripts/write-capacitor-server.mjs",
     "android:prepare:dev": "node scripts/write-capacitor-server.mjs --dev",
     "android:debug": "npm run android:prepare && npm run android:icons && cap sync android && scripts\\android-build.cmd assembleDebug",
