@@ -21,7 +21,7 @@ export const ROLE_ROUTE_RULES: RoleRouteRule[] = [
   { pattern: /^\/organizer(?:\/|$)/, roles: ["organizer", "admin"] },
   { pattern: /^\/club-dashboard(?:\/|$)/, roles: ["club_owner", "admin"] },
   { pattern: /^\/admin(?:\/|$)/, roles: ["admin"] },
-  { pattern: /^\/create-tournament(?:\/|$)/, roles: ["organizer", "admin"] },
+  { pattern: /^\/create-tournament(?:\/|$)/, roles: ["player", "admin"] },
 ];
 
 /** Default landing page after login / onboarding per role. */

@@ -246,7 +246,7 @@ const PLAYER_SIDEBAR: NavItem[] = [
     {
     id: "tournaments",
     label: "Tournaments",
-    href: "/create-tournament",
+    href: "/tournament",
     icon: TrophyIcon,
     activeIcon: TrophyIconSolid,
   },
@@ -256,18 +256,19 @@ const PLAYER_SIDEBAR: NavItem[] = [
     href: "/stats",
     icon: ChartBarIcon,
     activeIcon: ChartBarIconSolid,
+    roles: ["player","admin"],
   },
 ];
 
 const STAFF_SIDEBAR: NavItem[] = [
-  {
-    id: "referee",
-    label: "Referee desk",
-    href: "/referee",
-    icon: ClipboardDocumentCheckIcon,
-    activeIcon: ClipboardDocumentCheckIconSolid,
-    roles: ["referee", "admin"],
-  },
+  // {
+  //   id: "referee",
+  //   label: "Referee desk",
+  //   href: "/referee",
+  //   icon: ClipboardDocumentCheckIcon,
+  //   activeIcon: ClipboardDocumentCheckIconSolid,
+  //   roles: ["referee", "admin"],
+  // },
   {
     id: "club-dashboard",
     label: "Club dashboard",
@@ -276,22 +277,22 @@ const STAFF_SIDEBAR: NavItem[] = [
     activeIcon: CalendarDaysIconSolid,
     roles: ["club_owner", "admin"],
   },
-  {
-    id: "organizer",
-    label: "Organizer desk",
-    href: "/organizer",
-    icon: ClipboardDocumentListIcon,
-    activeIcon: ClipboardDocumentListIconSolid,
-    roles: ["organizer", "admin"],
-  },
-  {
-    id: "tournament",
-    label: "Create tournament",
-    href: "/create-tournament",
-    icon: MapPinIcon,
-    activeIcon: MapPinIcon,
-    roles: ["organizer", "admin"],
-  },
+  // {
+  //   id: "organizer",
+  //   label: "Organizer desk",
+  //   href: "/organizer",
+  //   icon: ClipboardDocumentListIcon,
+  //   activeIcon: ClipboardDocumentListIconSolid,
+  //   roles: ["organizer", "admin"],
+  // },
+  // {
+  //   id: "tournament",
+  //   label: "Create tournament",
+  //   href: "/create-tournament",
+  //   icon: MapPinIcon,
+  //   activeIcon: MapPinIcon,
+  //   roles: ["player","admin"],
+  // },
   {
     id: "admin",
     label: "Admin console",
@@ -316,49 +317,50 @@ export function getSidebarNavForRole(role: UserRole | undefined): NavItem[] {
 
   if (isPlayerRole(role)) {
     items.push(...PLAYER_SIDEBAR);
-  } else if (role === "organizer") {
-    items.push(
-      {
-        id: "organizer",
-        label: "Organizer desk",
-        href: "/organizer",
-        icon: ClipboardDocumentListIcon,
-        activeIcon: ClipboardDocumentListIconSolid,
-      },
-      {
-        id: "tournament",
-        label: "Create tournament",
-        href: "/create-tournament",
-        icon: MapPinIcon,
-        activeIcon: MapPinIcon,
-      }
-    );
-  } else if (role === "referee") {
-    items.push({
-      id: "referee",
-      label: "Referee desk",
-      href: "/referee",
-      icon: ClipboardDocumentCheckIcon,
-      activeIcon: ClipboardDocumentCheckIconSolid,
-    });
-  } else if (role === "club_owner") {
-    items.push(
-      {
-        id: "club-dashboard",
-        label: "Club dashboard",
-        href: "/club-dashboard",
-        icon: CalendarDaysIcon,
-        activeIcon: CalendarDaysIconSolid,
-      },
-      {
-        id: "clubs",
-        label: "Browse clubs",
-        href: "/clubs",
-        icon: BuildingStorefrontIcon,
-        activeIcon: BuildingStorefrontIconSolid,
-      }
-    );
-  } else if (role === "admin") {
+  } 
+  // else if (role === "organizer") {
+  //   items.push(
+  //     {
+  //       id: "organizer",
+  //       label: "Organizer desk",
+  //       href: "/organizer",
+  //       icon: ClipboardDocumentListIcon,
+  //       activeIcon: ClipboardDocumentListIconSolid,
+  //     },
+  //     {
+  //       id: "tournament",
+  //       label: "Create tournament",
+  //       href: "/create-tournament",
+  //       icon: MapPinIcon,
+  //       activeIcon: MapPinIcon,
+  //     }
+  //   );
+  // } else if (role === "referee") {
+  //   items.push({
+  //     id: "referee",
+  //     label: "Referee desk",
+  //     href: "/referee",
+  //     icon: ClipboardDocumentCheckIcon,
+  //     activeIcon: ClipboardDocumentCheckIconSolid,
+  //   });
+  // } else if (role === "club_owner") {
+  //   items.push(
+  //     {
+  //       id: "club-dashboard",
+  //       label: "Club dashboard",
+  //       href: "/club-dashboard",
+  //       icon: CalendarDaysIcon,
+  //       activeIcon: CalendarDaysIconSolid,
+  //     },
+  //     {
+  //       id: "clubs",
+  //       label: "Browse clubs",
+  //       href: "/clubs",
+  //       icon: BuildingStorefrontIcon,
+  //       activeIcon: BuildingStorefrontIconSolid,
+  //     }
+  //   );
+   else if (role === "admin") {
     items.push(...STAFF_SIDEBAR);
   }
 
