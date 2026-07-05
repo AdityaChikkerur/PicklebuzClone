@@ -243,6 +243,13 @@ const PLAYER_SIDEBAR: NavItem[] = [
     icon: PlusCircleIcon,
     activeIcon: PlusCircleIconSolid,
   },
+    {
+    id: "tournaments",
+    label: "Tournaments",
+    href: "/create-tournament",
+    icon: TrophyIcon,
+    activeIcon: TrophyIconSolid,
+  },
   {
     id: "stats",
     label: "Stats",

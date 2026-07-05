@@ -35,7 +35,7 @@ export function LandingFooter() {
         <div className="flex flex-col gap-8 lg:flex-row lg:justify-between">
           <AppLogo href="/" iconSize={32} showTagline />
 
-          <div className="grid gap-8 sm:grid-cols-3">
+          <div className="grid grid-cols-3 gap-4 sm:gap-8">
             <div>
               <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 Product

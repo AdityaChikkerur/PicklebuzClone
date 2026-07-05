@@ -86,7 +86,7 @@ export function LandingPage() {
         </section>
 
         <div className="fade-in stagger-3 space-y-12">
-          <LiveNowStrip matches={liveMatches} />
+          {/* <LiveNowStrip matches={liveMatches} /> */}
           <SponsorBannerSlot variant="compact" />
           <FeaturedTournamentsGrid tournaments={featuredTournaments} />
           <ExploreSection />

@@ -41,7 +41,7 @@ export function PlayerCard({ player, className }: PlayerCardProps) {
   return (
     <article
       className={cn(
-        "card-base flex flex-col gap-3 p-4",
+        "card-base flex flex-col gap-3 overflow-hidden p-4",
         className
       )}
     >
@@ -94,26 +94,28 @@ export function PlayerCard({ player, className }: PlayerCardProps) {
         )}
       </div>
 
-      <div className="mt-1 flex gap-2">
-        <button
-          type="button"
-          onClick={() => void toggleFollow(player.id, player.fullName)}
-          className={cn(
-            "btn-outline flex-1 text-sm",
-            following && "border-primary text-primary"
-          )}
-        >
-          <UserPlusIcon className="mr-1 inline h-4 w-4" aria-hidden="true" />
-          {following ? "Following" : "Follow"}
-        </button>
-        <button
-          type="button"
-          onClick={handleInvite}
-          className="btn-primary flex-1 text-sm"
-        >
-          Invite
-        </button>
-      </div>
-    </article>
-  );
+      
+      <div className="mt-1 grid w-full grid-cols-2 gap-2 overflow-hidden">
+<button
+  type="button"
+  onClick={() => void toggleFollow(player.id, player.fullName)}
+  className={cn(
+    "btn-outline w-full min-w-0 text-sm",
+    following && "border-primary text-primary"
+  )}
+>
+  <UserPlusIcon className="mr-1 inline h-4 w-4" aria-hidden="true" />
+  {following ? "Following" : "Follow"}
+</button>
+
+<button
+  type="button"
+  onClick={handleInvite}
+  className="btn-primary w-full min-w-0 text-sm"
+>
+  Invite
+</button>
+</div>
+  </article>
+);
 }
