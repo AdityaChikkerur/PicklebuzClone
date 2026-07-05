@@ -60,8 +60,10 @@ export function TournamentDetailPage({ tournamentId }: TournamentDetailPageProps
     loading: competitionLoading,
     generating,
     startingFixtureId,
+    bulkStarting,
     generateFixtures,
     startFixtureMatch,
+    startMultipleFixtureMatches,
     reload: reloadCompetition,
   } = useTournamentCompetition(tournament, registrations, source);
 
@@ -130,6 +132,12 @@ export function TournamentDetailPage({ tournamentId }: TournamentDetailPageProps
     );
     setCurrentMatchId(matchId);
     router.push(`/live-scoring/${matchId}`);
+  };
+
+  const handleStartMultipleFixtures = async (fixtureIds: string[]) => {
+    const matchIds = await startMultipleFixtureMatches(fixtureIds);
+    if (matchIds.length === 0) return;
+    setActiveTab("live");
   };
 
   if (loading) {
@@ -305,7 +313,18 @@ export function TournamentDetailPage({ tournamentId }: TournamentDetailPageProps
             onReject={(id) => handleRegistrationStatus(id, "rejected")}
           />
         ) : activeTab === "live" ? (
-          <LiveTab fixtures={filteredFixtures} />
+          <LiveTab
+            fixtures={filteredFixtures}
+            isOrganizer={tournament.isOrganizer}
+            startingFixtureId={startingFixtureId}
+            bulkStarting={bulkStarting}
+            onStartMatch={
+              tournament.isOrganizer ? handleStartFixture : undefined
+            }
+            onStartMultiple={
+              tournament.isOrganizer ? handleStartMultipleFixtures : undefined
+            }
+          />
         ) : (
           <ResultsTab fixtures={filteredFixtures} />
         )}

@@ -15,6 +15,7 @@ import { LiveScoringHeader } from "./LiveScoringHeader";
 import { MatchEventsFeed } from "./MatchEventsFeed";
 import { MatchInfoBar } from "./MatchInfoBar";
 import { MatchRuleChips } from "./MatchRuleChips";
+import { MatchScorerPanel } from "./MatchScorerPanel";
 import { ScoreDisplay } from "./ScoreDisplay";
 import { TimeoutBar } from "./TimeoutBar";
 
@@ -131,6 +132,13 @@ export function LiveScoringSession({ matchId }: LiveScoringSessionProps) {
             All live matches →
           </Link>
         </div>
+
+        <MatchScorerPanel
+          matchId={matchId}
+          teamAName={matchState.teamAName}
+          teamBName={matchState.teamBName}
+          canManage={permissions.isCreator || permissions.isDelegatedScorer}
+        />
 
         <EndMatchModal
           open={endModalOpen}

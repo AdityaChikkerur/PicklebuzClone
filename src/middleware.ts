@@ -1,7 +1,9 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { getDemoRoleFromCookie } from "@/lib/auth/demoSession";
+import { isDemoAuthAllowed } from "@/lib/auth/isDemoAuthAllowed";
 import { isSupabaseConfigured } from "@/lib/auth/isSupabaseConfigured";
+import { enforceApiRateLimit } from "@/lib/rateLimit/rateLimit";
 import {
   buildAuthRedirectUrl,
   getDefaultHomeForRole,
@@ -45,6 +47,7 @@ async function resolveUserRole(
     }
   }
 
+  if (!isDemoAuthAllowed()) return null;
   return getDemoRoleFromCookie(request.headers.get("cookie"));
 }
 
@@ -52,6 +55,8 @@ export async function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
   if (pathname.startsWith("/api/")) {
+    const rateLimited = await enforceApiRateLimit(request);
+    if (rateLimited) return rateLimited;
     return NextResponse.next({ request });
   }
 
@@ -93,7 +98,9 @@ export async function middleware(request: NextRequest) {
     userId = user?.id;
   }
 
-  const demoRole = getDemoRoleFromCookie(request.headers.get("cookie"));
+  const demoRole = isDemoAuthAllowed()
+    ? getDemoRoleFromCookie(request.headers.get("cookie"))
+    : null;
   const isAuthenticated = Boolean(userId || demoRole);
   const role = isAuthenticated
     ? await resolveUserRole(request, userId)

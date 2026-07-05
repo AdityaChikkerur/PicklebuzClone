@@ -1,3 +1,7 @@
+import {
+  createAdminSupabaseClient,
+  isSupabaseAdminConfigured,
+} from "@/lib/supabaseAdmin";
 import { createServerSupabaseClient } from "@/lib/supabaseServer";
 import type { DbPayment, Payment, PaymentGateway, PaymentKind, PaymentStatus } from "@/types/payment";
 
@@ -70,7 +74,9 @@ export async function markPaymentPaidServer(input: {
   gatewayOrderId: string;
   gatewayPaymentId: string;
 }): Promise<Payment | null> {
-  const supabase = await createServerSupabaseClient();
+  const supabase = isSupabaseAdminConfigured()
+    ? createAdminSupabaseClient()
+    : await createServerSupabaseClient();
   const { data, error } = await supabase
     .from("payments")
     .update({

@@ -2,23 +2,19 @@ import { NextResponse } from "next/server";
 import {
   applyDemoSessionCookies,
 } from "@/lib/auth/demoSession";
+import { isDemoAuthAllowed } from "@/lib/auth/isDemoAuthAllowed";
 import { DEMO_CREDENTIALS } from "@/types/player";
 import type { UserRole } from "@/types/player";
 
-const VALID_ROLES: UserRole[] = [
-  "player",
-  "organizer",
-  "referee",
-  "club_owner",
-  "admin",
-];
-
 export async function POST(request: Request) {
+  if (!isDemoAuthAllowed()) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
   try {
     const body = (await request.json()) as {
       email?: string;
       password?: string;
-      role?: string;
     };
 
     let role: UserRole | undefined;
@@ -34,8 +30,6 @@ export async function POST(request: Request) {
         );
       }
       role = cred.role;
-    } else if (body.role && VALID_ROLES.includes(body.role as UserRole)) {
-      role = body.role as UserRole;
     } else {
       return NextResponse.json({ error: "Invalid request" }, { status: 400 });
     }

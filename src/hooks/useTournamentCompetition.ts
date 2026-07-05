@@ -34,8 +34,10 @@ export interface UseTournamentCompetitionResult {
   source: "mock" | "supabase";
   generating: boolean;
   startingFixtureId: string | null;
+  bulkStarting: boolean;
   generateFixtures: (categoryId: string) => Promise<boolean>;
   startFixtureMatch: (fixtureId: string) => Promise<string | null>;
+  startMultipleFixtureMatches: (fixtureIds: string[]) => Promise<string[]>;
   reload: () => void;
 }
 
@@ -51,6 +53,7 @@ export function useTournamentCompetition(
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [startingFixtureId, setStartingFixtureId] = useState<string | null>(null);
+  const [bulkStarting, setBulkStarting] = useState(false);
   const [reloadToken, setReloadToken] = useState(0);
 
   const tournamentId = tournament?.id ?? "";
@@ -185,6 +188,49 @@ export function useTournamentCompetition(
     [tournament, userId, dataSource, registrations, reload]
   );
 
+  const startMultipleFixtureMatches = useCallback(
+    async (fixtureIds: string[]): Promise<string[]> => {
+      if (!tournament || !userId || fixtureIds.length === 0) {
+        toast.error("Sign in to start matches");
+        return [];
+      }
+
+      if (dataSource === "mock") {
+        toast.info("Bulk start is available on real tournaments only");
+        return [];
+      }
+
+      setBulkStarting(true);
+      const matchIds: string[] = [];
+
+      for (const fixtureId of fixtureIds) {
+        const result = await createMatchForFixture({
+          fixtureId,
+          tournament,
+          registrations,
+          createdBy: userId,
+        });
+        if (result.data?.matchId) {
+          matchIds.push(result.data.matchId);
+        }
+      }
+
+      setBulkStarting(false);
+
+      if (matchIds.length === 0) {
+        toast.error("Could not start any matches");
+        return [];
+      }
+
+      toast.success(
+        `Started ${matchIds.length} match${matchIds.length === 1 ? "" : "es"} — open each court to score`
+      );
+      reload();
+      return matchIds;
+    },
+    [tournament, userId, dataSource, registrations, reload]
+  );
+
   return {
     fixtures,
     points,
@@ -194,8 +240,10 @@ export function useTournamentCompetition(
     source: dataSource === "mock" ? "mock" : useDb ? "supabase" : "mock",
     generating,
     startingFixtureId,
+    bulkStarting,
     generateFixtures,
     startFixtureMatch,
+    startMultipleFixtureMatches,
     reload,
   };
 }

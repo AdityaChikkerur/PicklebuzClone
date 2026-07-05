@@ -783,6 +783,7 @@ export interface LiveMatchSummary {
   gameNumber: number;
   venue: string;
   city: string;
+  courtNumber: string;
   matchType: string;
   createdAt: string;
 }
@@ -800,8 +801,9 @@ export async function fetchLiveMatches(): Promise<FetchLiveMatchesResult> {
     );
     const mock = getLandingLiveMatches();
     return {
-      data: mock.map((m) => ({
+      data: mock.map((m, index) => ({
         ...m,
+        courtNumber: `Court ${index + 1}`,
         createdAt: new Date().toISOString(),
       })),
       source: "mock",
@@ -815,7 +817,7 @@ export async function fetchLiveMatches(): Promise<FetchLiveMatchesResult> {
     const { data: rows, error } = await supabase
       .from("matches")
       .select(
-        "id, team_a_name, team_b_name, venue, city, match_type, created_at"
+        "id, team_a_name, team_b_name, venue, city, court_number, match_type, created_at"
       )
       .eq("status", "live")
       .order("created_at", { ascending: false })
@@ -844,6 +846,7 @@ export async function fetchLiveMatches(): Promise<FetchLiveMatchesResult> {
         gameNumber: latestEvent?.game_number ?? 1,
         venue: (row.venue as string) ?? "",
         city: (row.city as string) ?? "",
+        courtNumber: (row.court_number as string) ?? "",
         matchType: row.match_type as string,
         createdAt: row.created_at as string,
       });
@@ -855,8 +858,9 @@ export async function fetchLiveMatches(): Promise<FetchLiveMatchesResult> {
       );
       const mock = getLandingLiveMatches();
       return {
-        data: mock.map((m) => ({
+        data: mock.map((m, index) => ({
           ...m,
+          courtNumber: `Court ${index + 1}`,
           createdAt: new Date().toISOString(),
         })),
         source: "mock",
@@ -871,8 +875,9 @@ export async function fetchLiveMatches(): Promise<FetchLiveMatchesResult> {
     );
     const mock = getLandingLiveMatches();
     return {
-      data: mock.map((m) => ({
+      data: mock.map((m, index) => ({
         ...m,
+        courtNumber: `Court ${index + 1}`,
         createdAt: new Date().toISOString(),
       })),
       source: "mock",

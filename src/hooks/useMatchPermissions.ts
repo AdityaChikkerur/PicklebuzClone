@@ -15,6 +15,7 @@ export interface MatchPermissions {
   isCreator: boolean;
   isPlayer: boolean;
   isReferee: boolean;
+  isDelegatedScorer: boolean;
 }
 
 const REFEREE_ROLES: UserRole[] = ["referee", "admin"];
@@ -27,6 +28,7 @@ export function useMatchPermissions(matchId: string | undefined): MatchPermissio
   const [loading, setLoading] = useState(Boolean(matchId));
   const [isCreator, setIsCreator] = useState(false);
   const [isPlayer, setIsPlayer] = useState(false);
+  const [isDelegatedScorer, setIsDelegatedScorer] = useState(false);
 
   const isReferee = Boolean(role && REFEREE_ROLES.includes(role));
   const isLocalMatch =
@@ -55,10 +57,21 @@ export function useMatchPermissions(matchId: string | undefined): MatchPermissio
         .eq("id", matchId)
         .maybeSingle();
 
-      const { data: players } = await supabase
-        .from("match_players")
-        .select("player_id")
-        .eq("match_id", matchId);
+      const [{ data: players }, { data: scorerRow }] = await Promise.all([
+        supabase
+          .from("match_players")
+          .select("player_id")
+          .eq("match_id", matchId),
+        userId
+          ? supabase
+              .from("match_scorers")
+              .select("id")
+              .eq("match_id", matchId)
+              .eq("user_id", userId)
+              .eq("status", "accepted")
+              .maybeSingle()
+          : Promise.resolve({ data: null }),
+      ]);
 
       if (cancelled) return;
 
@@ -69,6 +82,7 @@ export function useMatchPermissions(matchId: string | undefined): MatchPermissio
 
       setIsCreator(creator);
       setIsPlayer(player);
+      setIsDelegatedScorer(Boolean(scorerRow));
       setLoading(false);
     }
 
@@ -79,7 +93,7 @@ export function useMatchPermissions(matchId: string | undefined): MatchPermissio
   }, [matchId, userId, isLocalMatch]);
 
   const canScore =
-    isLocalMatch || isCreator || isPlayer || isReferee;
+    isLocalMatch || isCreator || isPlayer || isReferee || isDelegatedScorer;
 
   return {
     loading,
@@ -88,5 +102,6 @@ export function useMatchPermissions(matchId: string | undefined): MatchPermissio
     isCreator: isLocalMatch || isCreator,
     isPlayer: isLocalMatch || isPlayer,
     isReferee,
+    isDelegatedScorer: isLocalMatch || isDelegatedScorer,
   };
 }
