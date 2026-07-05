@@ -7,6 +7,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { ProfileBoostCard } from "@/components/monetization";
 import { AccountSection } from "@/components/profile/AccountSection";
+import { EditNameSection } from "@/components/profile/EditNameSection";
 import { useAuthStore } from "@/store/authStore";
 import { useProfileBoost } from "@/hooks/useProfileBoost";
 import { formatDupr } from "@/lib/utils";
@@ -71,6 +72,8 @@ export function ProfilePage() {
         </div>
 
         <ProfileBoostCard />
+
+        <EditNameSection />
 
         <AccountSection />
 

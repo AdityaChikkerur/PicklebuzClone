@@ -243,6 +243,103 @@ export async function completePlayerProfile(
   }
 }
 
+const MIN_FULL_NAME_LENGTH = 2;
+const MAX_FULL_NAME_LENGTH = 80;
+
+function validateFullName(fullName: string): ProfileResult<string> {
+  const trimmed = fullName.trim();
+
+  if (trimmed.length < MIN_FULL_NAME_LENGTH) {
+    return fail("Name must be at least 2 characters");
+  }
+
+  if (trimmed.length > MAX_FULL_NAME_LENGTH) {
+    return fail("Name must be 80 characters or fewer");
+  }
+
+  return ok(trimmed);
+}
+
+async function updateProfileFullNameDirect(
+  userId: string,
+  fullName: string
+): Promise<ProfileResult<Profile>> {
+  const valid = validateFullName(fullName);
+  if (valid.error || !valid.data) {
+    return fail(valid.error ?? "Invalid name");
+  }
+
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user || user.id !== userId) {
+    return fail("Your session expired. Please sign in again.");
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("profiles")
+      .update({ full_name: valid.data })
+      .eq("id", userId)
+      .select("*")
+      .single();
+
+    if (error) throw error;
+    return ok(mapDbProfile(data as DbProfileRow));
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** Updates display name — direct Supabase on native; API route on web. */
+export async function updateProfileFullName(
+  userId: string,
+  fullName: string
+): Promise<ProfileResult<Profile>> {
+  if (!isSupabaseConfigured()) {
+    return fail("Supabase is not configured");
+  }
+
+  const valid = validateFullName(fullName);
+  if (valid.error || !valid.data) {
+    return fail(valid.error ?? "Invalid name");
+  }
+
+  if (typeof window !== "undefined" && Capacitor.isNativePlatform()) {
+    try {
+      return await updateProfileFullNameDirect(userId, valid.data);
+    } catch (e) {
+      return fail(e);
+    }
+  }
+
+  try {
+    const response = await authFetch("/api/profile/update", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fullName: valid.data }),
+    });
+
+    const payload = (await response.json().catch(() => null)) as
+      | { profile?: DbProfileRow; error?: string }
+      | null;
+
+    if (!response.ok) {
+      return fail(payload?.error ?? "Could not update name");
+    }
+
+    if (!payload?.profile) {
+      return fail("Could not update name");
+    }
+
+    return ok(mapDbProfile(payload.profile));
+  } catch (e) {
+    return fail(e);
+  }
+}
+
 export async function fetchProfileById(
   userId: string
 ): Promise<ProfileResult<Profile>> {
