@@ -997,6 +997,11 @@ export interface LiveMatchSummary {
   courtNumber: string;
   matchType: string;
   createdAt: string;
+  createdBy: string;
+  hasPendingInvites: boolean;
+  hasScoringEvents: boolean;
+  /** True when the signed-in user created this match and can still cancel it. */
+  canCancel: boolean;
 }
 
 export interface FetchLiveMatchesResult {
@@ -1005,7 +1010,36 @@ export interface FetchLiveMatchesResult {
   error: string | null;
 }
 
-export async function fetchLiveMatches(): Promise<FetchLiveMatchesResult> {
+/** Remove a live/draft match the creator started before opponents accept. */
+export async function cancelMatchByCreator(
+  matchId: string
+): Promise<DbResult<{ cancelled: boolean }>> {
+  if (!isSupabaseConfigured() || isMockMatchId(matchId)) {
+    return fail("Match cancellation requires a live database connection");
+  }
+
+  if (!isUuid(matchId)) {
+    return fail("Invalid match id");
+  }
+
+  try {
+    const supabase = createClient();
+    const { data, error } = await supabase.rpc("cancel_match_by_creator", {
+      p_match_id: matchId,
+    });
+
+    if (error) throw error;
+
+    const payload = data as { cancelled?: boolean } | null;
+    return ok({ cancelled: Boolean(payload?.cancelled) });
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function fetchLiveMatches(
+  userId?: string | null
+): Promise<FetchLiveMatchesResult> {
   if (!isSupabaseConfigured()) {
     return {
       data: [],
@@ -1020,7 +1054,7 @@ export async function fetchLiveMatches(): Promise<FetchLiveMatchesResult> {
     const { data: rows, error } = await supabase
       .from("matches")
       .select(
-        "id, team_a_name, team_b_name, venue, city, court_number, match_type, created_at"
+        "id, team_a_name, team_b_name, venue, city, court_number, match_type, created_at, created_by"
       )
       .eq("status", "live")
       .eq("is_public", true)
@@ -1035,13 +1069,23 @@ export async function fetchLiveMatches(): Promise<FetchLiveMatchesResult> {
       string,
       { scoreA: number; scoreB: number; gameNumber: number }
     >();
+    const pendingInviteMatchIds = new Set<string>();
+    const creatorCanCancel = new Map<string, boolean>();
 
     if (matchIds.length > 0) {
-      const { data: eventRows } = await supabase
-        .from("match_events")
-        .select("match_id, score_a, score_b, game_number, created_at")
-        .in("match_id", matchIds)
-        .order("created_at", { ascending: false });
+      const [{ data: eventRows }, { data: pendingPlayers }] = await Promise.all([
+        supabase
+          .from("match_events")
+          .select("match_id, score_a, score_b, game_number, created_at")
+          .in("match_id", matchIds)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("match_players")
+          .select("match_id")
+          .in("match_id", matchIds)
+          .eq("invite_status", "pending")
+          .not("player_id", "is", null),
+      ]);
 
       for (const event of eventRows ?? []) {
         const matchId = event.match_id as string;
@@ -1052,11 +1096,43 @@ export async function fetchLiveMatches(): Promise<FetchLiveMatchesResult> {
           gameNumber: event.game_number ?? 1,
         });
       }
+
+      for (const row of pendingPlayers ?? []) {
+        pendingInviteMatchIds.add(row.match_id as string);
+      }
+
+      if (userId) {
+        const creatorMatchIds = matchRows
+          .filter((row) => (row.created_by as string) === userId)
+          .map((row) => row.id as string);
+
+        await Promise.all(
+          creatorMatchIds.map(async (matchId) => {
+            const { data, error: rpcError } = await supabase.rpc(
+              "creator_can_cancel_match",
+              { p_match_id: matchId }
+            );
+            creatorCanCancel.set(
+              matchId,
+              !rpcError && Boolean(data)
+            );
+          })
+        );
+      }
     }
 
     const summaries: LiveMatchSummary[] = matchRows.map((row) => {
       const matchId = row.id as string;
       const latestEvent = latestScores.get(matchId);
+      const createdBy = row.created_by as string;
+      const hasScoringEvents = latestScores.has(matchId);
+      const hasPendingInvites = pendingInviteMatchIds.has(matchId);
+      const canCancelFromRpc = creatorCanCancel.get(matchId) ?? false;
+      const canCancelFallback = Boolean(
+        userId &&
+          createdBy === userId &&
+          (hasPendingInvites || !hasScoringEvents)
+      );
 
       return {
         id: matchId,
@@ -1070,6 +1146,10 @@ export async function fetchLiveMatches(): Promise<FetchLiveMatchesResult> {
         courtNumber: (row.court_number as string) ?? "",
         matchType: row.match_type as string,
         createdAt: row.created_at as string,
+        createdBy,
+        hasPendingInvites,
+        hasScoringEvents,
+        canCancel: canCancelFromRpc || canCancelFallback,
       };
     });
 

@@ -3,11 +3,16 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { toast } from "sonner";
 import { AppLayout } from "@/components/layout";
 import { useMatchMinDuration } from "@/hooks/useMatchMinDuration";
 import { useMatchPermissions } from "@/hooks/useMatchPermissions";
 import { useRealtimeMatch } from "@/hooks/useRealtimeMatch";
-import { fetchMatchStateOverrides, fetchMatchStatus } from "@/lib/db/matches";
+import {
+  cancelMatchByCreator,
+  fetchMatchStateOverrides,
+  fetchMatchStatus,
+} from "@/lib/db/matches";
 import { fetchMatchInviteSummary } from "@/lib/db/matchPlayerInvites";
 import { isUuid } from "@/lib/db/config";
 import { useMatchStore, createInitialMatchState } from "@/store/matchStore";
@@ -37,6 +42,7 @@ export function LiveScoringSession({ matchId }: LiveScoringSessionProps) {
   const [endModalOpen, setEndModalOpen] = useState(false);
   const [showTimeline, setShowTimeline] = useState(false);
   const [awaitingStart, setAwaitingStart] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
   const reloadMatch = useCallback(async () => {
     const [overrides, statusResult, inviteResult] = await Promise.all([
@@ -65,10 +71,24 @@ export function LiveScoringSession({ matchId }: LiveScoringSessionProps) {
   }, [matchId, resetMatch, setCurrentMatchId]);
 
   useEffect(() => {
-    if (!permissions.loading && permissions.isSpectator && !awaitingStart) {
+    if (
+      !permissions.loading &&
+      permissions.isSpectator &&
+      !awaitingStart &&
+      !permissions.isCreator &&
+      !permissions.isPlayer
+    ) {
       router.replace(`/spectate/${matchId}`);
     }
-  }, [permissions.loading, permissions.isSpectator, awaitingStart, matchId, router]);
+  }, [
+    permissions.loading,
+    permissions.isSpectator,
+    permissions.isCreator,
+    permissions.isPlayer,
+    awaitingStart,
+    matchId,
+    router,
+  ]);
 
   useEffect(() => {
     if (!isUuid(matchId)) {
@@ -111,6 +131,33 @@ export function LiveScoringSession({ matchId }: LiveScoringSessionProps) {
     void reloadMatch();
   }, [reloadMatch]);
 
+  const handleCancelMatch = useCallback(async () => {
+    if (
+      !window.confirm(
+        "Cancel this match? Your opponent has not accepted yet — it will be removed from live."
+      )
+    ) {
+      return;
+    }
+
+    setCancelling(true);
+    const result = await cancelMatchByCreator(matchId);
+    setCancelling(false);
+
+    if (result.error) {
+      toast.error(result.error);
+      return;
+    }
+
+    toast.success("Match cancelled.");
+    router.replace("/live-scoring");
+  }, [matchId, router]);
+
+  const creatorCanCancel =
+    permissions.isCreator &&
+    !matchState.isMatchComplete &&
+    (awaitingStart || matchState.events.length === 0);
+
   if (permissions.loading || hydrating) {
     return (
       <AppLayout hideNav>
@@ -123,7 +170,9 @@ export function LiveScoringSession({ matchId }: LiveScoringSessionProps) {
     );
   }
 
-  const readOnly = !permissions.canScore || awaitingStart;
+  const readOnly =
+    !permissions.canScore ||
+    ((awaitingStart || permissions.isAwaitingStart) && !permissions.isCreator);
 
   return (
     <AppLayout hideNav>
@@ -138,8 +187,26 @@ export function LiveScoringSession({ matchId }: LiveScoringSessionProps) {
 
         <MatchRuleChips matchState={matchState} />
 
+        {creatorCanCancel && (
+          <div className="mx-4 mt-3 rounded-xl border border-warning/30 bg-warning/10 px-4 py-3 text-center">
+            <p className="text-sm text-foreground">
+              {awaitingStart
+                ? "Waiting for your opponent to accept before the match counts toward ratings."
+                : "This match has not started yet. You can cancel it if you no longer want to play."}
+            </p>
+            <button
+              type="button"
+              onClick={() => void handleCancelMatch()}
+              disabled={cancelling}
+              className="mt-3 rounded-xl border border-danger/40 bg-danger/10 px-4 py-2 text-sm font-semibold text-danger transition-colors hover:bg-danger/20 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {cancelling ? "Cancelling…" : "Cancel match"}
+            </button>
+          </div>
+        )}
+
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-          {awaitingStart ? (
+          {awaitingStart && !permissions.isCreator ? (
             <MatchWaitingPanel
               matchId={matchId}
               teamAName={matchState.teamAName}
