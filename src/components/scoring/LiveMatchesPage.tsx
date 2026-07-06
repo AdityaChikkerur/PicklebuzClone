@@ -1,9 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import {
   MapPinIcon,
-  PlusCircleIcon,
   SignalIcon,
 } from "@heroicons/react/24/outline";
 import { AppLayout } from "@/components/layout";
@@ -18,24 +16,15 @@ export function LiveMatchesPage() {
   return (
     <AppLayout title="Live matches">
       <div className="mx-auto flex max-w-4xl flex-col gap-5 md:gap-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-sm text-muted-foreground">Watch live</p>
-            <h2 className="text-xl font-bold text-foreground sm:text-2xl">
-              Live match center
-            </h2>
-            <p className="mt-1 text-sm text-foreground/70">
-              Follow multiple courts at once. Open &quot;Score&quot; in separate tabs to
-              run simultaneous matches — each court updates in real time.
-            </p>
-          </div>
-          <Link
-            href="/match-setup"
-            className="btn-primary inline-flex items-center justify-center gap-2 text-sm"
-          >
-            <PlusCircleIcon className="h-5 w-5" aria-hidden="true" />
-            Start new match
-          </Link>
+        <div>
+          <p className="text-sm text-muted-foreground">Watch live</p>
+          <h2 className="text-xl font-bold text-foreground sm:text-2xl">
+            Live match center
+          </h2>
+          <p className="mt-1 text-sm text-foreground/70">
+            Follow multiple courts at once. Open &quot;Score&quot; in separate tabs to
+            run simultaneous matches — each court updates in real time.
+          </p>
         </div>
 
         {error && (
@@ -62,11 +51,8 @@ export function LiveMatchesPage() {
             />
             <p className="mt-3 font-semibold text-foreground">No live matches right now</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Start a match or check back when tournaments are in play.
+              Check back when tournaments are in play.
             </p>
-            <Link href="/match-setup" className="btn-primary mt-4 inline-block text-sm">
-              Create match
-            </Link>
           </div>
         ) : (
           <>

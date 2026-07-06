@@ -74,12 +74,7 @@ export function useRealtimeMatch(
             return;
           }
 
-          setMatchFromDB({
-            scoreA: event.scoreA,
-            scoreB: event.scoreB,
-            currentGame: event.gameNumber,
-            incomingEvent: event,
-          });
+          setMatchFromDB({ incomingEvent: event });
         }
       )
       .on(

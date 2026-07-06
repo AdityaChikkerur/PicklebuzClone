@@ -34,4 +34,15 @@ describe("formatDbError", () => {
     );
     expect(formatDbError(error)).toBe(PHONE_ALREADY_REGISTERED_MESSAGE);
   });
+
+  it("hides postgres upsert internals when saving a match", () => {
+    expect(
+      formatDbError(
+        {
+          message: "ON CONFLICT DO UPDATE command cannot affect row a second time",
+        },
+        "Could not save match"
+      )
+    ).toBe("Unable to save match results. Please try again or contact support.");
+  });
 });

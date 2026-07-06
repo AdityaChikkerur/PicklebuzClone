@@ -42,6 +42,15 @@ export function isPhoneDuplicateError(error: unknown): boolean {
   return isPostgresDuplicatePhone(error);
 }
 
+const MATCH_SAVE_ERROR_MESSAGE =
+  "Unable to save match results. Please try again or contact support.";
+
+function isInternalDbMessage(message: string): boolean {
+  return /ON CONFLICT DO UPDATE|cannot affect row a second time|duplicate key value violates unique constraint/i.test(
+    message
+  );
+}
+
 /** Turn Supabase PostgrestError / network errors into user-readable strings. */
 export function formatDbError(error: unknown, fallback = "Something went wrong"): string {
   if (error instanceof TypeError && error.message === "Failed to fetch") {
@@ -53,6 +62,11 @@ export function formatDbError(error: unknown, fallback = "Something went wrong")
   }
 
   if (error instanceof Error && error.message) {
+    if (isInternalDbMessage(error.message)) {
+      return fallback === "Could not save match"
+        ? MATCH_SAVE_ERROR_MESSAGE
+        : fallback;
+    }
     return error.message;
   }
 
@@ -64,6 +78,11 @@ export function formatDbError(error: unknown, fallback = "Something went wrong")
     }
 
     if (typeof record.message === "string" && record.message) {
+      if (isInternalDbMessage(record.message)) {
+        return fallback === "Could not save match"
+          ? MATCH_SAVE_ERROR_MESSAGE
+          : fallback;
+      }
       const details =
         typeof record.details === "string" && record.details ? ` (${record.details})` : "";
       return `${record.message}${details}`;

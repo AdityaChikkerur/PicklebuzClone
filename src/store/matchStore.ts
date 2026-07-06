@@ -434,7 +434,18 @@ export const useMatchStore = create<MatchStore>((set, get) => ({
   setMatchFromDB: (data) => {
     set((s) => {
       const { incomingEvent, ...rest } = data;
-      let matchState = { ...s.matchState, ...rest };
+      // Realtime echoes include score/game fields that must not clobber local
+      // state until we know the event is not a local echo of our own persist.
+      const {
+        scoreA: _scoreA,
+        scoreB: _scoreB,
+        currentGame: _currentGame,
+        gameScores: _gameScores,
+        ...metaRest
+      } = rest;
+      let matchState = incomingEvent
+        ? { ...s.matchState, ...metaRest }
+        : { ...s.matchState, ...rest };
 
       if (
         incomingEvent &&

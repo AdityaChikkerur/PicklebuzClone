@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase";
 import { isSupabaseConfigured } from "@/lib/auth/isSupabaseConfigured";
 import { isUuid } from "@/lib/db/config";
@@ -18,39 +18,53 @@ async function fetchScoresForMatches(
   if (matchIds.length === 0) return [];
 
   const supabase = createClient();
-  const snapshots: LiveScoreSnapshot[] = [];
+  const { data: rows } = await supabase
+    .from("match_events")
+    .select("match_id, score_a, score_b, game_number, created_at")
+    .in("match_id", matchIds)
+    .order("created_at", { ascending: false });
 
-  await Promise.all(
-    matchIds.map(async (matchId) => {
-      const { data } = await supabase
-        .from("match_events")
-        .select("score_a, score_b, game_number")
-        .eq("match_id", matchId)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+  const latestByMatch = new Map<string, LiveScoreSnapshot>();
+  for (const row of rows ?? []) {
+    const matchId = row.match_id as string;
+    if (latestByMatch.has(matchId)) continue;
+    latestByMatch.set(matchId, {
+      matchId,
+      scoreA: row.score_a ?? 0,
+      scoreB: row.score_b ?? 0,
+      gameNumber: row.game_number ?? 1,
+    });
+  }
 
-      snapshots.push({
+  return matchIds.map(
+    (matchId) =>
+      latestByMatch.get(matchId) ?? {
         matchId,
-        scoreA: data?.score_a ?? 0,
-        scoreB: data?.score_b ?? 0,
-        gameNumber: data?.game_number ?? 1,
-      });
-    })
+        scoreA: 0,
+        scoreB: 0,
+        gameNumber: 1,
+      }
   );
-
-  return snapshots;
 }
 
 /** Subscribe to score updates for a set of live match ids. */
 export function useRealtimeLiveScores(matchIds: string[]) {
-  const validIds = matchIds.filter(isUuid);
-  const key = validIds.sort().join(",");
+  const key = useMemo(
+    () =>
+      matchIds
+        .filter(isUuid)
+        .sort()
+        .join(","),
+    [matchIds]
+  );
+  const validIds = useMemo(() => (key ? key.split(",") : []), [key]);
   const [scores, setScores] = useState<Record<string, LiveScoreSnapshot>>({});
 
   useEffect(() => {
-    if (!isSupabaseConfigured() || validIds.length === 0) {
-      setScores({});
+    if (!isSupabaseConfigured()) return;
+
+    if (validIds.length === 0) {
+      setScores((prev) => (Object.keys(prev).length === 0 ? prev : {}));
       return;
     }
 
@@ -103,7 +117,7 @@ export function useRealtimeLiveScores(matchIds: string[]) {
       cancelled = true;
       void supabase.removeChannel(channel);
     };
-  }, [key, validIds]);
+  }, [key]);
 
   return scores;
 }

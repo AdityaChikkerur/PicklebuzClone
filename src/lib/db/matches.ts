@@ -1010,32 +1010,49 @@ export async function fetchLiveMatches(): Promise<FetchLiveMatchesResult> {
 
     if (error) throw error;
 
-    const summaries: LiveMatchSummary[] = [];
+    const matchRows = rows ?? [];
+    const matchIds = matchRows.map((row) => row.id as string);
+    const latestScores = new Map<
+      string,
+      { scoreA: number; scoreB: number; gameNumber: number }
+    >();
 
-    for (const row of rows ?? []) {
-      const matchId = row.id as string;
-      const { data: latestEvent } = await supabase
+    if (matchIds.length > 0) {
+      const { data: eventRows } = await supabase
         .from("match_events")
-        .select("score_a, score_b, game_number")
-        .eq("match_id", matchId)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .select("match_id, score_a, score_b, game_number, created_at")
+        .in("match_id", matchIds)
+        .order("created_at", { ascending: false });
 
-      summaries.push({
+      for (const event of eventRows ?? []) {
+        const matchId = event.match_id as string;
+        if (latestScores.has(matchId)) continue;
+        latestScores.set(matchId, {
+          scoreA: event.score_a ?? 0,
+          scoreB: event.score_b ?? 0,
+          gameNumber: event.game_number ?? 1,
+        });
+      }
+    }
+
+    const summaries: LiveMatchSummary[] = matchRows.map((row) => {
+      const matchId = row.id as string;
+      const latestEvent = latestScores.get(matchId);
+
+      return {
         id: matchId,
         teamAName: row.team_a_name as string,
         teamBName: row.team_b_name as string,
-        scoreA: latestEvent?.score_a ?? 0,
-        scoreB: latestEvent?.score_b ?? 0,
-        gameNumber: latestEvent?.game_number ?? 1,
+        scoreA: latestEvent?.scoreA ?? 0,
+        scoreB: latestEvent?.scoreB ?? 0,
+        gameNumber: latestEvent?.gameNumber ?? 1,
         venue: (row.venue as string) ?? "",
         city: (row.city as string) ?? "",
         courtNumber: (row.court_number as string) ?? "",
         matchType: row.match_type as string,
         createdAt: row.created_at as string,
-      });
-    }
+      };
+    });
 
     if (summaries.length === 0) {
       return {
