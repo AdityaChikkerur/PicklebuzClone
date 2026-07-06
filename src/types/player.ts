@@ -35,8 +35,7 @@ export const USER_ROLES: { value: UserRole; label: string }[] = [
 /** Roles users may pick during onboarding (admin is staff-assigned only). */
 export const ONBOARDING_ROLES: { value: UserRole; label: string; description: string }[] = [
   { value: "player", label: "Player", description: "Score matches, climb rankings" },
-  { value: "organizer", label: "Organizer", description: "Run tournaments & events" },
-  { value: "referee", label: "Referee", description: "Officiate assigned matches" },
+
   { value: "club_owner", label: "Club Owner", description: "Manage courts & bookings" },
 ];
 

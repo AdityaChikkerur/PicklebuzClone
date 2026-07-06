@@ -12,11 +12,34 @@ import { useAuthStore } from "@/store/authStore";
 import { useProfileBoost } from "@/hooks/useProfileBoost";
 import { formatDupr } from "@/lib/utils";
 import { USER_ROLES } from "@/types/player";
+import { useEffect, useState } from "react";
+import {
+  fetchFollowerCount,
+  fetchFollowingCount,
+} from "@/lib/db/follows";
 
 export function ProfilePage() {
   const profile = useAuthStore((s) => s.profile);
   const userId = useAuthStore((s) => s.user?.id ?? s.profile?.id);
   const { boosted } = useProfileBoost(userId);
+  const [followers, setFollowers] = useState(0);
+const [following, setFollowing] = useState(0);
+
+useEffect(() => {
+  if (!userId) return;
+
+  async function loadCounts() {
+    const [followersCount, followingCount] = await Promise.all([
+      fetchFollowerCount(userId),
+      fetchFollowingCount(userId),
+    ]);
+
+    setFollowers(followersCount);
+    setFollowing(followingCount);
+  }
+
+  void loadCounts();
+}, [userId]);
 
   if (!profile) {
     return (
@@ -69,6 +92,29 @@ export function ProfilePage() {
           <p className="text-xs text-muted-foreground">
             Rating updates automatically after verified matches.
           </p>
+          <div className="mt-5 grid w-full grid-cols-3 divide-x rounded-xl border border-border">
+  <div className="py-3 text-center">
+    <p className="text-xl font-bold">{profile.matchesPlayed ?? 0}</p>
+    <p className="text-xs text-muted-foreground">Matches</p>
+  </div>
+
+  <Link
+  href="/profile/followers"
+  className="py-3 text-center transition hover:bg-muted/50"
+>
+  <p className="text-xl font-bold">{followers}</p>
+  <p className="text-xs text-muted-foreground">Followers</p>
+</Link>
+
+<Link
+  href="/profile/following"
+  className="py-3 text-center transition hover:bg-muted/50"
+>
+  <p className="text-xl font-bold">{following}</p>
+  <p className="text-xs text-muted-foreground">Following</p>
+</Link>
+</div>
+          
         </div>
 
         <ProfileBoostCard />

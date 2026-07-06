@@ -17,9 +17,6 @@ export interface RoleRouteRule {
 }
 
 export const ROLE_ROUTE_RULES: RoleRouteRule[] = [
-  { pattern: /^\/referee(?:\/|$)/, roles: ["referee", "admin"] },
-  { pattern: /^\/organizer(?:\/|$)/, roles: ["organizer", "admin"] },
-  { pattern: /^\/club-dashboard(?:\/|$)/, roles: ["club_owner", "admin"] },
   { pattern: /^\/admin(?:\/|$)/, roles: ["admin"] },
   { pattern: /^\/create-tournament(?:\/|$)/, roles: ["player", "admin"] },
 ];
@@ -27,12 +24,6 @@ export const ROLE_ROUTE_RULES: RoleRouteRule[] = [
 /** Default landing page after login / onboarding per role. */
 export function getDefaultHomeForRole(role: UserRole | null | undefined): string {
   switch (role) {
-    case "organizer":
-      return "/organizer";
-    case "referee":
-      return "/referee";
-    case "club_owner":
-      return "/club-dashboard";
     case "admin":
       return "/admin";
     case "player":
@@ -52,6 +43,7 @@ export function isPublicPath(pathname: string): boolean {
   if (/^\/club\/[^/]+$/.test(pathname)) return true;
   if (/^\/tournament\/[^/]+$/.test(pathname)) return true;
   if (/^\/spectate\/[^/]+$/.test(pathname)) return true;
+  if (/^\/player\/[^/]+$/.test(pathname)) return true;
   if (/^\/pickleball-in-[a-z0-9-]+$/.test(pathname)) return true;
 
   return false;
@@ -85,15 +77,10 @@ export function sanitizeRedirectPath(
     return fallback;
   }
 
-  // Generic post-login targets should resolve to the role home.
-  if (redirect === "/dashboard" && role && role !== "player") {
-    return fallback;
-  }
-
   return redirect;
 }
 
-/** Paths that are player-centric; staff roles get redirected to their home. */
+/** Paths that are player-centric. */
 export function isPlayerOnlyPath(pathname: string): boolean {
   return (
     pathname === "/dashboard" ||
