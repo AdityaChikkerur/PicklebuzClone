@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import type { Session } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase";
 import { readPersistedDemoAuth } from "@/lib/auth/persistDemoAuth";
 import {
@@ -30,9 +31,7 @@ export function AuthHydration() {
     const supabase = createClient();
     let cancelled = false;
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    async function applySession(session: Session | null) {
       if (cancelled) return;
 
       if (!session?.user) {
@@ -54,6 +53,19 @@ export function AuthHydration() {
       } finally {
         if (!cancelled) setLoading(false);
       }
+    }
+
+    // Always hydrate from cookies/local storage on mount. Relying only on
+    // onAuthStateChange can leave loading=true forever if the listener never fires.
+    void supabase.auth.getSession().then(({ data: { session } }) => {
+      void applySession(session);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "INITIAL_SESSION") return;
+      void applySession(session);
     });
 
     return () => {
