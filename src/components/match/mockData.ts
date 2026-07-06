@@ -10,6 +10,9 @@ export const MATCH_CATEGORIES: { value: MatchCategory; label: string }[] = [
 ];
 
 export const QUICK_VENUES = [
+  { name: "Pickle Social Club", city: "Nagpur" },
+  { name: "Pickle Co", city: "Nagpur" },
+  { name: "The Pickle Park", city: "Nagpur" },
   { name: "Nandanwan Lawn", city: "Nashik" },
   { name: "The Nova Club", city: "Nashik" },
   { name: "Nashik Sports Klub", city: "Nashik" },

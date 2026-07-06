@@ -79,7 +79,7 @@ export const FAQ_ITEMS: FaqItem[] = [
   {
     question: "Is PickleBuzz available in my city?",
     answer:
-      "PickleBuzz is growing across India — Mumbai, Bengaluru, Delhi NCR, Hyderabad, Pune, Chennai, Nashik, and more. Browse clubs on the app or visit our city pages.",
+      "PickleBuzz is growing across India — Mumbai, Bengaluru, Delhi NCR, Hyderabad, Pune, Chennai, Nashik, Nagpur, and more. Browse clubs on the app or visit our city pages.",
   },
   {
     question: "How is PickleBuzz different from CricHeroes?",
@@ -223,6 +223,24 @@ export const CITY_PAGES: CityPageContent[] = [
       "pickleball Nashik",
       "pickleball clubs Nashik",
       "pickleball courts Nashik",
+    ],
+  },
+  {
+    slug: "nagpur",
+    path: "/pickleball-in-nagpur",
+    city: "Nagpur",
+    headline: "Pickleball in Nagpur — Clubs, Courts & Grand Slam League",
+    intro:
+      "Nagpur's pickleball community is growing fast across Dharampeth, Jaripatka, Wardhaman Nagar, and Pardi. PickleBuzz lists verified local clubs — from Pickle Co to Pickle Social Club — and covers the Nagpur Grand Slam franchise league.",
+    highlights: [
+      "Browse Nagpur pickleball clubs with court hours",
+      "Follow the Nagpur Grand Slam Pickleball League",
+      "Live score matches at Pickle Co, The Cage, and more",
+    ],
+    keywords: [
+      "pickleball Nagpur",
+      "pickleball clubs Nagpur",
+      "Nagpur Grand Slam pickleball",
     ],
   },
 ];

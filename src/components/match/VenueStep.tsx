@@ -11,6 +11,7 @@ const CITIES = [
   "Hyderabad",
   "Pune",
   "Nashik",
+  "Nagpur",
   "Kolkata",
 ];
 
