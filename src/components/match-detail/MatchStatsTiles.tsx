@@ -21,7 +21,6 @@ export function MatchStatsTiles({
   className,
 }: MatchStatsTilesProps) {
   const durationLabel = formatMatchDuration(stats.durationMinutes);
-  const durationInvalid = stats.timingValid === false;
 
   const tiles = [
     { label: "Points won", value: `${stats.pointsWonA} / ${stats.pointsWonB}`, sub: `${teamAName} / ${teamBName}` },
@@ -29,8 +28,8 @@ export function MatchStatsTiles({
     { label: "Timeouts", value: `${stats.timeoutsUsedA} / ${stats.timeoutsUsedB}`, sub: "Used" },
     {
       label: "Duration",
-      value: durationInvalid ? "Invalid" : durationLabel,
-      sub: durationInvalid ? "Under 10 min — not counted" : "Match time",
+      value: durationLabel,
+      sub: "Match time",
     },
   ];
 
@@ -43,14 +42,7 @@ export function MatchStatsTiles({
         {tiles.map((tile) => (
           <div key={tile.label} className="card-base p-4">
             <p className="text-xs text-muted-foreground">{tile.label}</p>
-            <p
-              className={cn(
-                "mt-1 text-lg font-bold",
-                tile.label === "Duration" && durationInvalid
-                  ? "text-danger"
-                  : "text-foreground"
-              )}
-            >
+            <p className="mt-1 text-lg font-bold text-foreground">
               {tile.value}
             </p>
             <p className="text-xs text-muted-foreground">{tile.sub}</p>

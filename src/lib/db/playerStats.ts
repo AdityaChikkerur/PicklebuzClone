@@ -2,7 +2,6 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase";
 import {
   computeMatchDurationMinutes,
-  isMatchTimingValid,
 } from "@/lib/match/timingFlags";
 import type { GameScore, MatchType, RecentMatch, Team } from "@/types/match";
 import type {
@@ -220,15 +219,11 @@ export async function fetchPlayerMatches(
   });
 }
 
+/** Matches that count toward stats — aligned with public.player_rankings view. */
 function isOfficial(record: PlayerMatchRecord): boolean {
   return (
     OFFICIAL_STATUSES.includes(record.status as (typeof OFFICIAL_STATUSES)[number]) &&
-    record.winner !== null &&
-    isMatchTimingValid(
-      record.durationMinutes,
-      record.bestOf,
-      record.scoreFlagged
-    )
+    record.winner !== null
   );
 }
 

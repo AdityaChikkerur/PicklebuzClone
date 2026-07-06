@@ -18,7 +18,7 @@ export function computeMatchDurationMinutes(
   return (endMs - startMs) / 60_000;
 }
 
-/** Whether a completed match counts toward player stats and ratings. */
+/** Whether match duration looks credible (used for match-detail badges, not stat eligibility). */
 export function isMatchTimingValid(
   durationMinutes: number,
   bestOf: number,
@@ -58,8 +58,7 @@ export function analyzeMatchDuration(
       durationMinutes,
       timingFlag: "short",
       scoreFlagged: true,
-      message:
-        "This match finished unusually fast (under 10 min). It has been flagged for review.",
+      message: null,
     };
   }
 
@@ -68,8 +67,7 @@ export function analyzeMatchDuration(
       durationMinutes,
       timingFlag: "short",
       scoreFlagged: false,
-      message:
-        "This match was shorter than typical (under 15 min). Timing noted.",
+      message: null,
     };
   }
 
@@ -78,8 +76,7 @@ export function analyzeMatchDuration(
       durationMinutes,
       timingFlag: "long",
       scoreFlagged: true,
-      message:
-        "This match ran over 60 minutes. It has been flagged for review.",
+      message: null,
     };
   }
 
