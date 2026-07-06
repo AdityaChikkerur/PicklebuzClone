@@ -36,7 +36,11 @@ function mapDbEvent(row: DbMatchEvent): MatchEvent {
  * Subscribe to live match_events for a match.
  * Applies incoming events to matchStore so spectator and scorer stay in sync.
  */
-export function useRealtimeMatch(matchId: string | null, enabled = true) {
+export function useRealtimeMatch(
+  matchId: string | null,
+  enabled = true,
+  onRemoteEvent?: () => void
+) {
   const setMatchFromDB = useMatchStore((s) => s.setMatchFromDB);
   const channelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null);
 
@@ -61,12 +65,16 @@ export function useRealtimeMatch(matchId: string | null, enabled = true) {
           const row = payload.new as DbMatchEvent;
           const event = mapDbEvent(row);
 
-          setMatchFromDB({
-            scoreA: event.scoreA,
-            scoreB: event.scoreB,
-            currentGame: event.gameNumber,
-            incomingEvent: event,
-          });
+          const alreadyHave = useMatchStore
+            .getState()
+            .matchState.events.some((e) => e.id === event.id);
+
+          if (onRemoteEvent && !alreadyHave) {
+            onRemoteEvent();
+            return;
+          }
+
+          setMatchFromDB({ incomingEvent: event });
         }
       )
       .on(
@@ -103,5 +111,5 @@ export function useRealtimeMatch(matchId: string | null, enabled = true) {
       void supabase.removeChannel(channel);
       channelRef.current = null;
     };
-  }, [matchId, enabled, setMatchFromDB]);
+  }, [matchId, enabled, setMatchFromDB, onRemoteEvent]);
 }

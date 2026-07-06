@@ -76,7 +76,7 @@ export function EndMatchModal({
     setSaving(false);
 
     if (result.error) {
-      toast.error(`Save failed: ${result.error}`);
+      toast.error(result.error);
       return;
     }
 
@@ -153,9 +153,9 @@ export function EndMatchModal({
 
           {matchState.gameScores.length > 0 ? (
             <ul className="space-y-1.5">
-              {matchState.gameScores.map((game) => (
+              {matchState.gameScores.map((game, index) => (
                 <li
-                  key={game.gameNumber}
+                  key={`${game.gameNumber}-${index}`}
                   className="flex justify-between text-sm text-muted-foreground"
                 >
                   <span>Game {game.gameNumber}</span>

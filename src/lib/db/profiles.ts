@@ -3,7 +3,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { authFetch } from "@/lib/auth/clientFetch";
 import { createClient } from "@/lib/supabase";
 import { isSupabaseConfigured } from "@/lib/auth/isSupabaseConfigured";
-import { formatDbError } from "@/lib/db/formatDbError";
+import {
+  formatDbError,
+  PHONE_ALREADY_REGISTERED_MESSAGE,
+} from "@/lib/db/formatDbError";
 import { computePlayerRating } from "@/lib/ratings/computePlayerRating";
 import { fetchPlayerRankingSummary } from "@/lib/db/playerStats";
 import { mapDbProfile, type DbProfileRow } from "@/lib/db/profileMapper";
@@ -115,6 +118,29 @@ export interface CompleteProfileInput {
   fullName?: string;
 }
 
+async function assertPhoneAvailable(
+  supabase: SupabaseClient,
+  userId: string,
+  phone: string
+): Promise<ProfileResult<true>> {
+  const { data, error } = await supabase.rpc("lookup_profile_by_phone", {
+    p_phone: phone,
+  });
+
+  if (error) throw error;
+
+  const row = (Array.isArray(data) ? data[0] : data) as
+    | { id: string }
+    | null
+    | undefined;
+
+  if (row?.id && row.id !== userId) {
+    return fail(PHONE_ALREADY_REGISTERED_MESSAGE);
+  }
+
+  return ok(true);
+}
+
 export async function applyProfileCompletion(
   supabase: SupabaseClient,
   input: CompleteProfileInput,
@@ -125,6 +151,15 @@ export async function applyProfileCompletion(
   }
 
   try {
+    const phoneCheck = await assertPhoneAvailable(
+      supabase,
+      input.userId,
+      input.phone
+    );
+    if (phoneCheck.error) {
+      return fail(phoneCheck.error);
+    }
+
     const updateRow: Record<string, unknown> = {
       phone: input.phone.trim(),
       city: input.city.trim(),
@@ -281,6 +316,89 @@ async function updateProfileFullNameDirect(
 
     if (error) throw error;
     return ok(mapDbProfile(data as DbProfileRow));
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+async function updateProfileAvatarDirect(
+  userId: string,
+  file: File
+): Promise<ProfileResult<Profile>> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user || user.id !== userId) {
+    return fail("Your session expired. Please sign in again.");
+  }
+
+  const uploaded = await uploadProfileAvatarWithClient(supabase, userId, file);
+
+  if (uploaded.error || !uploaded.data) {
+    return fail(uploaded.error ?? "Could not upload photo");
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("profiles")
+      .update({ avatar_url: uploaded.data })
+      .eq("id", userId)
+      .select("*")
+      .single();
+
+    if (error) throw error;
+    return ok(mapDbProfile(data as DbProfileRow));
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** Updates profile photo — direct Supabase on native; API route on web. */
+export async function updateProfileAvatar(
+  userId: string,
+  file: File
+): Promise<ProfileResult<Profile>> {
+  if (!isSupabaseConfigured()) {
+    return fail("Supabase is not configured");
+  }
+
+  const valid = validateAvatarFile(file);
+  if (valid.error) {
+    return fail(valid.error);
+  }
+
+  if (typeof window !== "undefined" && Capacitor.isNativePlatform()) {
+    try {
+      return await updateProfileAvatarDirect(userId, file);
+    } catch (e) {
+      return fail(e);
+    }
+  }
+
+  try {
+    const formData = new FormData();
+    formData.append("avatar", file);
+
+    const response = await authFetch("/api/profile/avatar", {
+      method: "POST",
+      body: formData,
+    });
+
+    const payload = (await response.json().catch(() => null)) as
+      | { profile?: DbProfileRow; error?: string }
+      | null;
+
+    if (!response.ok) {
+      return fail(payload?.error ?? "Could not update photo");
+    }
+
+    if (!payload?.profile) {
+      return fail("Could not update photo");
+    }
+
+    return ok(mapDbProfile(payload.profile));
   } catch (e) {
     return fail(e);
   }

@@ -1,11 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeftIcon,
-  ClockIcon,
   ShareIcon,
   ListBulletIcon,
 } from "@heroicons/react/24/outline";
@@ -14,18 +12,12 @@ import { isUuid } from "@/lib/db/config";
 import { useMatchStore } from "@/store/matchStore";
 import type { MatchState } from "@/types/match";
 
-function formatElapsed(startTime: number): string {
-  const secs = Math.floor((Date.now() - startTime) / 1000);
-  const m = Math.floor(secs / 60);
-  const s = secs % 60;
-  return `${m}:${s.toString().padStart(2, "0")}`;
-}
-
 interface LiveScoringHeaderProps {
   matchState: MatchState;
   onEndMatch: () => void;
   onShowTimeline?: () => void;
   readOnly?: boolean;
+  canEndMatch?: boolean;
 }
 
 export function LiveScoringHeader({
@@ -33,28 +25,16 @@ export function LiveScoringHeader({
   onEndMatch,
   onShowTimeline,
   readOnly = false,
+  canEndMatch = true,
 }: LiveScoringHeaderProps) {
   const router = useRouter();
   const currentMatchId = useMatchStore((s) => s.currentMatchId);
-  const { currentGame, bestOf, isMatchComplete, scoringType, events } = matchState;
-  const matchStart = events[0]?.createdAt
-    ? new Date(events[0].createdAt).getTime()
-    : null;
-  const [elapsed, setElapsed] = useState(() =>
-    formatElapsed(matchStart ?? Date.now())
-  );
+  const { currentGame, bestOf, isMatchComplete, scoringType } = matchState;
 
   const spectateHref =
     currentMatchId && isUuid(currentMatchId)
       ? `/spectate/${currentMatchId}`
       : null;
-
-  useEffect(() => {
-    if (isMatchComplete) return;
-    const start = matchStart ?? Date.now();
-    const id = setInterval(() => setElapsed(formatElapsed(start)), 1000);
-    return () => clearInterval(id);
-  }, [matchStart, isMatchComplete]);
 
   const handleShare = async () => {
     const url =
@@ -91,12 +71,6 @@ export function LiveScoringHeader({
           <span className="text-xs font-extrabold uppercase tracking-widest text-red-brand">
             {isMatchComplete ? "Final" : "Live"}
           </span>
-          {!isMatchComplete && (
-            <span className="inline-flex items-center gap-1 text-xs font-semibold tabular-nums text-muted-foreground">
-              <ClockIcon className="h-3.5 w-3.5" />
-              {elapsed}
-            </span>
-          )}
         </div>
         <p className="mt-0.5 truncate text-[11px] font-medium text-muted-foreground">
           Game {currentGame} of {bestOf} ·{" "}
@@ -137,7 +111,13 @@ export function LiveScoringHeader({
           <button
             type="button"
             onClick={onEndMatch}
-            className="rounded-xl bg-red-light px-3 py-1.5 text-xs font-bold text-red-brand transition-colors hover:bg-red-brand/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-brand"
+            disabled={!canEndMatch}
+            title={
+              canEndMatch
+                ? "End match"
+                : "Matches must run at least 10 minutes before ending"
+            }
+            className="rounded-xl bg-red-light px-3 py-1.5 text-xs font-bold text-red-brand transition-colors hover:bg-red-brand/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-brand disabled:cursor-not-allowed disabled:opacity-40"
           >
             End
           </button>

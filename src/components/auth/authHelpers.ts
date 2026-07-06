@@ -18,7 +18,7 @@ export function buildDemoProfile(
     id: generateId(),
     fullName: overrides?.fullName ?? cred.label,
     avatarUrl: avatarUrl(cred.email),
-    city: overrides?.city ?? "Bangalore",
+    city: overrides?.city ?? "Bengaluru",
     role: cred.role,
     skillLevel,
     playerRating: rating,

@@ -154,7 +154,7 @@ const ORGANIZER_NAMES: Record<string, string> = {
   "current-user": "You",
 };
 
-const FEATURED_IDS = new Set(["t-ko-1", "t-rr-1"]);
+const FEATURED_IDS = new Set<string>();
 const ARCHIVED_IDS = new Set<string>();
 
 export function buildAdminTournamentRows(): AdminTournamentRow[] {

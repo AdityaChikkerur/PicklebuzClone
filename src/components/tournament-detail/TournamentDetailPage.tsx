@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeftIcon, ShareIcon } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
@@ -157,14 +156,7 @@ export function TournamentDetailPage({ tournamentId }: TournamentDetailPageProps
           <h1 className="text-xl font-bold text-foreground">Tournament not found</h1>
           {error && <p className="mt-2 text-sm text-danger">{error}</p>}
           <p className="mt-2 text-sm text-muted-foreground">
-            Try{" "}
-            <Link href="/tournament/t-rr-1" className="text-primary underline">
-              /tournament/t-rr-1
-            </Link>{" "}
-            or{" "}
-            <Link href="/tournament/t-ko-1" className="text-primary underline">
-              /tournament/t-ko-1
-            </Link>
+            This tournament may have been removed or the link is incorrect.
           </p>
           <button
             type="button"

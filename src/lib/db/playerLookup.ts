@@ -48,21 +48,18 @@ export async function lookupPlayerByPhone(
 
   try {
     const supabase = createClient();
-    const { data, error } = await supabase
-      .from("profiles")
-      .select(
-        "id, full_name, avatar_url, city, skill_level, dupr_rating, phone"
-      )
-      .not("phone", "is", null)
-      .limit(200);
+    const { data, error } = await supabase.rpc("lookup_profile_by_phone", {
+      p_phone: phone,
+    });
 
     if (error) throw error;
 
-    const match = ((data ?? []) as ProfilePhoneRow[]).find(
-      (row) => row.phone && normalizePhone(row.phone) === normalized
-    );
+    const row = (Array.isArray(data) ? data[0] : data) as
+      | ProfilePhoneRow
+      | null
+      | undefined;
 
-    return ok(match ? mapProfile(match) : null);
+    return ok(row ? mapProfile(row) : null);
   } catch (e) {
     return fail(e);
   }

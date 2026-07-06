@@ -3,6 +3,18 @@ import { formatDbError } from "@/lib/db/formatDbError";
 import { analyzeMatchDuration } from "@/lib/match/timingFlags";
 import type { EndMatchInput } from "@/lib/db/matches";
 import type { DbResult } from "@/lib/db/matches";
+import type { GameScore } from "@/types/match";
+
+/** Collapse duplicate game numbers (last entry wins) before upsert. */
+function dedupeGameScores(gameScores: GameScore[]): GameScore[] {
+  const byNumber = new Map<number, GameScore>();
+  for (const game of gameScores) {
+    byNumber.set(game.gameNumber, game);
+  }
+  return [...byNumber.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([, game]) => game);
+}
 
 const ok = <T>(data: T): DbResult<T> => ({ data, error: null });
 const fail = (error: unknown): DbResult<never> => ({
@@ -60,8 +72,10 @@ export async function executeEndMatch(
       return ok({ status: match.status as string, verified: true });
     }
 
-    if (input.gameScores.length > 0) {
-      const gameRows = input.gameScores.map((g) => ({
+    const normalizedScores = dedupeGameScores(input.gameScores);
+
+    if (normalizedScores.length > 0) {
+      const gameRows = normalizedScores.map((g) => ({
         match_id: input.matchId,
         game_number: g.gameNumber,
         score_a: g.scoreA,
