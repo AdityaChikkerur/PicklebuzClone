@@ -165,3 +165,9 @@ export function usePlayerStats(): PlayerStatsBundle {
   }
   return ctx;
 }
+
+/** Safe outside PlayerStatsProvider — no-op when provider is absent. */
+export function usePlayerStatsReload(): () => void {
+  const ctx = useContext(PlayerStatsContext);
+  return ctx?.reload ?? (() => {});
+}

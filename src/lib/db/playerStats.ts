@@ -1,3 +1,4 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase";
 import type { GameScore, MatchType, RecentMatch, Team } from "@/types/match";
 import type {
@@ -271,13 +272,16 @@ export function computeWeeklyPerformance(
   return weeks;
 }
 
-export async function fetchPlayerRankingSummary(playerId: string): Promise<{
+export async function fetchPlayerRankingSummary(
+  playerId: string,
+  supabaseClient?: SupabaseClient
+): Promise<{
   wins: number;
   losses: number;
   winPct: number;
   currentStreak: number;
 } | null> {
-  const supabase = createClient();
+  const supabase = supabaseClient ?? createClient();
   const { data, error } = await supabase
     .from("player_rankings")
     .select("wins, losses, win_pct, current_streak")

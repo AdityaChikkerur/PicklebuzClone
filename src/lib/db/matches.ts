@@ -16,8 +16,10 @@
 //   - No `any`. Uses createClient() from @/lib/supabase (browser client).
 // -----------------------------------------------------------------------------
 
+import { authFetch } from "@/lib/auth/clientFetch";
 import { createClient } from "@/lib/supabase";
 import { isSupabaseConfigured } from "@/lib/auth/isSupabaseConfigured";
+import { formatDbError } from "@/lib/db/formatDbError";
 import { isUuid } from "@/lib/db/config";
 import type {
   DbMatchRules,
@@ -55,7 +57,7 @@ export type DbResult<T> =
 const ok = <T>(data: T): DbResult<T> => ({ data, error: null });
 const fail = (error: unknown): DbResult<never> => ({
   data: null,
-  error: error instanceof Error ? error.message : String(error),
+  error: formatDbError(error, "Something went wrong"),
 });
 
 // Mock-mode sentinel: callers can detect "we didn't actually hit the DB".
@@ -187,10 +189,16 @@ export async function createMatch(
   const {
     createdBy,
     setup,
-    teamAPlayerIds = [],
+    teamAPlayerIds: inputTeamA = [],
     teamBPlayerIds = [],
     tournamentId,
   } = input;
+
+  const teamAPlayerIds = [...inputTeamA];
+  const linkedIds = new Set([...teamAPlayerIds, ...teamBPlayerIds]);
+  if (!linkedIds.has(createdBy)) {
+    teamAPlayerIds.push(createdBy);
+  }
 
   if (!isSupabaseConfigured()) {
     const id = `mock-${Date.now()}`;
@@ -366,63 +374,29 @@ export async function endMatch(
   input: EndMatchInput
 ): Promise<DbResult<{ status: string; mock: boolean }>> {
   if (!isSupabaseConfigured() || isMockMatchId(input.matchId)) {
-    return ok({ status: "pending", mock: true });
+    return ok({ status: "verified", mock: true });
+  }
+
+  if (!isUuid(input.matchId)) {
+    return fail("This match was not saved to the server. Start a new match from Match Setup.");
   }
 
   try {
-    const supabase = createClient();
+    const response = await authFetch("/api/matches/end", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
 
-    if (input.gameScores.length > 0) {
-      const gameRows = input.gameScores.map((g) => ({
-        match_id: input.matchId,
-        game_number: g.gameNumber,
-        score_a: g.scoreA,
-        score_b: g.scoreB,
-        winner: g.winner,
-      }));
-      const { error: gErr } = await supabase
-        .from("match_game_scores")
-        .insert(gameRows);
-      if (gErr) throw gErr;
+    const payload = (await response.json().catch(() => null)) as
+      | { status?: string; verified?: boolean; error?: string }
+      | null;
+
+    if (!response.ok) {
+      return fail(payload?.error ?? "Could not save match");
     }
 
-    const { error: mErr } = await supabase
-      .from("matches")
-      .update({
-        status: "pending",
-        winner: input.matchWinner,
-        completed_at: new Date().toISOString(),
-      })
-      .eq("id", input.matchId);
-    if (mErr) throw mErr;
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    const currentUserId = user?.id;
-
-    const { data: players } = await supabase
-      .from("match_players")
-      .select("player_id")
-      .eq("match_id", input.matchId);
-
-    const opponentIds = (players ?? [])
-      .map((row) => row.player_id as string)
-      .filter((playerId) => playerId !== currentUserId);
-
-    if (opponentIds.length > 0) {
-      const { createNotifications } = await import("@/lib/db/notifications");
-      await createNotifications(
-        opponentIds.map((userId) => ({
-          userId,
-          icon: "✅",
-          text: "Confirm the result of your last match",
-          link: `/match/${input.matchId}`,
-        }))
-      );
-    }
-
-    return ok({ status: "pending", mock: false });
+    return ok({ status: payload?.status ?? "verified", mock: false });
   } catch (e) {
     return fail(e);
   }

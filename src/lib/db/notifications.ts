@@ -1,3 +1,4 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase";
 import type { AppNotification, DbNotification } from "@/types/notification";
 
@@ -80,8 +81,15 @@ export async function createNotifications(
   inputs: CreateNotificationInput[]
 ): Promise<void> {
   if (inputs.length === 0) return;
+  return createNotificationsWithClient(createClient(), inputs);
+}
 
-  const supabase = createClient();
+export async function createNotificationsWithClient(
+  supabase: SupabaseClient,
+  inputs: CreateNotificationInput[]
+): Promise<void> {
+  if (inputs.length === 0) return;
+
   await supabase.from("notifications").insert(
     inputs.map((input) => ({
       user_id: input.userId,

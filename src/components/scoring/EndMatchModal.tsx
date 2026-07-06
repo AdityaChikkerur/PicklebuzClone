@@ -5,7 +5,10 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { endMatch } from "@/lib/db/matches";
+import { fetchProfileById } from "@/lib/db/profiles";
+import { usePlayerStatsReload } from "@/hooks/usePlayerStats";
 import { gamesToWin } from "@/lib/utils";
+import { useAuthStore } from "@/store/authStore";
 import { useMatchStore } from "@/store/matchStore";
 import type { MatchState } from "@/types/match";
 
@@ -25,6 +28,9 @@ export function EndMatchModal({
   onClose,
 }: EndMatchModalProps) {
   const router = useRouter();
+  const userId = useAuthStore((s) => s.user?.id ?? s.profile?.id);
+  const setProfile = useAuthStore((s) => s.setProfile);
+  const reloadStats = usePlayerStatsReload();
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -52,10 +58,17 @@ export function EndMatchModal({
     setSaving(true);
 
     const store = useMatchStore.getState();
-    const matchId = store.currentMatchId;
+    const matchId =
+      store.currentMatchId ?? matchState.matchId ?? null;
+
+    if (!matchId || matchId.startsWith("mock-")) {
+      setSaving(false);
+      toast.error("This match was not linked to your account. Start a new match from Match Setup.");
+      return;
+    }
 
     const result = await endMatch({
-      matchId: matchId ?? "mock-noid",
+      matchId,
       gameScores: matchState.gameScores,
       matchWinner: matchState.matchWinner,
     });
@@ -67,15 +80,23 @@ export function EndMatchModal({
       return;
     }
 
+    if (userId) {
+      const refreshed = await fetchProfileById(userId);
+      if (refreshed.data) {
+        setProfile(refreshed.data);
+      }
+    }
+    reloadStats();
+
     toast.success(
       result.data?.mock
         ? "Match saved (demo mode)"
-        : "Match saved. Awaiting opponent confirmation"
+        : "Match saved. Stats updated."
     );
 
     onClose();
     store.resetMatch();
-    router.push(matchId ? `/match/${matchId}` : "/dashboard");
+    router.push(`/match/${matchId}`);
   };
 
   return (
