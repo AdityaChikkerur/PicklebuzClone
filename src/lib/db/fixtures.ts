@@ -1,3 +1,4 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase";
 import { isSupabaseConfigured } from "@/lib/auth/isSupabaseConfigured";
 import { isUuid } from "@/lib/db/config";
@@ -538,10 +539,13 @@ async function propagateKnockoutWinner(
 }
 
 /** After a linked match is verified, refresh points table and bracket slots. */
-export async function syncFixtureFromMatch(matchId: string): Promise<void> {
+export async function syncFixtureFromMatch(
+  matchId: string,
+  supabaseClient?: SupabaseClient
+): Promise<void> {
   if (!isSupabaseConfigured() || !isUuid(matchId)) return;
 
-  const supabase = createClient();
+  const supabase = supabaseClient ?? createClient();
   const { data: fixture } = await supabase
     .from("fixtures")
     .select("id, tournament_id, category_id, round, team_a, team_b, match_id")

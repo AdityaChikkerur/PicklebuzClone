@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { authFetch } from "@/lib/auth/clientFetch";
 import { createClient } from "@/lib/supabase";
 import { isSupabaseConfigured } from "@/lib/auth/isSupabaseConfigured";
+import { formatDbError } from "@/lib/db/formatDbError";
 import { computePlayerRating } from "@/lib/ratings/computePlayerRating";
 import { fetchPlayerRankingSummary } from "@/lib/db/playerStats";
 import { mapDbProfile, type DbProfileRow } from "@/lib/db/profileMapper";
@@ -40,15 +41,7 @@ function fail(error: unknown): ProfileResult<never> {
 }
 
 function formatProfileError(error: unknown): string {
-  if (error instanceof TypeError && error.message === "Failed to fetch") {
-    return "Network error — check your internet connection and try again.";
-  }
-
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return String(error);
+  return formatDbError(error, "Something went wrong");
 }
 
 function avatarExtension(mime: string): string {
@@ -364,19 +357,20 @@ export async function fetchProfileById(
 
 /** Recalculate PickleBuzz rating from verified match history. */
 export async function recalculatePlayerRating(
-  playerId: string
+  playerId: string,
+  supabaseClient?: SupabaseClient
 ): Promise<ProfileResult<number>> {
   if (!isSupabaseConfigured()) {
     return fail("Supabase is not configured");
   }
 
   try {
-    const summary = await fetchPlayerRankingSummary(playerId);
+    const summary = await fetchPlayerRankingSummary(playerId, supabaseClient);
     const wins = summary?.wins ?? 0;
     const losses = summary?.losses ?? 0;
     const rating = computePlayerRating(wins, losses);
 
-    const supabase = createClient();
+    const supabase = supabaseClient ?? createClient();
     const { error } = await supabase
       .from("profiles")
       .update({ dupr_rating: rating })
@@ -390,11 +384,12 @@ export async function recalculatePlayerRating(
 }
 
 export async function updateRatingsForMatch(
-  matchId: string
+  matchId: string,
+  supabaseClient?: SupabaseClient
 ): Promise<void> {
   if (!isSupabaseConfigured()) return;
 
-  const supabase = createClient();
+  const supabase = supabaseClient ?? createClient();
   const { data: players } = await supabase
     .from("match_players")
     .select("player_id")
@@ -403,5 +398,5 @@ export async function updateRatingsForMatch(
   if (!players?.length) return;
 
   const uniqueIds = [...new Set(players.map((row) => row.player_id as string))];
-  await Promise.all(uniqueIds.map((id) => recalculatePlayerRating(id)));
+  await Promise.all(uniqueIds.map((id) => recalculatePlayerRating(id, supabase)));
 }
