@@ -6,8 +6,31 @@ interface FaultCountersProps {
 }
 
 export function FaultCounters({ matchState }: FaultCountersProps) {
-  const { faultsA, faultsB, teamAName, teamBName } = matchState;
+  const { teamAName, teamBName, events } = matchState;
   const faultTypes = Object.keys(FAULT_LABELS) as (keyof typeof FAULT_LABELS)[];
+
+  const faultsA = Object.fromEntries(faultTypes.map((key) => [key, 0])) as Record<
+    keyof typeof FAULT_LABELS,
+    number
+  >;
+
+  const faultsB = Object.fromEntries(faultTypes.map((key) => [key, 0])) as Record<
+    keyof typeof FAULT_LABELS,
+    number
+  >;
+
+  events.forEach((event) => {
+    if (event.eventType !== "fault" || !event.team || !event.description) return;
+
+    const faultType = faultTypes.find((type) =>
+      event.description.toLowerCase().includes(FAULT_LABELS[type].toLowerCase())
+    );
+
+    if (!faultType) return;
+
+    if (event.team === "A") faultsA[faultType] += 1;
+    if (event.team === "B") faultsB[faultType] += 1;
+  });
 
   const totalA = faultTypes.reduce((sum, key) => sum + faultsA[key], 0);
   const totalB = faultTypes.reduce((sum, key) => sum + faultsB[key], 0);
@@ -33,14 +56,23 @@ export function FaultCounters({ matchState }: FaultCountersProps) {
               </th>
             </tr>
           </thead>
+
           <tbody>
             {faultTypes.map((type) => (
-              <tr key={type} className="border-t border-arena-border text-muted-foreground">
+              <tr
+                key={type}
+                className="border-t border-arena-border text-muted-foreground"
+              >
                 <td className="py-1.5">{FAULT_LABELS[type]}</td>
-                <td className="py-1.5 text-center font-semibold text-foreground">{faultsA[type]}</td>
-                <td className="py-1.5 text-center font-semibold text-foreground">{faultsB[type]}</td>
+                <td className="py-1.5 text-center font-semibold text-foreground">
+                  {faultsA[type]}
+                </td>
+                <td className="py-1.5 text-center font-semibold text-foreground">
+                  {faultsB[type]}
+                </td>
               </tr>
             ))}
+
             <tr className="border-t border-border font-semibold text-foreground">
               <td className="py-1.5">Total</td>
               <td className="py-1.5 text-center">{totalA}</td>

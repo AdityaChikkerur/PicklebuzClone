@@ -46,10 +46,16 @@ export function ActionButtons({ disabled = false }: ActionButtonsProps) {
   };
 
   const commitFault = (team: Team) => {
-    if (!selectedFault) return;
-    addFault(team, selectedFault);
-    closeFaultMenu();
-  };
+  if (!selectedFault) return;
+
+  console.log("Fault selected:", {
+    team,
+    selectedFault,
+  });
+
+  addFault(team, selectedFault);
+  closeFaultMenu();
+};
 
   return (
     <div className="relative px-4 py-3">

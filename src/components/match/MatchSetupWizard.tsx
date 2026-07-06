@@ -81,13 +81,31 @@ export function MatchSetupWizard() {
       .filter((p) => p.team === "B" && !p.isGuest)
       .map((p) => p.playerId);
 
+    const teamAName =
+  setup.players
+    .filter((p) => p.team === "A")
+    .map((p) => p.fullName)
+    .filter(Boolean)
+    .join(" & ") || setup.teamAName || "Team A";
+
+const teamBName =
+  setup.players
+    .filter((p) => p.team === "B")
+    .map((p) => p.fullName)
+    .filter(Boolean)
+    .join(" & ") || setup.teamBName || "Team B";
+
+const finalSetup = {
+  ...setup,
+  teamAName,
+  teamBName,
+};
     const created = await createMatch({
-      createdBy: userId ?? "00000000-0000-0000-0000-000000000000",
-      setup,
-      teamAPlayerIds,
-      teamBPlayerIds,
-      matchPlayers: setup.players,
-    });
+  createdBy: userId ?? "00000000-0000-0000-0000-000000000000",
+  setup: finalSetup,
+  teamAPlayerIds,
+  teamBPlayerIds,
+});
 
     setStarting(false);
 
@@ -99,8 +117,8 @@ export function MatchSetupWizard() {
 
     const matchState = createInitialMatchState({
       matchId: persistedId ?? undefined,
-      teamAName: setup.teamAName.trim(),
-      teamBName: setup.teamBName.trim(),
+      teamAName,
+      teamBName,
       matchType: setup.matchType,
       scoringType: setup.scoringType,
       targetPoints: setup.targetPoints,

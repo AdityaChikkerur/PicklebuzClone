@@ -281,63 +281,50 @@ export const useMatchStore = create<MatchStore>((set, get) => ({
     });
   },
 
-  addFault: (team, faultType) => {
-    const { matchState, history } = get();
-    if (matchState.isMatchComplete) return;
+ addFault: (team, faultType) => {
+  const { matchState, history } = get();
+  if (matchState.isMatchComplete) return;
 
-    const faultKey = team === "A" ? "faultsA" : "faultsB";
-    const faults = {
+  const faultKey = team === "A" ? "faultsA" : "faultsB";
+
+  const faultLabels: Record<FaultType, string> = {
+    kitchen: "Kitchen violation",
+    service: "Service fault",
+    double_bounce: "Double bounce",
+    out_of_bounds: "Out of bounds",
+  };
+
+  const nextWithFault: MatchState = {
+    ...matchState,
+    [faultKey]: {
       ...matchState[faultKey],
       [faultType]: matchState[faultKey][faultType] + 1,
-    };
+    },
+  };
 
-    const faultLabels: Record<FaultType, string> = {
-      kitchen: "Kitchen violation",
-      service: "Service fault",
-      double_bounce: "Double bounce",
-      out_of_bounds: "Out of bounds",
-    };
+  const opposing = opponent(team);
 
-    let next: MatchState = {
-      ...matchState,
-      [faultKey]: faults,
-      events: [
-        createEvent(
-          matchState,
-          "fault",
-          team,
-          `${faultLabels[faultType]} — Team ${team}`
-        ),
-        ...matchState.events,
-      ],
-    };
+  const next = awardPoint(
+    nextWithFault,
+    opposing,
+    `Point to Team ${opposing} (${faultLabels[faultType]})`
+  );
 
-    const opposing = opponent(team);
-    const scoreA =
-      opposing === "A" ? matchState.scoreA + 1 : matchState.scoreA;
-    const scoreB =
-      opposing === "B" ? matchState.scoreB + 1 : matchState.scoreB;
-    const gameNumber = matchState.currentGame;
+  set({
+    matchState: next,
+    history: pushHistory(history, matchState),
+  });
 
-    next = awardPoint(
-      next,
-      opposing,
-      `Point to Team ${opposing} (${faultLabels[faultType]})`
-    );
-
-    set({ matchState: next, history: pushHistory(history, matchState) });
-
-    const s = get();
-    persistEvent({
-      matchId: s.currentMatchId,
-      eventType: "fault",
-      team,
-      scoreA,
-      scoreB,
-      gameNumber,
-      faultType,
-    });
-  },
+  persistEvent({
+    matchId: get().currentMatchId,
+    eventType: "fault",
+    team,
+    scoreA: next.scoreA,
+    scoreB: next.scoreB,
+    gameNumber: next.currentGame,
+    faultType,
+  });
+},
 
   callSideOut: () => {
     const { matchState, history } = get();

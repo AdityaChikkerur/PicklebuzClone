@@ -715,6 +715,25 @@ function statsFromEvents(events: MatchEvent[]): MatchStats {
       if (event.team === "A") pointsWonA += 1;
       if (event.team === "B") pointsWonB += 1;
     }
+
+    if (event.eventType === "fault") {
+      const desc = event.description?.toLowerCase() ?? "";
+
+      const faultType =
+        desc.includes("kitchen")
+          ? "kitchen"
+          : desc.includes("service")
+            ? "service"
+            : desc.includes("double bounce")
+              ? "double_bounce"
+              : desc.includes("out of bounds")
+                ? "out_of_bounds"
+                : null;
+
+      if (faultType && event.team === "A") faultsA[faultType] += 1;
+      if (faultType && event.team === "B") faultsB[faultType] += 1;
+    }
+
     if (event.eventType === "timeout") {
       if (event.team === "A") timeoutsUsedA += 1;
       if (event.team === "B") timeoutsUsedB += 1;
