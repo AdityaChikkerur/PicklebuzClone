@@ -74,7 +74,7 @@ export default function DownloadPage() {
             <li>✓ Real-time spectator scoreboards</li>
             <li>✓ Tournament registration and brackets</li>
             <li>✓ India-wide club discovery and court booking</li>
-            <li>✓ DUPR rating sync and player rankings</li>
+            <li>✓ BUZZ rating and player rankings</li>
           </ul>
         </section>
 

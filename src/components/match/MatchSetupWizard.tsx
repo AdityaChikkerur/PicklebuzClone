@@ -68,10 +68,10 @@ export function MatchSetupWizard() {
     }
 
     const teamAPlayerIds = setup.players
-      .filter((p) => p.team === "A")
+      .filter((p) => p.team === "A" && !p.isGuest)
       .map((p) => p.playerId);
     const teamBPlayerIds = setup.players
-      .filter((p) => p.team === "B")
+      .filter((p) => p.team === "B" && !p.isGuest)
       .map((p) => p.playerId);
 
     const created = await createMatch({
@@ -79,6 +79,7 @@ export function MatchSetupWizard() {
       setup,
       teamAPlayerIds,
       teamBPlayerIds,
+      matchPlayers: setup.players,
     });
 
     setStarting(false);

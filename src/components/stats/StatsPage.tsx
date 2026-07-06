@@ -17,7 +17,7 @@ const PREMIUM_INSIGHTS = [
   "Head-to-head vs top opponents",
   "Serve win % by court side",
   "Fault heatmap by match type",
-  "Weekly DUPR projection",
+  "Weekly BUZZ projection",
 ];
 
 export function StatsPage() {

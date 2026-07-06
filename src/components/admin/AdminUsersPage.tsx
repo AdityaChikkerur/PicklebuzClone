@@ -8,7 +8,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { useAdminUsers } from "@/hooks/useAdminDashboard";
 import { useAuthStore } from "@/store/authStore";
-import { formatDupr } from "@/lib/utils";
+import { formatBuzzRating } from "@/lib/utils";
 import { USER_ROLES } from "@/types/player";
 
 export function AdminUsersPage() {
@@ -73,7 +73,7 @@ export function AdminUsersPage() {
                   <tr className="border-b border-border bg-muted/50 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     <th className="px-4 py-3">User</th>
                     <th className="px-4 py-3">Role</th>
-                    <th className="px-4 py-3">DUPR</th>
+                    <th className="px-4 py-3">BUZZ</th>
                     <th className="px-4 py-3">Status</th>
                     <th className="px-4 py-3">Actions</th>
                   </tr>
@@ -102,7 +102,7 @@ export function AdminUsersPage() {
                         {roleLabel(u.role)}
                       </td>
                       <td className="px-4 py-3 text-foreground">
-                        {formatDupr(u.duprRating)}
+                        {formatBuzzRating(u.duprRating)}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex flex-wrap gap-1">

@@ -74,7 +74,7 @@ export function softwareApplicationJsonLd() {
       "Tournament brackets and fixtures",
       "Player rankings and stats",
       "Club discovery and court booking",
-      "DUPR rating sync",
+      "BUZZ rating tracking",
       "Live spectator scoreboards",
     ],
   };

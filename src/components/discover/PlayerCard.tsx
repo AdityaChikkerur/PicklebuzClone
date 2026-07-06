@@ -12,7 +12,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { useFollows } from "@/hooks/useFollows";
 import { useAuthStore } from "@/store/authStore";
-import { cn, formatDupr } from "@/lib/utils";
+import { cn, formatBuzzRating } from "@/lib/utils";
 import type { Player } from "@/types/player";
 
 interface PlayerCardProps {
@@ -78,7 +78,7 @@ export function PlayerCard({ player, className }: PlayerCardProps) {
 
       <div className="flex flex-wrap items-center gap-2 text-sm">
         <span className="font-semibold text-foreground">
-          DUPR {formatDupr(player.duprRating)}
+          BUZZ {formatBuzzRating(player.playerRating ?? player.duprRating)}
         </span>
 
         {player.winPct != null && player.wins != null && (

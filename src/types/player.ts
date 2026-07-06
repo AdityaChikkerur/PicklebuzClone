@@ -63,7 +63,12 @@ export interface Player {
   avatarUrl: string | null;
   city: string;
   skillLevel: SkillLevel;
+  /** PickleBuzz rating (BUZZ). */
+  playerRating?: number;
+  /** @deprecated Use playerRating — kept for DB column mapping */
   duprRating: number;
+  phone?: string | null;
+  isGuest?: boolean;
   wins?: number;
   losses?: number;
   winPct?: number;

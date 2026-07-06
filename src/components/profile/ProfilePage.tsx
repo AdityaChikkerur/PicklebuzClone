@@ -10,7 +10,7 @@ import { AccountSection } from "@/components/profile/AccountSection";
 import { EditNameSection } from "@/components/profile/EditNameSection";
 import { useAuthStore } from "@/store/authStore";
 import { useProfileBoost } from "@/hooks/useProfileBoost";
-import { formatDupr } from "@/lib/utils";
+import { formatBuzzRating } from "@/lib/utils";
 import { USER_ROLES } from "@/types/player";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase";
@@ -96,7 +96,7 @@ useEffect(() => {
             ) : null}
           </div>
           <div className="flex flex-wrap justify-center gap-2">
-            <Badge variant="primary">Rating {formatDupr(rating)}</Badge>
+            <Badge variant="primary">BUZZ {formatBuzzRating(rating)}</Badge>
             <Badge variant="outline">{roleLabel}</Badge>
           </div>
           <p className="text-xs text-muted-foreground">

@@ -796,6 +796,7 @@ export async function createMatchForFixture(input: {
   tournament: TournamentDetail;
   registrations: TournamentRegistration[];
   createdBy: string;
+  courtNumber?: string;
 }): Promise<DbResult<{ matchId: string }>> {
   if (!isSupabaseConfigured() || !isUuid(input.fixtureId)) {
     return ok({ matchId: `mock-fixture-${Date.now()}` });
@@ -846,7 +847,7 @@ export async function createMatchForFixture(input: {
         players: [],
         venue: input.tournament.venue,
         city: input.tournament.city,
-        courtNumber: "",
+        courtNumber: input.courtNumber ?? "",
         scoringType: input.tournament.scoringType,
         targetPoints: input.tournament.pointsToWin,
         bestOf: input.tournament.bestOf,

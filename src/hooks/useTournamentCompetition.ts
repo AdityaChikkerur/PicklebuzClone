@@ -168,11 +168,14 @@ export function useTournamentCompetition(
       }
 
       setStartingFixtureId(fixtureId);
+      const courtIndex =
+        fixtures.filter((f) => f.status === "live").length + 1;
       const result = await createMatchForFixture({
         fixtureId,
         tournament,
         registrations,
         createdBy: userId,
+        courtNumber: `Court ${courtIndex}`,
       });
       setStartingFixtureId(null);
 
@@ -185,7 +188,7 @@ export function useTournamentCompetition(
       reload();
       return result.data.matchId;
     },
-    [tournament, userId, dataSource, registrations, reload]
+    [tournament, userId, dataSource, registrations, reload, fixtures]
   );
 
   const startMultipleFixtureMatches = useCallback(
@@ -202,13 +205,15 @@ export function useTournamentCompetition(
 
       setBulkStarting(true);
       const matchIds: string[] = [];
+      const liveCount = fixtures.filter((f) => f.status === "live").length;
 
-      for (const fixtureId of fixtureIds) {
+      for (const [index, fixtureId] of fixtureIds.entries()) {
         const result = await createMatchForFixture({
           fixtureId,
           tournament,
           registrations,
           createdBy: userId,
+          courtNumber: `Court ${liveCount + index + 1}`,
         });
         if (result.data?.matchId) {
           matchIds.push(result.data.matchId);
@@ -228,7 +233,7 @@ export function useTournamentCompetition(
       reload();
       return matchIds;
     },
-    [tournament, userId, dataSource, registrations, reload]
+    [tournament, userId, dataSource, registrations, reload, fixtures]
   );
 
   return {

@@ -7,7 +7,7 @@ import { FAQ_ITEMS } from "@/lib/seo/content";
 export const metadata: Metadata = buildPageMetadata({
   title: "FAQ — Pickleball Scoring, Tournaments & Rankings",
   description:
-    "Answers to common PickleBuzz questions: free scoring, DUPR sync, tournaments, club bookings, cities covered, and how we compare to cricket scoring apps.",
+    "Answers to common PickleBuzz questions: free scoring, BUZZ ratings, tournaments, club bookings, cities covered, and how we compare to cricket scoring apps.",
   path: "/faq",
 });
 

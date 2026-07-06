@@ -11,7 +11,7 @@ import { CORE_FEATURES } from "@/lib/seo/content";
 export const metadata: Metadata = buildPageMetadata({
   title: "Features — Live Scoring, Tournaments, Rankings & Clubs",
   description:
-    "Explore PickleBuzz features: live pickleball scoring, spectator boards, tournament management, DUPR sync, club bookings, and India-wide player rankings.",
+    "Explore PickleBuzz features: live pickleball scoring, spectator boards, tournament management, BUZZ ratings, club bookings, and India-wide player rankings.",
   path: "/features",
   keywords: [
     "pickleball app features",

@@ -4,15 +4,15 @@ import { KeywordLandingPage } from "@/components/marketing";
 import { buildPageMetadata, breadcrumbJsonLd } from "@/lib/seo";
 
 export const metadata: Metadata = buildPageMetadata({
-  title: "Pickleball Rankings India — Leaderboards, Stats & DUPR",
+  title: "Pickleball Rankings India — Leaderboards, Stats & BUZZ",
   description:
-    "Track pickleball rankings in India with PickleBuzz. Strength-weighted leaderboards, win streaks, head-to-head stats, and DUPR sync for competitive players.",
+    "Track pickleball rankings in India with PickleBuzz. Strength-weighted leaderboards, win streaks, head-to-head stats, and BUZZ ratings for competitive players.",
   path: "/pickleball-rankings",
   keywords: [
     "pickleball rankings India",
     "pickleball leaderboard",
     "pickleball player rankings",
-    "DUPR India pickleball",
+    "BUZZ India pickleball",
   ],
 });
 
@@ -35,8 +35,8 @@ export default function PickleballRankingsPage() {
             body: "Beat stronger opponents and climb faster. Our ranking engine considers match context, not just W/L records.",
           },
           {
-            heading: "DUPR integration",
-            body: "Sync your official DUPR rating alongside PickleBuzz stats for a complete picture of your game.",
+            heading: "BUZZ rating",
+            body: "Your PickleBuzz skill rating updates automatically from verified match results — India's own pickleball ranking system.",
           },
           {
             heading: "Stats that drive improvement",

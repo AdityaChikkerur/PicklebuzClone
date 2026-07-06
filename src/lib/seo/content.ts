@@ -28,7 +28,7 @@ export const CORE_FEATURES: FeatureBlock[] = [
   {
     title: "Player Rankings",
     description:
-      "Strength-weighted leaderboards, win streaks, head-to-head stats, and DUPR sync to track your true level.",
+      "Strength-weighted leaderboards, win streaks, head-to-head stats, and BUZZ ratings to track your true level.",
     icon: "📊",
   },
   {
@@ -62,9 +62,9 @@ export const FAQ_ITEMS: FaqItem[] = [
       "Absolutely. PickleBuzz is designed for courtside scoring on mobile — tap faults, track serve side, manage timeouts, and broadcast scores instantly to spectators.",
   },
   {
-    question: "Does PickleBuzz support DUPR ratings?",
+    question: "What is the BUZZ rating?",
     answer:
-      "Yes. Players can sync DUPR ratings to their PickleBuzz profile so rankings and matchmaking reflect your official skill level.",
+      "BUZZ is PickleBuzz's own skill rating, calculated from your verified match results on the platform — like CricHeroes ratings for cricket.",
   },
   {
     question: "How do pickleball tournaments work on PickleBuzz?",
@@ -123,7 +123,7 @@ export const CITY_PAGES: CityPageContent[] = [
     city: "Bengaluru",
     headline: "Pickleball in Bengaluru — India's Tech-Forward Pickleball Hub",
     intro:
-      "From Koramangala to Whitefield, Bengaluru players use PickleBuzz for live scoring, DUPR-tracked rankings, and seamless tournament registration.",
+      "From Koramangala to Whitefield, Bengaluru players use PickleBuzz for live scoring, BUZZ-tracked rankings, and seamless tournament registration.",
     highlights: [
       "Find Bengaluru clubs with real-time court availability",
       "Track stats and climb city leaderboards",

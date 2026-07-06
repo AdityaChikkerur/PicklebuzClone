@@ -11,7 +11,7 @@ import {
 import { getCurrentSeasonYear } from "@/lib/greeting";
 import { useAuthStore } from "@/store/authStore";
 import { usePlayerStats } from "@/hooks/usePlayerStats";
-import { cn, formatDupr } from "@/lib/utils";
+import { cn, formatBuzzRating } from "@/lib/utils";
 
 interface KpiCardProps {
   label: string;
@@ -128,8 +128,8 @@ export function KpiBentoGrid() {
         <KpiCard
           hero
           className="col-span-2 min-h-[140px] md:row-span-2 md:min-h-[180px]"
-          label="PickleBuzz Rating"
-          value={formatDupr(rating)}
+          label="BUZZ Rating"
+          value={formatBuzzRating(rating)}
           subtext={`${changeSubtext} · ${cityLabel}`}
           icon={<ArrowTrendingUpIcon className="h-5 w-5" aria-hidden="true" />}
         />

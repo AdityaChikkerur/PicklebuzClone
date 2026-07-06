@@ -45,7 +45,7 @@ export default function AboutPage() {
           <section>
             <h2 className="text-xl font-bold text-foreground">Who we serve</h2>
             <ul className="mt-3 list-inside list-disc space-y-2">
-              <li>Recreational players tracking improvement and DUPR ratings</li>
+              <li>Recreational players tracking improvement and BUZZ ratings</li>
               <li>Competitive athletes joining ranked tournaments nationwide</li>
               <li>Club owners managing courts and member bookings</li>
               <li>Organizers running brackets, fixtures, and fee collection</li>

@@ -40,9 +40,12 @@ export function formatWinPct(wins: number, total: number): number {
   return Math.round((wins / total) * 100);
 }
 
-export function formatDupr(rating: number): string {
+export function formatBuzzRating(rating: number): string {
   return rating.toFixed(2);
 }
+
+/** @deprecated Use formatBuzzRating */
+export const formatDupr = formatBuzzRating;
 
 export function formatCurrency(amount: number): string {
   return new Intl.NumberFormat("en-IN", {
