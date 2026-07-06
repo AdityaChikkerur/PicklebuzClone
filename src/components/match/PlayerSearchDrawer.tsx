@@ -4,10 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import { MagnifyingGlassIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
-import { cn, formatDupr } from "@/lib/utils";
+import { formatDupr } from "@/lib/utils";
+import { createClient } from "@/lib/supabase";
 import type { MatchPlayer, Team } from "@/types/match";
 import type { Player } from "@/types/player";
-import { MOCK_SEARCH_PLAYERS } from "./mockData";
 
 interface PlayerSearchDrawerProps {
   open: boolean;
@@ -17,6 +17,15 @@ interface PlayerSearchDrawerProps {
   onSelect: (player: Player) => void;
 }
 
+type ProfileRow = {
+  id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  city: string | null;
+  skill_level: string | null;
+  dupr_rating: number | null;
+};
+
 export function PlayerSearchDrawer({
   open,
   team,
@@ -25,11 +34,50 @@ export function PlayerSearchDrawer({
   onSelect,
 }: PlayerSearchDrawerProps) {
   const [query, setQuery] = useState("");
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!open) {
       setQuery("");
     }
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    async function loadPlayers() {
+      setLoading(true);
+
+      const supabase = createClient();
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, full_name, avatar_url, city, skill_level, dupr_rating")
+        .order("full_name", { ascending: true });
+
+      if (error) {
+        console.error("Error loading players:", error);
+        setPlayers([]);
+      } else {
+        const mappedPlayers: Player[] = ((data ?? []) as ProfileRow[]).map(
+          (profile) => ({
+            id: profile.id,
+            fullName: profile.full_name ?? "Unnamed Player",
+            avatarUrl: profile.avatar_url ?? null,
+            city: profile.city ?? "Unknown",
+            skillLevel: (profile.skill_level ?? "3.0") as Player["skillLevel"],
+            duprRating: profile.dupr_rating ?? 0,
+          })
+        );
+
+        setPlayers(mappedPlayers);
+      }
+
+      setLoading(false);
+    }
+
+    loadPlayers();
   }, [open]);
 
   useEffect(() => {
@@ -41,6 +89,7 @@ export function PlayerSearchDrawer({
 
     document.addEventListener("keydown", handleEscape);
     document.body.style.overflow = "hidden";
+
     return () => {
       document.removeEventListener("keydown", handleEscape);
       document.body.style.overflow = "";
@@ -49,15 +98,17 @@ export function PlayerSearchDrawer({
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return MOCK_SEARCH_PLAYERS.filter((player) => {
+
+    return players.filter((player) => {
       if (selectedPlayerIds.includes(player.id)) return false;
       if (!q) return true;
+
       return (
         player.fullName.toLowerCase().includes(q) ||
         player.city.toLowerCase().includes(q)
       );
     });
-  }, [query, selectedPlayerIds]);
+  }, [query, selectedPlayerIds, players]);
 
   if (!open) return null;
 
@@ -85,6 +136,7 @@ export function PlayerSearchDrawer({
               Team {team} · search by name or city
             </p>
           </div>
+
           <button
             type="button"
             onClick={onClose}
@@ -101,6 +153,7 @@ export function PlayerSearchDrawer({
               className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
               aria-hidden="true"
             />
+
             <input
               type="search"
               value={query}
@@ -113,7 +166,11 @@ export function PlayerSearchDrawer({
         </div>
 
         <ul className="flex-1 overflow-y-auto p-2">
-          {filtered.length === 0 ? (
+          {loading ? (
+            <li className="px-4 py-8 text-center text-sm text-muted-foreground">
+              Loading players...
+            </li>
+          ) : filtered.length === 0 ? (
             <li className="px-4 py-8 text-center text-sm text-muted-foreground">
               No players found. Try a different search.
             </li>
@@ -133,6 +190,7 @@ export function PlayerSearchDrawer({
                     name={player.fullName}
                     size="md"
                   />
+
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium text-foreground">
                       {player.fullName}
@@ -141,6 +199,7 @@ export function PlayerSearchDrawer({
                       {player.city} · DUPR {formatDupr(player.duprRating)}
                     </p>
                   </div>
+
                   <Badge variant="outline">{player.skillLevel}</Badge>
                 </button>
               </li>

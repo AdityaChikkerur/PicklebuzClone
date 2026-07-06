@@ -795,19 +795,12 @@ export interface FetchLiveMatchesResult {
 
 export async function fetchLiveMatches(): Promise<FetchLiveMatchesResult> {
   if (!isSupabaseConfigured()) {
-    const { getLandingLiveMatches } = await import(
-      "@/lib/mock/landingMockData"
-    );
-    const mock = getLandingLiveMatches();
-    return {
-      data: mock.map((m) => ({
-        ...m,
-        createdAt: new Date().toISOString(),
-      })),
-      source: "mock",
-      error: null,
-    };
-  }
+  return {
+    data: [],
+    source: "supabase",
+    error: "Supabase is not configured",
+  };
+}
 
   try {
     const supabase = createClient();
@@ -850,33 +843,19 @@ export async function fetchLiveMatches(): Promise<FetchLiveMatchesResult> {
     }
 
     if (summaries.length === 0) {
-      const { getLandingLiveMatches } = await import(
-        "@/lib/mock/landingMockData"
-      );
-      const mock = getLandingLiveMatches();
-      return {
-        data: mock.map((m) => ({
-          ...m,
-          createdAt: new Date().toISOString(),
-        })),
-        source: "mock",
-        error: null,
-      };
-    }
+  return {
+    data: [],
+    source: "supabase",
+    error: null,
+  };
+}
 
     return { data: summaries, source: "supabase", error: null };
   } catch (e) {
-    const { getLandingLiveMatches } = await import(
-      "@/lib/mock/landingMockData"
-    );
-    const mock = getLandingLiveMatches();
     return {
-      data: mock.map((m) => ({
-        ...m,
-        createdAt: new Date().toISOString(),
-      })),
-      source: "mock",
-      error: e instanceof Error ? e.message : "Could not load live matches",
-    };
+  data: [],
+  source: "supabase",
+  error: e instanceof Error ? e.message : "Could not load live matches",
+};
   }
 }
