@@ -186,6 +186,59 @@ export interface CreateMatchInput {
   autoStart?: boolean;
 }
 
+type SetupMatchPlayer = import("@/types/match").MatchPlayer;
+
+function registeredIdsForTeam(
+  players: SetupMatchPlayer[],
+  team: "A" | "B"
+): string[] {
+  return [
+    ...new Set(
+      players
+        .filter((p) => p.team === team && !p.isGuest && isUuid(p.playerId))
+        .map((p) => p.playerId)
+    ),
+  ];
+}
+
+/** Build registered rosters from setup rows; place the creator on the open team. */
+function resolveRegisteredTeamIds(input: CreateMatchInput): {
+  teamAPlayerIds: string[];
+  teamBPlayerIds: string[];
+} {
+  const {
+    createdBy,
+    teamAPlayerIds: inputA = [],
+    teamBPlayerIds: inputB = [],
+    matchPlayers = [],
+  } = input;
+
+  let teamAPlayerIds =
+    matchPlayers.length > 0
+      ? registeredIdsForTeam(matchPlayers, "A")
+      : [...new Set(inputA.filter(isUuid))];
+  let teamBPlayerIds =
+    matchPlayers.length > 0
+      ? registeredIdsForTeam(matchPlayers, "B")
+      : [...new Set(inputB.filter(isUuid))];
+
+  const linkedIds = new Set([...teamAPlayerIds, ...teamBPlayerIds]);
+  if (!linkedIds.has(createdBy)) {
+    if (teamAPlayerIds.length > 0 && teamBPlayerIds.length === 0) {
+      teamBPlayerIds = [...teamBPlayerIds, createdBy];
+    } else if (teamBPlayerIds.length > 0 && teamAPlayerIds.length === 0) {
+      teamAPlayerIds = [...teamAPlayerIds, createdBy];
+    } else {
+      teamAPlayerIds = [...teamAPlayerIds, createdBy];
+    }
+  }
+
+  return {
+    teamAPlayerIds: [...new Set(teamAPlayerIds)],
+    teamBPlayerIds: [...new Set(teamBPlayerIds)],
+  };
+}
+
 /**
  * Creates matches + match_rules + match_players and returns the new match id.
  * In mock mode returns a synthetic id so the scorer can run unpersisted.
@@ -196,18 +249,12 @@ export async function createMatch(
   const {
     createdBy,
     setup,
-    teamAPlayerIds: inputTeamA = [],
-    teamBPlayerIds = [],
     matchPlayers = [],
     tournamentId,
     autoStart = false,
   } = input;
 
-  const teamAPlayerIds = [...inputTeamA];
-  const linkedIds = new Set([...teamAPlayerIds, ...teamBPlayerIds]);
-  if (!linkedIds.has(createdBy)) {
-    teamAPlayerIds.push(createdBy);
-  }
+  const { teamAPlayerIds, teamBPlayerIds } = resolveRegisteredTeamIds(input);
 
   const guestSlots = matchPlayers.filter((p) => p.isGuest && p.guestPhone);
 
@@ -271,7 +318,11 @@ export async function createMatch(
     });
     if (rulesErr) throw rulesErr;
 
-    const inviteStatusFor = () => (autoStart ? "accepted" : "pending");
+    const inviteStatusFor = (playerId: string) => {
+      if (autoStart) return "accepted";
+      if (playerId === createdBy) return "accepted";
+      return "pending";
+    };
 
     const playerRows = [
       ...teamAPlayerIds.map((pid, i) => ({
@@ -279,7 +330,7 @@ export async function createMatch(
         player_id: pid,
         team: "A" as const,
         server_number: i + 1,
-        invite_status: inviteStatusFor(),
+        invite_status: inviteStatusFor(pid),
         invited_by: createdBy,
       })),
       ...teamBPlayerIds.map((pid, i) => ({
@@ -287,7 +338,7 @@ export async function createMatch(
         player_id: pid,
         team: "B" as const,
         server_number: i + 1,
-        invite_status: inviteStatusFor(),
+        invite_status: inviteStatusFor(pid),
         invited_by: createdBy,
       })),
     ];
@@ -305,6 +356,8 @@ export async function createMatch(
         guest_id: string;
         team: "A" | "B";
         server_number: number;
+        invite_status: string;
+        invited_by: string;
       }[] = [];
 
       for (const slot of guestSlots) {
@@ -323,6 +376,8 @@ export async function createMatch(
           guest_id: guestResult.data.guestId,
           team: slot.team,
           server_number: slotIndex >= 0 ? slotIndex + 1 : 1,
+          invite_status: autoStart ? "accepted" : "pending",
+          invited_by: createdBy,
         });
       }
 
@@ -335,32 +390,20 @@ export async function createMatch(
     }
 
     if (needsInviteAccept) {
-      const { sendNotification, sendNotifications } = await import(
+      const { sendNotification } = await import(
         "@/lib/notifications/sendNotification"
       );
-      const { data: creatorProfile } = await supabase
-        .from("profiles")
-        .select("full_name")
-        .eq("id", createdBy)
-        .maybeSingle();
-      const creatorName =
-        (creatorProfile as { full_name?: string } | null)?.full_name ?? "A player";
       const matchLabel = `${setup.teamAName} vs ${setup.teamBName}`;
-
       const opponentIds = allRegisteredIds.filter((id) => id !== createdBy);
-      if (opponentIds.length > 0) {
-        await sendNotifications(opponentIds, {
-          icon: "match_invite",
-          text: `${creatorName} invited you to play ${matchLabel}`,
-          link: `/match-invite/${matchId}`,
-        });
-      }
 
       await sendNotification({
         userId: createdBy,
         icon: "match_invite",
-        text: `Confirm your match: ${matchLabel}`,
-        link: `/match-invite/${matchId}`,
+        text:
+          opponentIds.length > 0
+            ? `Match created: ${matchLabel}. Waiting for your opponent to accept.`
+            : `Confirm your match: ${matchLabel}`,
+        link: `/live-scoring/${matchId}`,
       });
     }
 

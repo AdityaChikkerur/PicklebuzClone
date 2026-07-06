@@ -7,11 +7,13 @@ export type MatchPlayerInviteStatus = "pending" | "accepted" | "declined";
 
 export interface MatchPlayerInvite {
   matchId: string;
-  playerId: string;
+  playerId: string | null;
+  guestId: string | null;
   fullName: string;
   team: "A" | "B";
   inviteStatus: MatchPlayerInviteStatus;
   respondedAt: string | null;
+  isGuest: boolean;
 }
 
 export interface MatchInviteSummary {
@@ -30,23 +32,47 @@ const fail = (error: unknown): DbResult<never> => ({
 
 interface DbPlayerRow {
   player_id: string | null;
+  guest_id: string | null;
   team: "A" | "B";
   invite_status: MatchPlayerInviteStatus;
   responded_at: string | null;
   profiles?: { full_name: string } | { full_name: string }[] | null;
+  guest_players?: { full_name: string } | { full_name: string }[] | null;
 }
 
 function mapPlayer(row: DbPlayerRow): MatchPlayerInvite | null {
-  if (!row.player_id) return null;
   const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
-  return {
-    matchId: "",
-    playerId: row.player_id,
-    fullName: profile?.full_name ?? "Player",
-    team: row.team,
-    inviteStatus: row.invite_status,
-    respondedAt: row.responded_at,
-  };
+  const guest = Array.isArray(row.guest_players)
+    ? row.guest_players[0]
+    : row.guest_players;
+
+  if (row.player_id) {
+    return {
+      matchId: "",
+      playerId: row.player_id,
+      guestId: null,
+      fullName: profile?.full_name ?? "Player",
+      team: row.team,
+      inviteStatus: row.invite_status,
+      respondedAt: row.responded_at,
+      isGuest: false,
+    };
+  }
+
+  if (row.guest_id) {
+    return {
+      matchId: "",
+      playerId: null,
+      guestId: row.guest_id,
+      fullName: guest?.full_name ?? "Guest player",
+      team: row.team,
+      inviteStatus: row.invite_status,
+      respondedAt: row.responded_at,
+      isGuest: true,
+    };
+  }
+
+  return null;
 }
 
 export async function fetchMatchInviteSummary(
@@ -69,10 +95,9 @@ export async function fetchMatchInviteSummary(
         supabase
           .from("match_players")
           .select(
-            "player_id, team, invite_status, responded_at, profiles:player_id(full_name)"
+            "player_id, guest_id, team, invite_status, responded_at, profiles:player_id(full_name), guest_players:guest_id(full_name)"
           )
-          .eq("match_id", matchId)
-          .not("player_id", "is", null),
+          .eq("match_id", matchId),
       ]);
 
     if (mErr) throw mErr;
@@ -88,7 +113,7 @@ export async function fetchMatchInviteSummary(
       .filter((row): row is MatchPlayerInvite => row !== null);
 
     const pendingCount = mapped.filter(
-      (p) => p.inviteStatus === "pending"
+      (p) => p.inviteStatus === "pending" && !p.isGuest
     ).length;
 
     return ok({

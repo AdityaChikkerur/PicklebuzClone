@@ -286,6 +286,89 @@ async function updateProfileFullNameDirect(
   }
 }
 
+async function updateProfileAvatarDirect(
+  userId: string,
+  file: File
+): Promise<ProfileResult<Profile>> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user || user.id !== userId) {
+    return fail("Your session expired. Please sign in again.");
+  }
+
+  const uploaded = await uploadProfileAvatarWithClient(supabase, userId, file);
+
+  if (uploaded.error || !uploaded.data) {
+    return fail(uploaded.error ?? "Could not upload photo");
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("profiles")
+      .update({ avatar_url: uploaded.data })
+      .eq("id", userId)
+      .select("*")
+      .single();
+
+    if (error) throw error;
+    return ok(mapDbProfile(data as DbProfileRow));
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** Updates profile photo — direct Supabase on native; API route on web. */
+export async function updateProfileAvatar(
+  userId: string,
+  file: File
+): Promise<ProfileResult<Profile>> {
+  if (!isSupabaseConfigured()) {
+    return fail("Supabase is not configured");
+  }
+
+  const valid = validateAvatarFile(file);
+  if (valid.error) {
+    return fail(valid.error);
+  }
+
+  if (typeof window !== "undefined" && Capacitor.isNativePlatform()) {
+    try {
+      return await updateProfileAvatarDirect(userId, file);
+    } catch (e) {
+      return fail(e);
+    }
+  }
+
+  try {
+    const formData = new FormData();
+    formData.append("avatar", file);
+
+    const response = await authFetch("/api/profile/avatar", {
+      method: "POST",
+      body: formData,
+    });
+
+    const payload = (await response.json().catch(() => null)) as
+      | { profile?: DbProfileRow; error?: string }
+      | null;
+
+    if (!response.ok) {
+      return fail(payload?.error ?? "Could not update photo");
+    }
+
+    if (!payload?.profile) {
+      return fail("Could not update photo");
+    }
+
+    return ok(mapDbProfile(payload.profile));
+  } catch (e) {
+    return fail(e);
+  }
+}
+
 /** Updates display name — direct Supabase on native; API route on web. */
 export async function updateProfileFullName(
   userId: string,

@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/Badge";
 import { formatBuzzRating } from "@/lib/utils";
 import { createClient } from "@/lib/supabase";
 import { lookupPlayerByPhone } from "@/lib/db/playerLookup";
+import { useAuthStore } from "@/store/authStore";
 import {
   formatPhoneDisplay,
   looksLikePhone,
@@ -44,6 +45,7 @@ export function PlayerSearchDrawer({
   onClose,
   onSelect,
 }: PlayerSearchDrawerProps) {
+  const currentUserId = useAuthStore((s) => s.user?.id ?? s.profile?.id);
   const [mode, setMode] = useState<AddMode>("phone");
   const [query, setQuery] = useState("");
   const [players, setPlayers] = useState<Player[]>([]);
@@ -132,6 +134,7 @@ export function PlayerSearchDrawer({
     const phoneDigits = normalizePhone(query);
 
     return players.filter((player) => {
+      if (currentUserId && player.id === currentUserId) return false;
       if (selectedPlayerIds.includes(player.id)) return false;
       if (!q) return true;
 
@@ -147,7 +150,7 @@ export function PlayerSearchDrawer({
         (player.phone?.includes(q) ?? false)
       );
     });
-  }, [query, selectedPlayerIds, players]);
+  }, [query, selectedPlayerIds, players, currentUserId]);
 
   const handlePhoneLookup = async () => {
     const digits = normalizePhone(phoneQuery);
@@ -166,6 +169,10 @@ export function PlayerSearchDrawer({
     }
 
     setPhoneLookup(result.data);
+
+    if (result.data && currentUserId && result.data.id === currentUserId) {
+      toast.error("That's your number — add your opponent's phone instead.");
+    }
   };
 
   const handleAddGuest = () => {
@@ -303,12 +310,22 @@ export function PlayerSearchDrawer({
               </p>
             </div>
 
-            {phoneLookup && (
+            {phoneLookup && phoneLookup.id === currentUserId && (
+              <p className="text-sm text-warning">
+                This is your phone number. Enter your opponent&apos;s number to
+                invite them.
+              </p>
+            )}
+
+            {phoneLookup && phoneLookup.id !== currentUserId && (
               <div className="rounded-xl border border-border bg-muted/40 p-3">
                 <button
                   type="button"
                   onClick={() => handleSelectRegistered(phoneLookup)}
-                  disabled={selectedPlayerIds.includes(phoneLookup.id)}
+                  disabled={
+                    selectedPlayerIds.includes(phoneLookup.id) ||
+                    phoneLookup.id === currentUserId
+                  }
                   className="flex w-full items-center gap-3 text-left disabled:opacity-50"
                 >
                   <Avatar

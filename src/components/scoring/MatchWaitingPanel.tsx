@@ -53,7 +53,9 @@ export function MatchWaitingPanel({
 
   const pending = summary?.players.filter((p) => p.inviteStatus === "pending") ?? [];
   const accepted = summary?.players.filter((p) => p.inviteStatus === "accepted") ?? [];
-  const userPending = pending.some((p) => p.playerId === userId);
+  const userPending = pending.some(
+    (p) => !p.isGuest && p.playerId === userId
+  );
 
   return (
     <div className="mx-4 my-4 flex flex-col gap-4 rounded-2xl border border-primary/30 bg-primary/5 p-5">
@@ -89,12 +91,13 @@ export function MatchWaitingPanel({
           <ul className="space-y-2">
             {pending.map((player) => (
               <li
-                key={player.playerId}
+                key={player.playerId ?? player.guestId ?? player.fullName}
                 className="flex items-center justify-between rounded-xl border border-border bg-arena-surface px-3 py-2 text-sm"
               >
                 <span className="font-medium text-foreground">
                   {player.fullName}
-                  {player.playerId === userId ? " (you)" : ""}
+                  {!player.isGuest && player.playerId === userId ? " (you)" : ""}
+                  {player.isGuest ? " (guest)" : ""}
                 </span>
                 <span className="rounded-full bg-warning/20 px-2 py-0.5 text-xs font-semibold text-warning">
                   Pending
@@ -113,12 +116,13 @@ export function MatchWaitingPanel({
           <ul className="space-y-2">
             {accepted.map((player) => (
               <li
-                key={player.playerId}
+                key={player.playerId ?? player.guestId ?? player.fullName}
                 className="flex items-center justify-between rounded-xl border border-border bg-arena-surface px-3 py-2 text-sm"
               >
                 <span className="font-medium text-foreground">
                   {player.fullName}
-                  {player.playerId === userId ? " (you)" : ""}
+                  {!player.isGuest && player.playerId === userId ? " (you)" : ""}
+                  {player.isGuest ? " (guest)" : ""}
                 </span>
                 <span className="rounded-full bg-primary/20 px-2 py-0.5 text-xs font-semibold text-primary">
                   Accepted

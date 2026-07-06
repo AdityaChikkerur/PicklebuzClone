@@ -13,7 +13,7 @@ import { PlayersStep } from "./PlayersStep";
 import { ScoringConfigStep } from "./ScoringConfigStep";
 import { StepIndicator } from "./StepIndicator";
 import { VenueStep } from "./VenueStep";
-import { isStepValid } from "./validation";
+import { isStepValid, hasOpponentSelected } from "./validation";
 
 export function MatchSetupWizard() {
   const router = useRouter();
@@ -68,6 +68,12 @@ export function MatchSetupWizard() {
       return;
     }
 
+    if (isSupabaseConfigured() && !hasOpponentSelected(setup, userId)) {
+      setStarting(false);
+      toast.error("Add an opponent before starting the match.");
+      return;
+    }
+
     const teamAPlayerIds = setup.players
       .filter((p) => p.team === "A" && !p.isGuest)
       .map((p) => p.playerId);
@@ -111,15 +117,11 @@ export function MatchSetupWizard() {
     const isDraft = created.data?.status === "draft";
     toast.success(
       isDraft
-        ? "Match created! Accept the invite to confirm you're playing."
+        ? "Match created! Waiting for your opponent to accept."
         : "Match ready. Let's score!"
     );
     router.push(
-      persistedId
-        ? isDraft
-          ? `/match-invite/${persistedId}`
-          : `/live-scoring/${persistedId}`
-        : "/live-scoring/local"
+      persistedId ? `/live-scoring/${persistedId}` : "/live-scoring/local"
     );
   };
 
