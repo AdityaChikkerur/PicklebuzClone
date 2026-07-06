@@ -2,7 +2,10 @@ import { test, expect, type Page } from "@playwright/test";
 
 async function startDemoSession(page: Page) {
   const res = await page.request.post("/api/auth/demo-session", {
-    data: { role: "player" },
+    data: {
+      email: "player@picklebuzz.demo",
+      password: "demo1234",
+    },
   });
   expect(res.ok()).toBeTruthy();
 }
