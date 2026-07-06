@@ -145,6 +145,8 @@ function buildMatchState(
     match.status === "pending" ||
     match.status === "disputed";
 
+  const isAwaitingStart = match.status === "draft";
+
   return {
     matchId: match.id,
     teamAName: match.team_a_name,
@@ -165,6 +167,7 @@ function buildMatchState(
     events: mappedEvents,
     isMatchComplete: isComplete,
     matchWinner: match.winner,
+    isAwaitingStart,
   };
 }
 
@@ -179,6 +182,8 @@ export interface CreateMatchInput {
   /** Full player rows including guests added by phone. */
   matchPlayers?: import("@/types/match").MatchPlayer[];
   tournamentId?: string;
+  /** Tournament fixtures skip the invite gate and go live immediately. */
+  autoStart?: boolean;
 }
 
 /**
@@ -187,7 +192,7 @@ export interface CreateMatchInput {
  */
 export async function createMatch(
   input: CreateMatchInput
-): Promise<DbResult<{ id: string; mock: boolean }>> {
+): Promise<DbResult<{ id: string; mock: boolean; status?: string }>> {
   const {
     createdBy,
     setup,
@@ -195,6 +200,7 @@ export async function createMatch(
     teamBPlayerIds = [],
     matchPlayers = [],
     tournamentId,
+    autoStart = false,
   } = input;
 
   const teamAPlayerIds = [...inputTeamA];
@@ -213,6 +219,11 @@ export async function createMatch(
   try {
     const supabase = createClient();
     const localRules = parseLocalRules(setup.localRules);
+
+    const allRegisteredIds = [...new Set([...teamAPlayerIds, ...teamBPlayerIds])];
+    const needsInviteAccept = !autoStart && allRegisteredIds.length > 0;
+    const initialStatus = needsInviteAccept ? "draft" : "live";
+    const startedAt = needsInviteAccept ? null : new Date().toISOString();
 
     const insertRow = {
       created_by: createdBy,
@@ -233,7 +244,8 @@ export async function createMatch(
       has_referee: setup.hasReferee,
       local_rules: localRules,
       tournament_id: tournamentId ?? null,
-      status: "live",
+      status: initialStatus,
+      started_at: startedAt,
       winner: null,
     };
 
@@ -259,18 +271,24 @@ export async function createMatch(
     });
     if (rulesErr) throw rulesErr;
 
+    const inviteStatusFor = () => (autoStart ? "accepted" : "pending");
+
     const playerRows = [
       ...teamAPlayerIds.map((pid, i) => ({
         match_id: matchId,
         player_id: pid,
         team: "A" as const,
         server_number: i + 1,
+        invite_status: inviteStatusFor(),
+        invited_by: createdBy,
       })),
       ...teamBPlayerIds.map((pid, i) => ({
         match_id: matchId,
         player_id: pid,
         team: "B" as const,
         server_number: i + 1,
+        invite_status: inviteStatusFor(),
+        invited_by: createdBy,
       })),
     ];
     if (playerRows.length > 0) {
@@ -316,21 +334,37 @@ export async function createMatch(
       }
     }
 
-    const allPlayerIds = [...teamAPlayerIds, ...teamBPlayerIds].filter(
-      (id) => id !== createdBy
-    );
-    if (allPlayerIds.length > 0) {
-      const { sendNotifications } = await import(
+    if (needsInviteAccept) {
+      const { sendNotification, sendNotifications } = await import(
         "@/lib/notifications/sendNotification"
       );
-      await sendNotifications(allPlayerIds, {
+      const { data: creatorProfile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", createdBy)
+        .maybeSingle();
+      const creatorName =
+        (creatorProfile as { full_name?: string } | null)?.full_name ?? "A player";
+      const matchLabel = `${setup.teamAName} vs ${setup.teamBName}`;
+
+      const opponentIds = allRegisteredIds.filter((id) => id !== createdBy);
+      if (opponentIds.length > 0) {
+        await sendNotifications(opponentIds, {
+          icon: "match_invite",
+          text: `${creatorName} invited you to play ${matchLabel}`,
+          link: `/match-invite/${matchId}`,
+        });
+      }
+
+      await sendNotification({
+        userId: createdBy,
         icon: "match_invite",
-        text: `You were added to ${setup.teamAName} vs ${setup.teamBName}`,
-        link: `/spectate/${matchId}`,
+        text: `Confirm your match: ${matchLabel}`,
+        link: `/match-invite/${matchId}`,
       });
     }
 
-    return ok({ id: matchId, mock: false });
+    return ok({ id: matchId, mock: false, status: initialStatus });
   } catch (e) {
     return fail(e);
   }
@@ -413,7 +447,7 @@ export interface EndMatchInput {
 
 export async function endMatch(
   input: EndMatchInput
-): Promise<DbResult<{ status: string; mock: boolean }>> {
+): Promise<DbResult<{ status: string; mock: boolean; timingMessage?: string | null }>> {
   if (!isSupabaseConfigured() || isMockMatchId(input.matchId)) {
     return ok({ status: "verified", mock: true });
   }
@@ -430,14 +464,23 @@ export async function endMatch(
     });
 
     const payload = (await response.json().catch(() => null)) as
-      | { status?: string; verified?: boolean; error?: string }
+      | {
+          status?: string;
+          verified?: boolean;
+          error?: string;
+          timingMessage?: string | null;
+        }
       | null;
 
     if (!response.ok) {
       return fail(payload?.error ?? "Could not save match");
     }
 
-    return ok({ status: payload?.status ?? "verified", mock: false });
+    return ok({
+      status: payload?.status ?? "verified",
+      mock: false,
+      timingMessage: payload?.timingMessage ?? null,
+    });
   } catch (e) {
     return fail(e);
   }
@@ -662,7 +705,7 @@ export async function fetchMatchState(
 
   const { data: match, error: matchError } = await supabase
     .from("matches")
-    .select("id, match_type, team_a_name, team_b_name, status, winner")
+    .select("id, match_type, team_a_name, team_b_name, status, winner, started_at")
     .eq("id", matchId)
     .maybeSingle();
 
@@ -756,7 +799,29 @@ export async function fetchMatchStateOverrides(
   };
 }
 
-/** Upsert scoring rules for a match (called after match creation). */
+export async function fetchMatchStatus(
+  matchId: string
+): Promise<DbResult<{ status: string; startedAt: string | null } | null>> {
+  if (!shouldPersist(matchId)) return ok(null);
+
+  try {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from("matches")
+      .select("status, started_at")
+      .eq("id", matchId)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) return ok(null);
+    return ok({
+      status: data.status as string,
+      startedAt: data.started_at as string | null,
+    });
+  } catch (e) {
+    return fail(e);
+  }
+}
+
 export async function upsertMatchRules(
   matchId: string,
   rules: Partial<MatchRules> & { scoringType: MatchRules["scoringType"] }

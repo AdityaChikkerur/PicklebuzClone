@@ -41,7 +41,7 @@ export interface TournamentForm {
   categories: TournamentCategory[];
   scoringType: ScoringType;
   pointsToWin: number;
-  bestOf: 1 | 3 | 5;
+  bestOf: 3 | 5;
   winBy: 1 | 2;
   maxTimeouts: number;
   timeoutDuration: number;
@@ -108,7 +108,7 @@ export interface TournamentDetail extends UpcomingTournament {
   categories: TournamentCategory[];
   scoringType: ScoringType;
   pointsToWin: number;
-  bestOf: 1 | 3 | 5;
+  bestOf: 3 | 5;
   winBy: 1 | 2;
   maxTimeouts: number;
   timeoutDuration: number;

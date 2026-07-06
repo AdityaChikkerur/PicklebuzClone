@@ -17,8 +17,8 @@ import type {
   Team,
 } from "@/types/match";
 
-function asBestOf(value: number): 1 | 3 | 5 {
-  if (value === 1 || value === 5) return value;
+function asBestOf(value: number): 3 | 5 {
+  if (value === 5) return 5;
   return 3;
 }
 

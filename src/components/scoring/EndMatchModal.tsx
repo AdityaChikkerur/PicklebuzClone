@@ -94,6 +94,10 @@ export function EndMatchModal({
         : "Match saved. Stats updated."
     );
 
+    if (result.data?.timingMessage) {
+      toast.warning(result.data.timingMessage);
+    }
+
     onClose();
     store.resetMatch();
     router.push(`/match/${matchId}`);

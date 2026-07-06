@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AppLayout } from "@/components/layout";
 import { useMatchPermissions } from "@/hooks/useMatchPermissions";
-import { fetchMatchStateOverrides } from "@/lib/db/matches";
+import { usePointTimer } from "@/hooks/usePointTimer";
+import { fetchMatchStateOverrides, fetchMatchStatus } from "@/lib/db/matches";
 import { isUuid } from "@/lib/db/config";
 import { useMatchStore, createInitialMatchState } from "@/store/matchStore";
 import { ActionButtons } from "./ActionButtons";
@@ -16,6 +17,8 @@ import { MatchEventsFeed } from "./MatchEventsFeed";
 import { MatchInfoBar } from "./MatchInfoBar";
 import { MatchRuleChips } from "./MatchRuleChips";
 import { MatchScorerPanel } from "./MatchScorerPanel";
+import { MatchWaitingPanel } from "./MatchWaitingPanel";
+import { PointTimerBar } from "./PointTimerBar";
 import { ScoreDisplay } from "./ScoreDisplay";
 import { TimeoutBar } from "./TimeoutBar";
 
@@ -32,12 +35,39 @@ export function LiveScoringSession({ matchId }: LiveScoringSessionProps) {
   const [hydrating, setHydrating] = useState(isUuid(matchId));
   const [endModalOpen, setEndModalOpen] = useState(false);
   const [showTimeline, setShowTimeline] = useState(false);
+  const [awaitingStart, setAwaitingStart] = useState(false);
+
+  const pointTimer = usePointTimer(
+    matchState.events,
+    permissions.canScore && !awaitingStart && !matchState.isMatchComplete
+  );
+
+  const reloadMatch = useCallback(async () => {
+    const [overrides, statusResult] = await Promise.all([
+      fetchMatchStateOverrides(matchId),
+      fetchMatchStatus(matchId),
+    ]);
+
+    const isDraft = statusResult.data?.status === "draft";
+    setAwaitingStart(isDraft);
+
+    if (overrides) {
+      resetMatch(
+        createInitialMatchState({
+          matchId,
+          ...overrides,
+          isAwaitingStart: isDraft,
+        })
+      );
+      setCurrentMatchId(matchId);
+    }
+  }, [matchId, resetMatch, setCurrentMatchId]);
 
   useEffect(() => {
-    if (!permissions.loading && permissions.isSpectator) {
+    if (!permissions.loading && permissions.isSpectator && !awaitingStart) {
       router.replace(`/spectate/${matchId}`);
     }
-  }, [permissions.loading, permissions.isSpectator, matchId, router]);
+  }, [permissions.loading, permissions.isSpectator, awaitingStart, matchId, router]);
 
   useEffect(() => {
     if (!isUuid(matchId)) {
@@ -50,26 +80,15 @@ export function LiveScoringSession({ matchId }: LiveScoringSessionProps) {
 
     async function hydrate() {
       setHydrating(true);
-      const overrides = await fetchMatchStateOverrides(matchId);
-      if (cancelled) return;
-
-      if (overrides) {
-        resetMatch(
-          createInitialMatchState({
-            matchId,
-            ...overrides,
-          })
-        );
-        setCurrentMatchId(matchId);
-      }
-      setHydrating(false);
+      await reloadMatch();
+      if (!cancelled) setHydrating(false);
     }
 
     void hydrate();
     return () => {
       cancelled = true;
     };
-  }, [matchId, resetMatch, setCurrentMatchId]);
+  }, [matchId, reloadMatch, setCurrentMatchId]);
 
   useEffect(() => {
     if (matchState.isMatchComplete) {
@@ -77,7 +96,11 @@ export function LiveScoringSession({ matchId }: LiveScoringSessionProps) {
     }
   }, [matchState.isMatchComplete]);
 
-  if (permissions.loading || hydrating || permissions.isSpectator) {
+  const handleMatchStarted = useCallback(() => {
+    void reloadMatch();
+  }, [reloadMatch]);
+
+  if (permissions.loading || hydrating) {
     return (
       <AppLayout hideNav>
         <div className="flex min-h-screen items-center justify-center arena-bg">
@@ -89,7 +112,8 @@ export function LiveScoringSession({ matchId }: LiveScoringSessionProps) {
     );
   }
 
-  const readOnly = !permissions.canScore;
+  const readOnly = !permissions.canScore || awaitingStart;
+  const scoringBlocked = readOnly || !pointTimer.canScore;
 
   return (
     <AppLayout hideNav>
@@ -104,12 +128,28 @@ export function LiveScoringSession({ matchId }: LiveScoringSessionProps) {
         <MatchRuleChips matchState={matchState} />
 
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-          <ScoreDisplay matchState={matchState} readOnly={readOnly} />
-          <MatchInfoBar matchState={matchState} />
-          {!readOnly && <ActionButtons />}
-          {!readOnly && <TimeoutBar />}
-          {!readOnly && <FaultCounters matchState={matchState} />}
-          {readOnly && (
+          {awaitingStart ? (
+            <MatchWaitingPanel
+              matchId={matchId}
+              teamAName={matchState.teamAName}
+              teamBName={matchState.teamBName}
+              onMatchStarted={handleMatchStarted}
+            />
+          ) : (
+            <>
+              <ScoreDisplay
+                matchState={matchState}
+                readOnly={scoringBlocked}
+              />
+              <MatchInfoBar matchState={matchState} />
+              <PointTimerBar timer={pointTimer} />
+              {!readOnly && <ActionButtons disabled={!pointTimer.canScore} />}
+              {!readOnly && <TimeoutBar />}
+              {!readOnly && <FaultCounters matchState={matchState} />}
+            </>
+          )}
+
+          {readOnly && !awaitingStart && (
             <div className="mx-4 mb-4 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-center text-sm text-foreground">
               View-only mode.{" "}
               <Link href={`/spectate/${matchId}`} className="font-semibold text-primary underline">
@@ -133,12 +173,14 @@ export function LiveScoringSession({ matchId }: LiveScoringSessionProps) {
           </Link>
         </div>
 
-        <MatchScorerPanel
-          matchId={matchId}
-          teamAName={matchState.teamAName}
-          teamBName={matchState.teamBName}
-          canManage={permissions.isCreator || permissions.isDelegatedScorer}
-        />
+        {!awaitingStart && (
+          <MatchScorerPanel
+            matchId={matchId}
+            teamAName={matchState.teamAName}
+            teamBName={matchState.teamBName}
+            canManage={permissions.isCreator || permissions.isDelegatedScorer}
+          />
+        )}
 
         <EndMatchModal
           open={endModalOpen}

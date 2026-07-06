@@ -108,8 +108,19 @@ export function MatchSetupWizard() {
 
     resetMatch(matchState);
     setCurrentMatchId(persistedId);
-    toast.success("Match ready. Let's score!");
-    router.push(persistedId ? `/live-scoring/${persistedId}` : "/live-scoring/local");
+    const isDraft = created.data?.status === "draft";
+    toast.success(
+      isDraft
+        ? "Match created! Accept the invite to confirm you're playing."
+        : "Match ready. Let's score!"
+    );
+    router.push(
+      persistedId
+        ? isDraft
+          ? `/match-invite/${persistedId}`
+          : `/live-scoring/${persistedId}`
+        : "/live-scoring/local"
+    );
   };
 
   const canContinue = isStepValid(setup.step, setup);

@@ -390,6 +390,12 @@ export async function updateRatingsForMatch(
   if (!isSupabaseConfigured()) return;
 
   const supabase = supabaseClient ?? createClient();
+
+  const { data: eligible } = await supabase.rpc("match_is_rating_eligible", {
+    p_match_id: matchId,
+  });
+  if (!eligible) return;
+
   const { data: players } = await supabase
     .from("match_players")
     .select("player_id")
@@ -397,6 +403,12 @@ export async function updateRatingsForMatch(
 
   if (!players?.length) return;
 
-  const uniqueIds = [...new Set(players.map((row) => row.player_id as string))];
+  const uniqueIds = [
+    ...new Set(
+      players
+        .map((row) => row.player_id as string | null)
+        .filter((id): id is string => Boolean(id))
+    ),
+  ];
   await Promise.all(uniqueIds.map((id) => recalculatePlayerRating(id, supabase)));
 }

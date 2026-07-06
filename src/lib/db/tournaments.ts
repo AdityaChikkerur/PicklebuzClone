@@ -112,7 +112,7 @@ function mapTournamentDetail(
     categories: categories.map(mapCategory),
     scoringType: row.scoring_type,
     pointsToWin: row.points_to_win,
-    bestOf: row.best_of as 1 | 3 | 5,
+    bestOf: row.best_of as 3 | 5,
     winBy: row.win_by as 1 | 2,
     maxTimeouts: row.max_timeouts,
     timeoutDuration: row.timeout_duration,
