@@ -5,6 +5,24 @@ import { createClient } from "@/lib/supabase";
 import { isSupabaseConfigured } from "@/lib/auth/isSupabaseConfigured";
 import { fetchLiveMatches, type LiveMatchSummary } from "@/lib/db/matches";
 import { useRealtimeLiveScores } from "@/hooks/useRealtimeLiveScores";
+import { useAuthStore } from "@/store/authStore";
+
+function withCancelForUser(
+  matches: LiveMatchSummary[],
+  userId: string | null | undefined
+): LiveMatchSummary[] {
+  if (!userId) return matches;
+
+  return matches.map((match) => {
+    const canCancel =
+      match.createdBy === userId &&
+      (match.canCancel ||
+        match.hasPendingInvites ||
+        !match.hasScoringEvents);
+
+    return canCancel === match.canCancel ? match : { ...match, canCancel };
+  });
+}
 
 export function useLiveMatches() {
   const [matches, setMatches] = useState<LiveMatchSummary[]>([]);
@@ -13,6 +31,8 @@ export function useLiveMatches() {
   const [source, setSource] = useState<"supabase" | "mock">("mock");
   const [reloadToken, setReloadToken] = useState(0);
   const reloadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const authLoading = useAuthStore((s) => s.loading);
+  const userId = useAuthStore((s) => s.user?.id ?? s.profile?.id ?? null);
 
   const reload = useCallback(() => {
     setReloadToken((t) => t + 1);
@@ -27,6 +47,8 @@ export function useLiveMatches() {
   }, [reload]);
 
   useEffect(() => {
+    if (authLoading) return;
+
     let cancelled = false;
     const isInitialLoad = reloadToken === 0;
 
@@ -36,14 +58,14 @@ export function useLiveMatches() {
       }
       setError(null);
 
-      const result = await fetchLiveMatches();
+      const result = await fetchLiveMatches(userId);
       if (cancelled) return;
 
       if (result.error) {
         setError(result.error);
       }
 
-      setMatches(result.data ?? []);
+      setMatches(withCancelForUser(result.data ?? [], userId));
       setSource(result.source);
       setLoading(false);
     }
@@ -52,7 +74,7 @@ export function useLiveMatches() {
     return () => {
       cancelled = true;
     };
-  }, [reloadToken]);
+  }, [reloadToken, authLoading, userId]);
 
   useEffect(() => {
     return () => {
@@ -83,6 +105,11 @@ export function useLiveMatches() {
         { event: "INSERT", schema: "public", table: "matches" },
         () => scheduleReload()
       )
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "matches" },
+        () => scheduleReload()
+      )
       .subscribe();
 
     return () => {
@@ -95,18 +122,21 @@ export function useLiveMatches() {
 
   const matchesWithLiveScores = useMemo(
     () =>
-      matches.map((match, index) => {
-        const live = liveScores[match.id];
-        return {
-          ...match,
-          scoreA: live?.scoreA ?? match.scoreA,
-          scoreB: live?.scoreB ?? match.scoreB,
-          gameNumber: live?.gameNumber ?? match.gameNumber,
-          courtNumber:
-            match.courtNumber?.trim() || `Court ${index + 1}`,
-        };
-      }),
-    [matches, liveScores]
+      withCancelForUser(
+        matches.map((match, index) => {
+          const live = liveScores[match.id];
+          return {
+            ...match,
+            scoreA: live?.scoreA ?? match.scoreA,
+            scoreB: live?.scoreB ?? match.scoreB,
+            gameNumber: live?.gameNumber ?? match.gameNumber,
+            courtNumber:
+              match.courtNumber?.trim() || `Court ${index + 1}`,
+          };
+        }),
+        userId
+      ),
+    [matches, liveScores, userId]
   );
 
   return { matches: matchesWithLiveScores, loading, error, source, reload };

@@ -1,15 +1,18 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeftIcon,
+  ClockIcon,
   ShareIcon,
   ListBulletIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import { isUuid } from "@/lib/db/config";
 import { useMatchStore } from "@/store/matchStore";
+import { formatElapsedClock } from "@/lib/utils";
 import type { MatchState } from "@/types/match";
 
 interface LiveScoringHeaderProps {
@@ -18,6 +21,7 @@ interface LiveScoringHeaderProps {
   onShowTimeline?: () => void;
   readOnly?: boolean;
   canEndMatch?: boolean;
+  matchStartedAt?: number | null;
 }
 
 export function LiveScoringHeader({
@@ -26,15 +30,31 @@ export function LiveScoringHeader({
   onShowTimeline,
   readOnly = false,
   canEndMatch = true,
+  matchStartedAt = null,
 }: LiveScoringHeaderProps) {
   const router = useRouter();
   const currentMatchId = useMatchStore((s) => s.currentMatchId);
-  const { currentGame, bestOf, isMatchComplete, scoringType } = matchState;
+  const { currentGame, bestOf, isMatchComplete, scoringType, events } = matchState;
+
+  const fallbackStart = events[0]?.createdAt
+    ? new Date(events[0].createdAt).getTime()
+    : null;
+  const startTime = matchStartedAt ?? fallbackStart;
+
+  const [elapsed, setElapsed] = useState(() =>
+    startTime ? formatElapsedClock(startTime) : "0:00"
+  );
 
   const spectateHref =
     currentMatchId && isUuid(currentMatchId)
       ? `/spectate/${currentMatchId}`
       : null;
+
+  useEffect(() => {
+    if (isMatchComplete || !startTime) return;
+    const id = setInterval(() => setElapsed(formatElapsedClock(startTime)), 1000);
+    return () => clearInterval(id);
+  }, [startTime, isMatchComplete]);
 
   const handleShare = async () => {
     const url =
@@ -71,6 +91,12 @@ export function LiveScoringHeader({
           <span className="text-xs font-extrabold uppercase tracking-widest text-red-brand">
             {isMatchComplete ? "Final" : "Live"}
           </span>
+          {!isMatchComplete && startTime && (
+            <span className="inline-flex items-center gap-1 text-xs font-semibold tabular-nums text-muted-foreground">
+              <ClockIcon className="h-3.5 w-3.5" aria-hidden="true" />
+              {elapsed}
+            </span>
+          )}
         </div>
         <p className="mt-0.5 truncate text-[11px] font-medium text-muted-foreground">
           Game {currentGame} of {bestOf} ·{" "}

@@ -13,6 +13,7 @@ import {
   ClipboardDocumentListIcon,
   ClipboardDocumentCheckIcon,
   ExclamationTriangleIcon,
+  QueueListIcon,
 } from "@heroicons/react/24/outline";
 import {
   HomeIcon as HomeIconSolid,
@@ -27,6 +28,7 @@ import {
   ClipboardDocumentCheckIcon as ClipboardDocumentCheckIconSolid,
   ExclamationTriangleIcon as ExclamationTriangleIconSolid,
   BellIcon as BellIconSolid,
+  QueueListIcon as QueueListIconSolid,
 } from "@heroicons/react/24/solid";
 import type { ComponentType, SVGProps } from "react";
 import type { UserRole } from "@/types/player";
@@ -238,12 +240,12 @@ const PLAYER_SIDEBAR: NavItem[] = [
     activeIcon: ChartBarIconSolid,
   },
   {
-  id: "my-matches",
-  label: "My Matches",
-  href: "/my-matches",
-  icon: ClipboardDocumentListIcon,
+    id: "my-matches",
+    label: "My Matches",
+    href: "/my-matches",
+   icon: ClipboardDocumentListIcon,
   activeIcon: TrophyIconSolid,
-},
+  },
     {
     id: "tournaments",
     label: "Tournaments",

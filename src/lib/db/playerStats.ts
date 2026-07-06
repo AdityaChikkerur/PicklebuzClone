@@ -1,20 +1,37 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase";
+import {
+  computeMatchDurationMinutes,
+  isMatchTimingValid,
+} from "@/lib/match/timingFlags";
 import type { GameScore, MatchType, RecentMatch, Team } from "@/types/match";
 import type {
   DashboardKpis,
   WeeklyPerformance,
 } from "@/components/dashboard/mockData";
 
-function profileName(profiles: unknown): string {
-  if (Array.isArray(profiles)) {
-    const first = profiles[0] as { full_name?: string } | undefined;
-    return first?.full_name ?? "Opponent";
+function opponentTeamName(
+  playerTeam: Team,
+  teamAName: string,
+  teamBName: string
+): string {
+  return playerTeam === "A" ? teamBName : teamAName;
+}
+
+function resolveOpponentNames(
+  profileNames: string[],
+  playerTeam: Team,
+  teamAName: string,
+  teamBName: string
+): string[] {
+  const fromProfiles = profileNames.filter((name) => name && name !== "Opponent");
+  if (fromProfiles.length > 0) return fromProfiles;
+
+  const teamName = opponentTeamName(playerTeam, teamAName, teamBName).trim();
+  if (teamName && teamName !== "Team A" && teamName !== "Team B") {
+    return [teamName];
   }
-  if (profiles && typeof profiles === "object" && "full_name" in profiles) {
-    return String((profiles as { full_name: string }).full_name);
-  }
-  return "Opponent";
+  return teamName ? [teamName] : [];
 }
 
 const OFFICIAL_STATUSES = ["verified", "completed"] as const;
@@ -32,6 +49,9 @@ export interface PlayerMatchRecord {
   createdAt: string;
   gameScores: GameScore[];
   opponentNames: string[];
+  durationMinutes: number;
+  bestOf: number;
+  scoreFlagged: boolean;
 }
 
 function formatScoreLine(gameScores: GameScore[], playerTeam: Team): string {
@@ -92,12 +112,17 @@ export async function fetchPlayerMatches(
       id,
       match_type,
       match_category,
+      team_a_name,
+      team_b_name,
       venue,
       city,
       status,
       winner,
       completed_at,
       created_at,
+      started_at,
+      best_of,
+      score_flagged,
       match_game_scores (
         game_number,
         score_a,
@@ -128,14 +153,32 @@ export async function fetchPlayerMatches(
     const matchId = mp.match_id as string;
     const playerTeam = teamByMatch.get(matchId);
     if (!playerTeam || mp.team === playerTeam) continue;
-    const name = profileName(mp.profiles);
+    const profiles = mp.profiles as unknown;
+    let name = "";
+    if (Array.isArray(profiles)) {
+      const first = profiles[0] as { full_name?: string } | undefined;
+      name = first?.full_name?.trim() ?? "";
+    } else if (profiles && typeof profiles === "object" && "full_name" in profiles) {
+      name = String((profiles as { full_name: string }).full_name).trim();
+    }
+    if (!name) continue;
     const list = opponentsByMatch.get(matchId) ?? [];
     list.push(name);
     opponentsByMatch.set(matchId, list);
   }
 
   return matches.map((m) => {
-    const playerTeam = teamByMatch.get(m.id as string)!;
+    const matchId = m.id as string;
+    const playerTeam = teamByMatch.get(matchId)!;
+    const teamAName = (m.team_a_name as string) ?? "Team A";
+    const teamBName = (m.team_b_name as string) ?? "Team B";
+    const bestOf = (m.best_of as number) ?? 3;
+    const scoreFlagged = Boolean(m.score_flagged);
+    const durationMinutes = computeMatchDurationMinutes(
+      m.started_at as string | null,
+      m.completed_at as string | null,
+      m.created_at as string
+    );
     const gameScores: GameScore[] = (
       (m.match_game_scores as Array<{
         game_number: number;
@@ -153,7 +196,7 @@ export async function fetchPlayerMatches(
       }));
 
     return {
-      id: m.id as string,
+      id: matchId,
       matchType: m.match_type as MatchType,
       matchCategory: m.match_category as string,
       venue: (m.venue as string) ?? "",
@@ -164,7 +207,15 @@ export async function fetchPlayerMatches(
       completedAt: m.completed_at as string | null,
       createdAt: m.created_at as string,
       gameScores,
-      opponentNames: opponentsByMatch.get(m.id as string) ?? ["Opponent"],
+      opponentNames: resolveOpponentNames(
+        opponentsByMatch.get(matchId) ?? [],
+        playerTeam,
+        teamAName,
+        teamBName
+      ),
+      durationMinutes,
+      bestOf,
+      scoreFlagged,
     };
   });
 }
@@ -172,7 +223,12 @@ export async function fetchPlayerMatches(
 function isOfficial(record: PlayerMatchRecord): boolean {
   return (
     OFFICIAL_STATUSES.includes(record.status as (typeof OFFICIAL_STATUSES)[number]) &&
-    record.winner !== null
+    record.winner !== null &&
+    isMatchTimingValid(
+      record.durationMinutes,
+      record.bestOf,
+      record.scoreFlagged
+    )
   );
 }
 
@@ -228,7 +284,7 @@ export function computeRecentMatches(matches: PlayerMatchRecord[]): RecentMatch[
     .slice(0, 20)
     .map((m) => ({
       id: m.id,
-      opponent: m.opponentNames.join(" & "),
+      opponent: m.opponentNames.join(" & ") || "Unknown opponent",
       score: formatScoreLine(m.gameScores, m.playerTeam),
       result: playerWon(m) ? "W" : "L",
       matchType: m.matchType,

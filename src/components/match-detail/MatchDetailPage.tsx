@@ -328,9 +328,15 @@ export function MatchDetailPage({ matchId }: MatchDetailPageProps) {
 
               {match.venue} · {match.city}
 
+              {match.startedAt && (
+
+                <> · Started {formatDateTime(match.startedAt)}</>
+
+              )}
+
               {match.completedAt && (
 
-                <> · {formatDateTime(match.completedAt)}</>
+                <> · Finished {formatDateTime(match.completedAt)}</>
 
               )}
 

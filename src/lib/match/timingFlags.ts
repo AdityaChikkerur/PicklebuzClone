@@ -1,5 +1,34 @@
 export type TimingFlag = "ok" | "short" | "long";
 
+export const MIN_OFFICIAL_MATCH_MINUTES = 10;
+
+/** Elapsed minutes between match start and end (or now if still in progress). */
+export function computeMatchDurationMinutes(
+  startedAt: string | null | undefined,
+  completedAt: string | null | undefined,
+  createdAt?: string | null
+): number {
+  const startIso = startedAt ?? createdAt;
+  if (!startIso) return 0;
+  const endMs = completedAt ? new Date(completedAt).getTime() : Date.now();
+  const startMs = new Date(startIso).getTime();
+  if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) {
+    return 0;
+  }
+  return (endMs - startMs) / 60_000;
+}
+
+/** Whether a completed match counts toward player stats and ratings. */
+export function isMatchTimingValid(
+  durationMinutes: number,
+  bestOf: number,
+  scoreFlagged = false
+): boolean {
+  if (scoreFlagged) return false;
+  if (bestOf >= 3 && durationMinutes < MIN_OFFICIAL_MATCH_MINUTES) return false;
+  return durationMinutes > 0;
+}
+
 export interface MatchDurationAnalysis {
   durationMinutes: number;
   timingFlag: TimingFlag;

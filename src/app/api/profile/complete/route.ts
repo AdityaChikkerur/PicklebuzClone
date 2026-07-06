@@ -41,16 +41,27 @@ export async function POST(request: Request) {
   }
 
   const avatarFile = formData.get("avatar");
+  const existingAvatarUrl = String(formData.get("existingAvatarUrl") ?? "").trim();
   const phone = String(formData.get("phone") ?? "").trim();
   const city = String(formData.get("city") ?? "").trim();
   const role = String(formData.get("role") ?? "") as UserRole;
   const fullName = String(formData.get("fullName") ?? "").trim();
 
-  if (!(avatarFile instanceof File) || avatarFile.size === 0) {
-    return NextResponse.json(
-      { error: "Profile photo is required." },
-      { status: 400 }
-    );
+  const hasNewAvatar = avatarFile instanceof File && avatarFile.size > 0;
+
+  if (!hasNewAvatar && !existingAvatarUrl) {
+    const { data: profileRow } = await supabase
+      .from("profiles")
+      .select("avatar_url")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (!profileRow?.avatar_url?.trim()) {
+      return NextResponse.json(
+        { error: "Profile photo is required." },
+        { status: 400 }
+      );
+    }
   }
 
   if (!phone || phone.length < 10) {
@@ -76,27 +87,48 @@ export async function POST(request: Request) {
     phone: phone.replace(/\s|-/g, ""),
     city,
     role,
-    avatarFile,
+    avatarFile: hasNewAvatar ? (avatarFile as File) : undefined,
+    existingAvatarUrl: existingAvatarUrl || undefined,
     fullName: fullName || undefined,
   };
 
-  const uploaded = await uploadProfileAvatarWithClient(
-    supabase as SupabaseClient,
-    input.userId,
-    avatarFile
-  );
+  let avatarUrl: string;
 
-  if (uploaded.error || !uploaded.data) {
-    return NextResponse.json(
-      { error: uploaded.error ?? "Could not upload photo." },
-      { status: 500 }
+  if (hasNewAvatar) {
+    const uploaded = await uploadProfileAvatarWithClient(
+      supabase as SupabaseClient,
+      input.userId,
+      avatarFile as File
     );
+
+    if (uploaded.error || !uploaded.data) {
+      return NextResponse.json(
+        { error: uploaded.error ?? "Could not upload photo." },
+        { status: 500 }
+      );
+    }
+
+    avatarUrl = uploaded.data;
+  } else {
+    const { data: profileRow } = await supabase
+      .from("profiles")
+      .select("avatar_url")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    avatarUrl = existingAvatarUrl || profileRow?.avatar_url?.trim() || "";
+    if (!avatarUrl) {
+      return NextResponse.json(
+        { error: "Profile photo is required." },
+        { status: 400 }
+      );
+    }
   }
 
   const completed = await applyProfileCompletion(
     supabase as SupabaseClient,
     input,
-    uploaded.data
+    avatarUrl
   );
 
   if (completed.error || !completed.data) {

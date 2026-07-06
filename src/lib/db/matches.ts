@@ -20,6 +20,10 @@ import { authFetch } from "@/lib/auth/clientFetch";
 import { createClient } from "@/lib/supabase";
 import { isSupabaseConfigured } from "@/lib/auth/isSupabaseConfigured";
 import { formatDbError } from "@/lib/db/formatDbError";
+import {
+  computeMatchDurationMinutes,
+  isMatchTimingValid,
+} from "@/lib/match/timingFlags";
 import { isUuid } from "@/lib/db/config";
 import type {
   DbMatchRules,
@@ -101,6 +105,8 @@ interface MatchRow {
   winner: string | null;
   created_at: string;
   completed_at: string | null;
+  started_at?: string | null;
+  score_flagged?: boolean;
   local_rules?: Record<string, unknown>;
   has_referee?: boolean;
 }
@@ -702,7 +708,16 @@ function localRulesNotes(localRules: Record<string, unknown> | undefined): strin
   return typeof notes === "string" ? notes : "";
 }
 
-function statsFromEvents(events: MatchEvent[]): MatchStats {
+function statsFromEvents(
+  events: MatchEvent[],
+  timing?: {
+    startedAt?: string | null;
+    completedAt?: string | null;
+    createdAt?: string;
+    bestOf?: number;
+    scoreFlagged?: boolean;
+  }
+): MatchStats {
   const faultsA = { ...DEFAULT_FAULTS };
   const faultsB = { ...DEFAULT_FAULTS };
   let pointsWonA = 0;
@@ -740,6 +755,20 @@ function statsFromEvents(events: MatchEvent[]): MatchStats {
     }
   }
 
+  const durationMinutes = timing
+    ? computeMatchDurationMinutes(
+        timing.startedAt,
+        timing.completedAt,
+        timing.createdAt
+      )
+    : 0;
+  const bestOf = timing?.bestOf ?? 3;
+  const timingValid = isMatchTimingValid(
+    durationMinutes,
+    bestOf,
+    timing?.scoreFlagged ?? false
+  );
+
   return {
     pointsWonA,
     pointsWonB,
@@ -747,7 +776,8 @@ function statsFromEvents(events: MatchEvent[]): MatchStats {
     faultsB,
     timeoutsUsedA,
     timeoutsUsedB,
-    durationMinutes: 0,
+    durationMinutes,
+    timingValid,
   };
 }
 
@@ -771,10 +801,17 @@ export function mapFullMatchToDetail(
     createdBy: match.created_by,
     createdAt: match.created_at,
     completedAt: match.completed_at,
+    startedAt: match.started_at ?? null,
     gameScores,
     players: [],
     events,
-    stats: statsFromEvents(events),
+    stats: statsFromEvents(events, {
+      startedAt: match.started_at,
+      completedAt: match.completed_at,
+      createdAt: match.created_at,
+      bestOf: match.best_of ?? 3,
+      scoreFlagged: match.score_flagged ?? false,
+    }),
     localRules: localRulesNotes(match.local_rules),
     isCurrentUserCreator: Boolean(
       currentUserId && currentUserId === match.created_by
@@ -997,6 +1034,11 @@ export interface LiveMatchSummary {
   courtNumber: string;
   matchType: string;
   createdAt: string;
+  createdBy: string;
+  hasPendingInvites: boolean;
+  hasScoringEvents: boolean;
+  /** True when the signed-in user created this match and can still cancel it. */
+  canCancel: boolean;
 }
 
 export interface FetchLiveMatchesResult {
@@ -1005,7 +1047,36 @@ export interface FetchLiveMatchesResult {
   error: string | null;
 }
 
-export async function fetchLiveMatches(): Promise<FetchLiveMatchesResult> {
+/** Remove a live/draft match the creator started before opponents accept. */
+export async function cancelMatchByCreator(
+  matchId: string
+): Promise<DbResult<{ cancelled: boolean }>> {
+  if (!isSupabaseConfigured() || isMockMatchId(matchId)) {
+    return fail("Match cancellation requires a live database connection");
+  }
+
+  if (!isUuid(matchId)) {
+    return fail("Invalid match id");
+  }
+
+  try {
+    const supabase = createClient();
+    const { data, error } = await supabase.rpc("cancel_match_by_creator", {
+      p_match_id: matchId,
+    });
+
+    if (error) throw error;
+
+    const payload = data as { cancelled?: boolean } | null;
+    return ok({ cancelled: Boolean(payload?.cancelled) });
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function fetchLiveMatches(
+  userId?: string | null
+): Promise<FetchLiveMatchesResult> {
   if (!isSupabaseConfigured()) {
     return {
       data: [],
@@ -1020,7 +1091,7 @@ export async function fetchLiveMatches(): Promise<FetchLiveMatchesResult> {
     const { data: rows, error } = await supabase
       .from("matches")
       .select(
-        "id, team_a_name, team_b_name, venue, city, court_number, match_type, created_at"
+        "id, team_a_name, team_b_name, venue, city, court_number, match_type, created_at, created_by"
       )
       .eq("status", "live")
       .eq("is_public", true)
@@ -1035,13 +1106,23 @@ export async function fetchLiveMatches(): Promise<FetchLiveMatchesResult> {
       string,
       { scoreA: number; scoreB: number; gameNumber: number }
     >();
+    const pendingInviteMatchIds = new Set<string>();
+    const creatorCanCancel = new Map<string, boolean>();
 
     if (matchIds.length > 0) {
-      const { data: eventRows } = await supabase
-        .from("match_events")
-        .select("match_id, score_a, score_b, game_number, created_at")
-        .in("match_id", matchIds)
-        .order("created_at", { ascending: false });
+      const [{ data: eventRows }, { data: pendingPlayers }] = await Promise.all([
+        supabase
+          .from("match_events")
+          .select("match_id, score_a, score_b, game_number, created_at")
+          .in("match_id", matchIds)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("match_players")
+          .select("match_id")
+          .in("match_id", matchIds)
+          .eq("invite_status", "pending")
+          .not("player_id", "is", null),
+      ]);
 
       for (const event of eventRows ?? []) {
         const matchId = event.match_id as string;
@@ -1052,11 +1133,43 @@ export async function fetchLiveMatches(): Promise<FetchLiveMatchesResult> {
           gameNumber: event.game_number ?? 1,
         });
       }
+
+      for (const row of pendingPlayers ?? []) {
+        pendingInviteMatchIds.add(row.match_id as string);
+      }
+
+      if (userId) {
+        const creatorMatchIds = matchRows
+          .filter((row) => (row.created_by as string) === userId)
+          .map((row) => row.id as string);
+
+        await Promise.all(
+          creatorMatchIds.map(async (matchId) => {
+            const { data, error: rpcError } = await supabase.rpc(
+              "creator_can_cancel_match",
+              { p_match_id: matchId }
+            );
+            creatorCanCancel.set(
+              matchId,
+              !rpcError && Boolean(data)
+            );
+          })
+        );
+      }
     }
 
     const summaries: LiveMatchSummary[] = matchRows.map((row) => {
       const matchId = row.id as string;
       const latestEvent = latestScores.get(matchId);
+      const createdBy = row.created_by as string;
+      const hasScoringEvents = latestScores.has(matchId);
+      const hasPendingInvites = pendingInviteMatchIds.has(matchId);
+      const canCancelFromRpc = creatorCanCancel.get(matchId) ?? false;
+      const canCancelFallback = Boolean(
+        userId &&
+          createdBy === userId &&
+          (hasPendingInvites || !hasScoringEvents)
+      );
 
       return {
         id: matchId,
@@ -1070,6 +1183,10 @@ export async function fetchLiveMatches(): Promise<FetchLiveMatchesResult> {
         courtNumber: (row.court_number as string) ?? "",
         matchType: row.match_type as string,
         createdAt: row.created_at as string,
+        createdBy,
+        hasPendingInvites,
+        hasScoringEvents,
+        canCancel: canCancelFromRpc || canCancelFallback,
       };
     });
 

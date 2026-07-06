@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase";
 import { isSupabaseConfigured } from "@/lib/auth/isSupabaseConfigured";
 import { isUuid } from "@/lib/db/config";
 import { useAuthStore } from "@/store/authStore";
+import { useMatchStore } from "@/store/matchStore";
 import type { UserRole } from "@/types/player";
 
 export interface MatchPermissions {
@@ -22,8 +23,10 @@ export interface MatchPermissions {
 const REFEREE_ROLES: UserRole[] = ["referee", "admin"];
 
 export function useMatchPermissions(matchId: string | undefined): MatchPermissions {
+  const authLoading = useAuthStore((s) => s.loading);
   const userId = useAuthStore((s) => s.user?.id ?? s.profile?.id);
   const role = useAuthStore((s) => s.profile?.role);
+  const currentMatchId = useMatchStore((s) => s.currentMatchId);
 
   const [loading, setLoading] = useState(Boolean(matchId));
   const [isCreator, setIsCreator] = useState(false);
@@ -31,17 +34,26 @@ export function useMatchPermissions(matchId: string | undefined): MatchPermissio
   const [isDelegatedScorer, setIsDelegatedScorer] = useState(false);
   const [matchStatus, setMatchStatus] = useState<string | null>(null);
   const [hasPendingInvites, setHasPendingInvites] = useState(false);
+  const [canScoreFromDb, setCanScoreFromDb] = useState(false);
 
   const isReferee = Boolean(role && REFEREE_ROLES.includes(role));
   const isDemoMatch =
     !matchId || matchId.startsWith("mock-") || !isUuid(matchId);
+  const isActiveScoringSession =
+    Boolean(userId) && Boolean(matchId) && currentMatchId === matchId;
 
   useEffect(() => {
     if (!matchId || !isSupabaseConfigured() || !isUuid(matchId)) {
       setIsCreator(isDemoMatch);
       setIsPlayer(isDemoMatch);
       setMatchStatus(isDemoMatch ? "live" : null);
+      setCanScoreFromDb(isDemoMatch);
       setLoading(false);
+      return;
+    }
+
+    if (authLoading) {
+      setLoading(true);
       return;
     }
 
@@ -57,7 +69,7 @@ export function useMatchPermissions(matchId: string | undefined): MatchPermissio
         .eq("id", matchId)
         .maybeSingle();
 
-      const [{ data: players }, { data: scorerRow }] = await Promise.all([
+      const [{ data: players }, { data: scorerRow }, scoreRpc] = await Promise.all([
         supabase
           .from("match_players")
           .select("player_id, invite_status")
@@ -71,6 +83,9 @@ export function useMatchPermissions(matchId: string | undefined): MatchPermissio
               .eq("status", "accepted")
               .maybeSingle()
           : Promise.resolve({ data: null }),
+        userId
+          ? supabase.rpc("user_can_score_match", { p_match_id: matchId })
+          : Promise.resolve({ data: false, error: null }),
       ]);
 
       if (cancelled) return;
@@ -80,7 +95,7 @@ export function useMatchPermissions(matchId: string | undefined): MatchPermissio
         userId && (players ?? []).some((row) => row.player_id === userId)
       );
       const status = (match?.status as string) ?? null;
-      const hasPendingInvites = (players ?? []).some(
+      const pendingInvites = (players ?? []).some(
         (row) =>
           row.player_id &&
           (row.invite_status as string | undefined) === "pending"
@@ -90,7 +105,8 @@ export function useMatchPermissions(matchId: string | undefined): MatchPermissio
       setIsPlayer(player);
       setIsDelegatedScorer(Boolean(scorerRow));
       setMatchStatus(status);
-      setHasPendingInvites(hasPendingInvites);
+      setHasPendingInvites(pendingInvites);
+      setCanScoreFromDb(!scoreRpc.error && Boolean(scoreRpc.data));
       setLoading(false);
     }
 
@@ -98,23 +114,34 @@ export function useMatchPermissions(matchId: string | undefined): MatchPermissio
     return () => {
       cancelled = true;
     };
-  }, [matchId, userId, isDemoMatch]);
+  }, [matchId, userId, isDemoMatch, authLoading]);
 
+  const isParticipant =
+    isCreator || isPlayer || isReferee || isDelegatedScorer;
   const isAwaitingStart =
-    matchStatus === "draft" ||
-    (matchStatus === "live" && hasPendingInvites);
+    !isCreator &&
+    (matchStatus === "draft" ||
+      (matchStatus === "live" && hasPendingInvites));
   const isLive = isDemoMatch || matchStatus === "live";
 
   const canScore =
     isDemoMatch ||
+    canScoreFromDb ||
+    (isLive && isCreator) ||
     (isLive &&
       !isAwaitingStart &&
-      (isCreator || isPlayer || isReferee || isDelegatedScorer));
+      (isPlayer || isReferee || isDelegatedScorer));
 
   return {
-    loading,
+    loading: authLoading || loading,
     canScore,
-    isSpectator: !canScore && !isAwaitingStart,
+    isSpectator:
+      !authLoading &&
+      !loading &&
+      !canScore &&
+      !isAwaitingStart &&
+      !isParticipant &&
+      !isActiveScoringSession,
     isCreator: isDemoMatch || isCreator,
     isPlayer: isDemoMatch || isPlayer,
     isReferee,

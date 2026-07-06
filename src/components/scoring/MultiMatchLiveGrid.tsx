@@ -14,6 +14,7 @@ export interface LiveMatchCardData {
   courtLabel?: string;
   round?: string;
   subtitle?: string;
+  canCancel?: boolean;
 }
 
 interface MultiMatchLiveGridProps {
@@ -22,6 +23,8 @@ interface MultiMatchLiveGridProps {
   emptyDescription?: string;
   showScoreButton?: boolean;
   className?: string;
+  onCancel?: (matchId: string) => void;
+  cancellingId?: string | null;
 }
 
 export function MultiMatchLiveGrid({
@@ -30,6 +33,8 @@ export function MultiMatchLiveGrid({
   emptyDescription = "Live matches will appear here when play starts.",
   showScoreButton = true,
   className,
+  onCancel,
+  cancellingId = null,
 }: MultiMatchLiveGridProps) {
   if (matches.length === 0) {
     return (
@@ -102,6 +107,16 @@ export function MultiMatchLiveGrid({
               >
                 Score
               </Link>
+            )}
+            {match.canCancel && onCancel && (
+              <button
+                type="button"
+                onClick={() => onCancel(match.id)}
+                disabled={cancellingId === match.id}
+                className="rounded-xl border border-danger/40 bg-danger/10 px-4 py-2 text-sm font-semibold text-danger transition-colors hover:bg-danger/20 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {cancellingId === match.id ? "Cancelling…" : "Cancel match"}
+              </button>
             )}
           </div>
         </article>

@@ -156,6 +156,8 @@ export interface MatchStats {
   timeoutsUsedA: number;
   timeoutsUsedB: number;
   durationMinutes: number;
+  /** False when the match finished too quickly to count as official. */
+  timingValid?: boolean;
 }
 
 export interface MatchDetail {
@@ -171,6 +173,7 @@ export interface MatchDetail {
   createdBy: string;
   createdAt: string;
   completedAt: string | null;
+  startedAt?: string | null;
   gameScores: GameScore[];
   players: MatchPlayer[];
   events: MatchEvent[];

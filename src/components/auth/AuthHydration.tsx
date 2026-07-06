@@ -1,8 +1,13 @@
 "use client";
 
 import { useEffect } from "react";
+import type { Session } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase";
 import { readPersistedDemoAuth } from "@/lib/auth/persistDemoAuth";
-import { hydrateSupabaseSession } from "@/lib/auth/hydrateSession";
+import {
+  buildFallbackProfile,
+  fetchOrEnsureProfile,
+} from "@/lib/auth/hydrateSession";
 import { isSupabaseConfigured } from "@/lib/auth/isSupabaseConfigured";
 import { useAuthStore } from "@/store/authStore";
 
@@ -13,37 +18,59 @@ export function AuthHydration() {
   const setLoading = useAuthStore((s) => s.setLoading);
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function hydrate() {
-      if (isSupabaseConfigured()) {
-        const session = await hydrateSupabaseSession();
-        if (cancelled) return;
-
-        if (session) {
-          setUser(session.user);
-          setProfile(session.profile);
-        }
-
-        if (!cancelled) setLoading(false);
-        return;
-      }
-
+    if (!isSupabaseConfigured()) {
       const persisted = readPersistedDemoAuth();
       if (persisted) {
         setUser(persisted.user);
         setProfile(persisted.profile);
+      }
+      setLoading(false);
+      return;
+    }
+
+    const supabase = createClient();
+    let cancelled = false;
+
+    async function applySession(session: Session | null) {
+      if (cancelled) return;
+
+      if (!session?.user) {
+        setUser(null);
+        setProfile(null);
         setLoading(false);
         return;
       }
 
-      if (!cancelled) setLoading(false);
+      try {
+        const profile = await fetchOrEnsureProfile(supabase, session.user);
+        if (cancelled) return;
+        setUser(session.user);
+        setProfile(profile);
+      } catch {
+        if (cancelled) return;
+        setUser(session.user);
+        setProfile(buildFallbackProfile(session.user));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     }
 
-    void hydrate();
+    // Always hydrate from cookies/local storage on mount. Relying only on
+    // onAuthStateChange can leave loading=true forever if the listener never fires.
+    void supabase.auth.getSession().then(({ data: { session } }) => {
+      void applySession(session);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "INITIAL_SESSION") return;
+      void applySession(session);
+    });
 
     return () => {
       cancelled = true;
+      subscription.unsubscribe();
     };
   }, [setUser, setProfile, setLoading]);
 

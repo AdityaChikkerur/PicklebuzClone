@@ -114,7 +114,8 @@ export interface CompleteProfileInput {
   phone: string;
   city: string;
   role: UserRole;
-  avatarFile: File;
+  avatarFile?: File;
+  existingAvatarUrl?: string;
   fullName?: string;
 }
 
@@ -187,6 +188,33 @@ export async function applyProfileCompletion(
   }
 }
 
+async function resolveAvatarUrlForCompletion(
+  supabase: SupabaseClient,
+  input: CompleteProfileInput
+): Promise<ProfileResult<string>> {
+  if (input.avatarFile) {
+    return uploadProfileAvatarWithClient(supabase, input.userId, input.avatarFile);
+  }
+
+  const existing = input.existingAvatarUrl?.trim();
+  if (existing) {
+    return ok(existing);
+  }
+
+  const { data: profileRow } = await supabase
+    .from("profiles")
+    .select("avatar_url")
+    .eq("id", input.userId)
+    .maybeSingle();
+
+  const stored = profileRow?.avatar_url?.trim();
+  if (stored) {
+    return ok(stored);
+  }
+
+  return fail("Profile photo is required");
+}
+
 async function completePlayerProfileDirect(
   input: CompleteProfileInput
 ): Promise<ProfileResult<Profile>> {
@@ -199,11 +227,7 @@ async function completePlayerProfileDirect(
     return fail("Your session expired. Please sign in again.");
   }
 
-  const uploaded = await uploadProfileAvatarWithClient(
-    supabase,
-    input.userId,
-    input.avatarFile
-  );
+  const uploaded = await resolveAvatarUrlForCompletion(supabase, input);
 
   if (uploaded.error || !uploaded.data) {
     return fail(uploaded.error ?? "Could not upload photo");
@@ -240,7 +264,11 @@ export async function completePlayerProfile(
 
   try {
     const formData = new FormData();
-    formData.append("avatar", input.avatarFile);
+    if (input.avatarFile) {
+      formData.append("avatar", input.avatarFile);
+    } else if (input.existingAvatarUrl?.trim()) {
+      formData.append("existingAvatarUrl", input.existingAvatarUrl.trim());
+    }
     formData.append("phone", input.phone);
     formData.append("city", input.city);
     formData.append("role", input.role);

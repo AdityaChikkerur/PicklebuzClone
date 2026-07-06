@@ -9,7 +9,7 @@ const MIN_MATCH_MS = 10 * 60 * 1000;
 
 /**
  * Enforces the 10-minute minimum match duration before allowing end-match.
- * No visible timer — only gates the End action.
+ * Also exposes the resolved start time for the live elapsed clock.
  */
 export function useMatchMinDuration(
   matchId: string,
@@ -40,7 +40,7 @@ export function useMatchMinDuration(
         ? new Date(result.data.startedAt).getTime()
         : null;
       const fromEvent = events.length
-        ? new Date(events[events.length - 1].createdAt).getTime()
+        ? new Date(events[0].createdAt).getTime()
         : null;
 
       setStartedAt(fromDb ?? fromEvent ?? Date.now());
@@ -67,5 +67,5 @@ export function useMatchMinDuration(
     return () => window.clearInterval(id);
   }, [enabled, startedAt]);
 
-  return { canEnd };
+  return { canEnd, startedAt };
 }

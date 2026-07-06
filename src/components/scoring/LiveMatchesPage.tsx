@@ -1,17 +1,51 @@
 "use client";
 
+import { useCallback, useState } from "react";
 import {
   MapPinIcon,
   SignalIcon,
 } from "@heroicons/react/24/outline";
+import { toast } from "sonner";
 import { AppLayout } from "@/components/layout";
 import { Badge } from "@/components/ui/Badge";
 import { MultiMatchLiveGrid } from "@/components/scoring/MultiMatchLiveGrid";
 import { useLiveMatches } from "@/hooks/useLiveMatches";
+import { cancelMatchByCreator } from "@/lib/db/matches";
 import { formatRelativeTime } from "@/lib/utils";
 
 export function LiveMatchesPage() {
-  const { matches, loading, error } = useLiveMatches();
+  const { matches, loading, error, reload } = useLiveMatches();
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+
+  const handleCancel = useCallback(
+    async (matchId: string) => {
+      const match = matches.find((m) => m.id === matchId);
+      const label = match
+        ? `${match.teamAName} vs ${match.teamBName}`
+        : "this match";
+
+      if (
+        !window.confirm(
+          `Cancel ${label}? Your opponent has not accepted yet — this will remove the match from live.`
+        )
+      ) {
+        return;
+      }
+
+      setCancellingId(matchId);
+      const result = await cancelMatchByCreator(matchId);
+      setCancellingId(null);
+
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
+
+      toast.success("Match cancelled.");
+      reload();
+    },
+    [matches, reload]
+  );
 
   return (
     <AppLayout title="Live matches">
@@ -77,7 +111,10 @@ export function LiveMatchesPage() {
                 gameNumber: match.gameNumber,
                 courtLabel: match.courtNumber,
                 subtitle: match.matchType,
+                canCancel: match.canCancel,
               }))}
+              onCancel={(matchId) => void handleCancel(matchId)}
+              cancellingId={cancellingId}
             />
 
             {(matches.some((m) => m.venue) || matches.some((m) => m.city)) && (
