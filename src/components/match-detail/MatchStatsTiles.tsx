@@ -1,7 +1,7 @@
 import type { MatchStats } from "@/types/match";
 import { FAULT_LABELS } from "@/components/scoring/faultLabels";
 import type { FaultType } from "@/types/match";
-import { cn } from "@/lib/utils";
+import { cn, formatMatchDuration } from "@/lib/utils";
 
 interface MatchStatsTilesProps {
   stats: MatchStats;
@@ -20,11 +20,18 @@ export function MatchStatsTiles({
   teamBName,
   className,
 }: MatchStatsTilesProps) {
+  const durationLabel = formatMatchDuration(stats.durationMinutes);
+  const durationInvalid = stats.timingValid === false;
+
   const tiles = [
     { label: "Points won", value: `${stats.pointsWonA} / ${stats.pointsWonB}`, sub: `${teamAName} / ${teamBName}` },
     { label: "Faults", value: `${faultTotal(stats.faultsA)} / ${faultTotal(stats.faultsB)}`, sub: "Total per team" },
     { label: "Timeouts", value: `${stats.timeoutsUsedA} / ${stats.timeoutsUsedB}`, sub: "Used" },
-    { label: "Duration", value: `${stats.durationMinutes} min`, sub: "Match time" },
+    {
+      label: "Duration",
+      value: durationInvalid ? "Invalid" : durationLabel,
+      sub: durationInvalid ? "Under 10 min — not counted" : "Match time",
+    },
   ];
 
   const topFaultA = Object.entries(stats.faultsA).sort((a, b) => b[1] - a[1])[0];
@@ -36,7 +43,16 @@ export function MatchStatsTiles({
         {tiles.map((tile) => (
           <div key={tile.label} className="card-base p-4">
             <p className="text-xs text-muted-foreground">{tile.label}</p>
-            <p className="mt-1 text-lg font-bold text-foreground">{tile.value}</p>
+            <p
+              className={cn(
+                "mt-1 text-lg font-bold",
+                tile.label === "Duration" && durationInvalid
+                  ? "text-danger"
+                  : "text-foreground"
+              )}
+            >
+              {tile.value}
+            </p>
             <p className="text-xs text-muted-foreground">{tile.sub}</p>
           </div>
         ))}

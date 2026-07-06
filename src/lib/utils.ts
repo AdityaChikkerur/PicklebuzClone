@@ -23,6 +23,22 @@ export function formatDateTime(date: string | Date): string {
   }).format(new Date(date));
 }
 
+export function formatElapsedClock(startTime: number): string {
+  const secs = Math.max(0, Math.floor((Date.now() - startTime) / 1000));
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+export function formatMatchDuration(minutes: number): string {
+  if (minutes <= 0) return "—";
+  const rounded = Math.round(minutes);
+  if (rounded < 60) return `${rounded} min`;
+  const h = Math.floor(rounded / 60);
+  const m = rounded % 60;
+  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+}
+
 export function formatRelativeTime(date: string | Date): string {
   const now = Date.now();
   const then = new Date(date).getTime();

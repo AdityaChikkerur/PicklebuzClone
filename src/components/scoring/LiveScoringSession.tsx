@@ -115,7 +115,7 @@ export function LiveScoringSession({ matchId }: LiveScoringSessionProps) {
     isUuid(matchId) && !awaitingStart && !hydrating && !matchState.isMatchComplete;
   useRealtimeMatch(matchId, realtimeEnabled);
 
-  const { canEnd: canEndMatch } = useMatchMinDuration(
+  const { canEnd: canEndMatch, startedAt: matchStartedAt } = useMatchMinDuration(
     matchId,
     matchState.events,
     matchState.bestOf >= 3 && !matchState.isMatchComplete
@@ -183,6 +183,7 @@ export function LiveScoringSession({ matchId }: LiveScoringSessionProps) {
           onShowTimeline={() => setShowTimeline((v) => !v)}
           readOnly={readOnly}
           canEndMatch={canEndMatch}
+          matchStartedAt={matchStartedAt}
         />
 
         <MatchRuleChips matchState={matchState} />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CameraIcon } from "@heroicons/react/24/outline";
@@ -32,8 +32,16 @@ export function ProfileOnboardingModal() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(
+    profile?.avatarUrl ?? null
+  );
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!avatarFile && profile?.avatarUrl) {
+      setAvatarPreview(profile.avatarUrl);
+    }
+  }, [profile?.avatarUrl, avatarFile]);
 
   const {
     register,
@@ -89,7 +97,7 @@ export function ProfileOnboardingModal() {
       return;
     }
 
-    if (!avatarFile) {
+    if (!avatarFile && !profile?.avatarUrl) {
       toast.error("Profile photo is required");
       return;
     }
@@ -101,7 +109,8 @@ export function ProfileOnboardingModal() {
       phone: values.phone.replace(/\s|-/g, ""),
       city: values.city,
       role: values.role as UserRole,
-      avatarFile,
+      avatarFile: avatarFile ?? undefined,
+      existingAvatarUrl: !avatarFile ? profile?.avatarUrl ?? undefined : undefined,
       fullName: profile?.fullName,
     });
 

@@ -20,6 +20,10 @@ import { authFetch } from "@/lib/auth/clientFetch";
 import { createClient } from "@/lib/supabase";
 import { isSupabaseConfigured } from "@/lib/auth/isSupabaseConfigured";
 import { formatDbError } from "@/lib/db/formatDbError";
+import {
+  computeMatchDurationMinutes,
+  isMatchTimingValid,
+} from "@/lib/match/timingFlags";
 import { isUuid } from "@/lib/db/config";
 import type {
   DbMatchRules,
@@ -101,6 +105,8 @@ interface MatchRow {
   winner: string | null;
   created_at: string;
   completed_at: string | null;
+  started_at?: string | null;
+  score_flagged?: boolean;
   local_rules?: Record<string, unknown>;
   has_referee?: boolean;
 }
@@ -702,7 +708,16 @@ function localRulesNotes(localRules: Record<string, unknown> | undefined): strin
   return typeof notes === "string" ? notes : "";
 }
 
-function statsFromEvents(events: MatchEvent[]): MatchStats {
+function statsFromEvents(
+  events: MatchEvent[],
+  timing?: {
+    startedAt?: string | null;
+    completedAt?: string | null;
+    createdAt?: string;
+    bestOf?: number;
+    scoreFlagged?: boolean;
+  }
+): MatchStats {
   const faultsA = { ...DEFAULT_FAULTS };
   const faultsB = { ...DEFAULT_FAULTS };
   let pointsWonA = 0;
@@ -740,6 +755,20 @@ function statsFromEvents(events: MatchEvent[]): MatchStats {
     }
   }
 
+  const durationMinutes = timing
+    ? computeMatchDurationMinutes(
+        timing.startedAt,
+        timing.completedAt,
+        timing.createdAt
+      )
+    : 0;
+  const bestOf = timing?.bestOf ?? 3;
+  const timingValid = isMatchTimingValid(
+    durationMinutes,
+    bestOf,
+    timing?.scoreFlagged ?? false
+  );
+
   return {
     pointsWonA,
     pointsWonB,
@@ -747,7 +776,8 @@ function statsFromEvents(events: MatchEvent[]): MatchStats {
     faultsB,
     timeoutsUsedA,
     timeoutsUsedB,
-    durationMinutes: 0,
+    durationMinutes,
+    timingValid,
   };
 }
 
@@ -771,10 +801,17 @@ export function mapFullMatchToDetail(
     createdBy: match.created_by,
     createdAt: match.created_at,
     completedAt: match.completed_at,
+    startedAt: match.started_at ?? null,
     gameScores,
     players: [],
     events,
-    stats: statsFromEvents(events),
+    stats: statsFromEvents(events, {
+      startedAt: match.started_at,
+      completedAt: match.completed_at,
+      createdAt: match.created_at,
+      bestOf: match.best_of ?? 3,
+      scoreFlagged: match.score_flagged ?? false,
+    }),
     localRules: localRulesNotes(match.local_rules),
     isCurrentUserCreator: Boolean(
       currentUserId && currentUserId === match.created_by
