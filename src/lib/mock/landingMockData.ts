@@ -1,7 +1,4 @@
 import type { AdminTournamentRow } from "@/types/admin";
-import type { MatchDetail } from "@/types/match";
-import { buildAdminTournamentRows } from "./adminMockData";
-import { MATCH_DETAILS } from "./extendedMockData";
 
 export interface LandingLiveMatch {
   id: string;
@@ -15,29 +12,10 @@ export interface LandingLiveMatch {
   matchType: string;
 }
 
-function matchToLandingCard(match: MatchDetail): LandingLiveMatch {
-  const lastEvent = match.events[0];
-  const currentGame = match.gameScores.at(-1);
-
-  return {
-    id: match.id,
-    teamAName: match.teamAName,
-    teamBName: match.teamBName,
-    scoreA: lastEvent?.scoreA ?? currentGame?.scoreA ?? 0,
-    scoreB: lastEvent?.scoreB ?? currentGame?.scoreB ?? 0,
-    gameNumber: lastEvent?.gameNumber ?? match.gameScores.length,
-    venue: match.venue,
-    city: match.city,
-    matchType: match.matchType,
-  };
-}
-
 export function getFeaturedTournamentsForLanding(): AdminTournamentRow[] {
-  return buildAdminTournamentRows().filter((t) => t.featured && !t.archived);
+  return [];
 }
 
 export function getLandingLiveMatches(): LandingLiveMatch[] {
-  return Object.values(MATCH_DETAILS)
-    .filter((match) => match.status === "live")
-    .map(matchToLandingCard);
+  return [];
 }

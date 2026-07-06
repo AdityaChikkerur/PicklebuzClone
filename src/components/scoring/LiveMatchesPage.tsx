@@ -13,7 +13,7 @@ import { useLiveMatches } from "@/hooks/useLiveMatches";
 import { formatRelativeTime } from "@/lib/utils";
 
 export function LiveMatchesPage() {
-  const { matches, loading, error, source } = useLiveMatches();
+  const { matches, loading, error } = useLiveMatches();
 
   return (
     <AppLayout title="Live matches">
@@ -38,9 +38,9 @@ export function LiveMatchesPage() {
           </Link>
         </div>
 
-        {error && source === "mock" && (
+        {error && (
           <p className="rounded-xl border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-warning">
-            {error}. Showing demo matches.
+            {error}
           </p>
         )}
 

@@ -263,6 +263,10 @@ export const useMatchStore = create<MatchStore>((set, get) => ({
       return;
     }
 
+    const scoreA = team === "A" ? matchState.scoreA + 1 : matchState.scoreA;
+    const scoreB = team === "B" ? matchState.scoreB + 1 : matchState.scoreB;
+    const gameNumber = matchState.currentGame;
+
     const next = awardPoint(matchState, team, `Point for Team ${team}`);
     set({ matchState: next, history: pushHistory(history, matchState) });
 
@@ -271,9 +275,9 @@ export const useMatchStore = create<MatchStore>((set, get) => ({
       matchId: s.currentMatchId,
       eventType: "point",
       team,
-      scoreA: s.matchState.scoreA,
-      scoreB: s.matchState.scoreB,
-      gameNumber: s.matchState.currentGame,
+      scoreA,
+      scoreB,
+      gameNumber,
     });
   },
 
@@ -309,6 +313,12 @@ export const useMatchStore = create<MatchStore>((set, get) => ({
     };
 
     const opposing = opponent(team);
+    const scoreA =
+      opposing === "A" ? matchState.scoreA + 1 : matchState.scoreA;
+    const scoreB =
+      opposing === "B" ? matchState.scoreB + 1 : matchState.scoreB;
+    const gameNumber = matchState.currentGame;
+
     next = awardPoint(
       next,
       opposing,
@@ -322,9 +332,9 @@ export const useMatchStore = create<MatchStore>((set, get) => ({
       matchId: s.currentMatchId,
       eventType: "fault",
       team,
-      scoreA: s.matchState.scoreA,
-      scoreB: s.matchState.scoreB,
-      gameNumber: s.matchState.currentGame,
+      scoreA,
+      scoreB,
+      gameNumber,
       faultType,
     });
   },
@@ -417,20 +427,117 @@ export const useMatchStore = create<MatchStore>((set, get) => ({
     set({
       matchState: createInitialMatchState(overrides),
       history: [],
-      currentMatchId: null,
+      currentMatchId: overrides?.matchId ?? null,
     });
   },
 
   setMatchFromDB: (data) => {
     set((s) => {
       const { incomingEvent, ...rest } = data;
-      const matchState = { ...s.matchState, ...rest };
+      let matchState = { ...s.matchState, ...rest };
+
       if (
         incomingEvent &&
         !s.matchState.events.some((e) => e.id === incomingEvent.id)
       ) {
+        const localEcho = s.matchState.events.find(
+          (e) =>
+            e.id !== incomingEvent.id &&
+            e.eventType === incomingEvent.eventType &&
+            e.scoreA === incomingEvent.scoreA &&
+            e.scoreB === incomingEvent.scoreB &&
+            e.gameNumber === incomingEvent.gameNumber &&
+            e.team === incomingEvent.team
+        );
+
+        if (localEcho) {
+          matchState.events = [
+            incomingEvent,
+            ...s.matchState.events.filter((e) => e.id !== localEcho.id),
+          ];
+          return { matchState };
+        }
+
+        const gameWinner = isGameWon(
+          incomingEvent.scoreA,
+          incomingEvent.scoreB,
+          matchState.targetPoints,
+          matchState.winBy
+        );
+
+        if (
+          gameWinner &&
+          (incomingEvent.eventType === "point" ||
+            incomingEvent.eventType === "fault")
+        ) {
+          const alreadyRecorded = matchState.gameScores.some(
+            (g) => g.gameNumber === incomingEvent.gameNumber
+          );
+          if (!alreadyRecorded) {
+            matchState = {
+              ...matchState,
+              gameScores: [
+                ...matchState.gameScores,
+                {
+                  gameNumber: incomingEvent.gameNumber,
+                  scoreA: incomingEvent.scoreA,
+                  scoreB: incomingEvent.scoreB,
+                  winner: gameWinner,
+                },
+              ],
+            };
+          }
+
+          const gamesNeeded = gamesToWin(matchState.bestOf);
+          const aWins = countGameWins(matchState.gameScores, "A");
+          const bWins = countGameWins(matchState.gameScores, "B");
+
+          if (aWins >= gamesNeeded || bWins >= gamesNeeded) {
+            matchState = {
+              ...matchState,
+              scoreA: incomingEvent.scoreA,
+              scoreB: incomingEvent.scoreB,
+              currentGame: incomingEvent.gameNumber,
+              isMatchComplete: true,
+              matchWinner: aWins >= gamesNeeded ? "A" : "B",
+            };
+          } else {
+            matchState = {
+              ...matchState,
+              scoreA: 0,
+              scoreB: 0,
+              currentGame: incomingEvent.gameNumber + 1,
+            };
+          }
+        } else {
+          matchState = {
+            ...matchState,
+            scoreA: incomingEvent.scoreA,
+            scoreB: incomingEvent.scoreB,
+            currentGame: incomingEvent.gameNumber,
+          };
+        }
+
+        if (incomingEvent.eventType === "side_out" && incomingEvent.team) {
+          matchState = applyServeChange(
+            { ...matchState, servingTeam: incomingEvent.team },
+            incomingEvent.team
+          );
+        } else if (incomingEvent.team) {
+          const scoringTeam =
+            incomingEvent.eventType === "fault"
+              ? opponent(incomingEvent.team)
+              : incomingEvent.team;
+          if (matchState.scoringType === "rally") {
+            matchState = applyServeChange(matchState, scoringTeam);
+          } else if (scoringTeam !== matchState.servingTeam) {
+            matchState = applyServeChange(matchState, scoringTeam);
+          }
+        }
+
         matchState.events = [incomingEvent, ...s.matchState.events];
       }
+
       return { matchState };
     });
   },

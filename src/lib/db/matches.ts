@@ -128,6 +128,48 @@ function countTimeoutsUsed(events: DbMatchEventRow[], team: Team): number {
     .length;
 }
 
+function isGameWonFromScores(
+  scoreA: number,
+  scoreB: number,
+  targetPoints: number,
+  winBy: number
+): Team | null {
+  if (scoreA >= targetPoints && scoreA - scoreB >= winBy) return "A";
+  if (scoreB >= targetPoints && scoreB - scoreA >= winBy) return "B";
+  return null;
+}
+
+/** Reconstruct completed games from persisted point/fault events during live play. */
+function deriveGameScoresFromEvents(
+  events: DbMatchEventRow[],
+  rules: MatchRules
+): ReturnType<typeof mapDbGameScore>[] {
+  const chron = [...events].reverse();
+  const seen = new Set<number>();
+  const derived: ReturnType<typeof mapDbGameScore>[] = [];
+
+  for (const event of chron) {
+    if (event.event_type !== "point" && event.event_type !== "fault") continue;
+    const winner = isGameWonFromScores(
+      event.score_a,
+      event.score_b,
+      rules.targetPoints,
+      rules.winBy
+    );
+    if (winner && !seen.has(event.game_number)) {
+      seen.add(event.game_number);
+      derived.push({
+        gameNumber: event.game_number,
+        scoreA: event.score_a,
+        scoreB: event.score_b,
+        winner,
+      });
+    }
+  }
+
+  return derived;
+}
+
 function buildMatchState(
   match: DbMatchRow,
   rules: MatchRules,
@@ -138,6 +180,9 @@ function buildMatchState(
   const latest = events[0];
   const timeoutsUsedA = countTimeoutsUsed(events, "A");
   const timeoutsUsedB = countTimeoutsUsed(events, "B");
+  const derivedGameScores = deriveGameScoresFromEvents(events, rules);
+  const mergedGameScores =
+    gameScores.length >= derivedGameScores.length ? gameScores : derivedGameScores;
 
   const isComplete =
     match.status === "completed" ||
@@ -146,6 +191,26 @@ function buildMatchState(
     match.status === "disputed";
 
   const isAwaitingStart = match.status === "draft";
+
+  let scoreA = latest?.score_a ?? 0;
+  let scoreB = latest?.score_b ?? 0;
+  let currentGame = latest?.game_number ?? mergedGameScores.length + 1;
+
+  if (
+    latest &&
+    (latest.event_type === "point" || latest.event_type === "fault") &&
+    isGameWonFromScores(
+      latest.score_a,
+      latest.score_b,
+      rules.targetPoints,
+      rules.winBy
+    ) &&
+    !isComplete
+  ) {
+    currentGame = latest.game_number + 1;
+    scoreA = 0;
+    scoreB = 0;
+  }
 
   return {
     matchId: match.id,
@@ -158,10 +223,10 @@ function buildMatchState(
     winBy: rules.winBy as 1 | 2,
     maxTimeouts: rules.maxTimeouts,
     timeoutDuration: rules.timeoutDuration,
-    scoreA: latest?.score_a ?? 0,
-    scoreB: latest?.score_b ?? 0,
-    currentGame: latest?.game_number ?? gameScores.length + 1,
-    gameScores,
+    scoreA,
+    scoreB,
+    currentGame,
+    gameScores: mergedGameScores,
     timeoutsA: Math.max(0, rules.maxTimeouts - timeoutsUsedA),
     timeoutsB: Math.max(0, rules.maxTimeouts - timeoutsUsedB),
     events: mappedEvents,
@@ -269,8 +334,12 @@ export async function createMatch(
 
     const allRegisteredIds = [...new Set([...teamAPlayerIds, ...teamBPlayerIds])];
     const needsInviteAccept = !autoStart && allRegisteredIds.length > 0;
-    const initialStatus = needsInviteAccept ? "draft" : "live";
-    const startedAt = needsInviteAccept ? null : new Date().toISOString();
+    // Public matches are visible in the live feed immediately; private matches
+    // stay draft until all opponents accept their invites.
+    const initialStatus =
+      needsInviteAccept && !setup.isPublic ? "draft" : "live";
+    const startedAt =
+      initialStatus === "live" ? new Date().toISOString() : null;
 
     const insertRow = {
       created_by: createdBy,
@@ -917,7 +986,7 @@ export interface FetchLiveMatchesResult {
   error: string | null;
 }
 
-  export async function fetchLiveMatches(): Promise<FetchLiveMatchesResult> {
+export async function fetchLiveMatches(): Promise<FetchLiveMatchesResult> {
   if (!isSupabaseConfigured()) {
     return {
       data: [],
@@ -925,7 +994,6 @@ export interface FetchLiveMatchesResult {
       error: "Supabase is not configured",
     };
   }
-
 
   try {
     const supabase = createClient();
@@ -936,6 +1004,7 @@ export interface FetchLiveMatchesResult {
         "id, team_a_name, team_b_name, venue, city, court_number, match_type, created_at"
       )
       .eq("status", "live")
+      .eq("is_public", true)
       .order("created_at", { ascending: false })
       .limit(50);
 
@@ -968,7 +1037,7 @@ export interface FetchLiveMatchesResult {
       });
     }
 
-       if (summaries.length === 0) {
+    if (summaries.length === 0) {
       return {
         data: [],
         source: "supabase",

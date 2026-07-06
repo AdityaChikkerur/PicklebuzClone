@@ -117,8 +117,10 @@ export function MatchSetupWizard() {
     const isDraft = created.data?.status === "draft";
     toast.success(
       isDraft
-        ? "Match created! Waiting for your opponent to accept."
-        : "Match ready. Let's score!"
+        ? "Match created! Waiting for your opponent to accept before scoring."
+        : setup.isPublic
+          ? "Match is live! Opponents can accept invites to start scoring."
+          : "Match ready. Let's score!"
     );
     router.push(
       persistedId ? `/live-scoring/${persistedId}` : "/live-scoring/local"

@@ -10,7 +10,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { cn } from "@/lib/utils";
 
 const SIGNUP_CITIES = [
-  "Bangalore",
+  "Bengaluru",
   "Mumbai",
   "Delhi",
   "Chennai",
@@ -18,6 +18,7 @@ const SIGNUP_CITIES = [
   "Pune",
   "Kolkata",
 ];
+import { isPhoneDuplicateError } from "@/lib/db/formatDbError";
 import { completePlayerProfile } from "@/lib/db/profiles";
 import { getDefaultHomeForRole } from "@/lib/auth/routeGuards";
 import { useAuthStore } from "@/store/authStore";
@@ -38,6 +39,8 @@ export function ProfileOnboardingModal() {
     register,
     handleSubmit,
     setValue,
+    setError,
+    clearErrors,
     watch,
     formState: { errors },
   } = useForm<OnboardingFormValues>({
@@ -105,7 +108,12 @@ export function ProfileOnboardingModal() {
     setSubmitting(false);
 
     if (result.error || !result.data) {
-      toast.error(result.error ?? "Could not save profile");
+      const message = result.error ?? "Could not save profile";
+      if (isPhoneDuplicateError(message)) {
+        setError("phone", { type: "server", message });
+        return;
+      }
+      toast.error(message);
       return;
     }
 
@@ -174,12 +182,17 @@ export function ProfileOnboardingModal() {
               type="tel"
               autoComplete="tel"
               inputMode="tel"
-              className="input-base"
+              aria-invalid={errors.phone ? true : undefined}
+              className={cn(errors.phone ? "input-error" : "input-base")}
               placeholder="+91 98765 43210"
-              {...register("phone")}
+              {...register("phone", {
+                onChange: () => clearErrors("phone"),
+              })}
             />
             {errors.phone && (
-              <p className="mt-1 text-xs text-danger">{errors.phone.message}</p>
+              <p className="mt-1.5 text-xs font-medium text-danger" role="alert">
+                {errors.phone.message}
+              </p>
             )}
           </div>
 
@@ -192,7 +205,7 @@ export function ProfileOnboardingModal() {
               type="text"
               list="onboarding-cities"
               className="input-base"
-              placeholder="e.g. Bangalore"
+              placeholder="e.g. Bengaluru"
               {...register("city")}
             />
             <datalist id="onboarding-cities">

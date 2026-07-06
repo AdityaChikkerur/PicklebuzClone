@@ -6,7 +6,7 @@ import { QUICK_VENUES } from "@/components/match/mockData";
 import type { TournamentForm } from "@/types/tournament";
 
 const CITIES = [
-  "Bangalore",
+  "Bengaluru",
   "Mumbai",
   "Delhi",
   "Chennai",
@@ -75,7 +75,7 @@ export function BasicsStep({ form, onChange }: BasicsStepProps) {
           value={form.name}
           onChange={(e) => onChange({ name: e.target.value })}
           className="input-base"
-          placeholder="e.g. Bangalore Open 2026"
+          placeholder="e.g. Bengaluru Open 2026"
         />
       </div>
 
@@ -158,7 +158,7 @@ export function BasicsStep({ form, onChange }: BasicsStepProps) {
             value={form.city}
             onChange={(e) => onChange({ city: e.target.value })}
             className="input-base"
-            placeholder="e.g. Bangalore"
+            placeholder="e.g. Bengaluru"
           />
           <datalist id="tournament-cities">
             {CITIES.map((city) => (

@@ -5,6 +5,7 @@ import {
   uploadProfileAvatarWithClient,
   type CompleteProfileInput,
 } from "@/lib/db/profiles";
+import { isPhoneDuplicateError } from "@/lib/db/formatDbError";
 import { createAuthenticatedSupabaseClient } from "@/lib/supabaseServer";
 import type { UserRole } from "@/types/player";
 
@@ -99,10 +100,9 @@ export async function POST(request: Request) {
   );
 
   if (completed.error || !completed.data) {
-    return NextResponse.json(
-      { error: completed.error ?? "Could not save profile." },
-      { status: 500 }
-    );
+    const message = completed.error ?? "Could not save profile.";
+    const status = isPhoneDuplicateError(message) ? 409 : 500;
+    return NextResponse.json({ error: message }, { status });
   }
 
   return NextResponse.json({

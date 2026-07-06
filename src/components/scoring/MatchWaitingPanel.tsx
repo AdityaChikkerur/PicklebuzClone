@@ -30,7 +30,7 @@ export function MatchWaitingPanel({
       if (cancelled) return;
       setSummary(result.data);
       setLoading(false);
-      if (result.data?.matchStatus === "live") {
+      if (result.data?.allAccepted) {
         onMatchStarted?.();
       }
     }

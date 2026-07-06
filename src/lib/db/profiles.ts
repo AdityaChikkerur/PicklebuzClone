@@ -3,7 +3,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { authFetch } from "@/lib/auth/clientFetch";
 import { createClient } from "@/lib/supabase";
 import { isSupabaseConfigured } from "@/lib/auth/isSupabaseConfigured";
-import { formatDbError } from "@/lib/db/formatDbError";
+import {
+  formatDbError,
+  PHONE_ALREADY_REGISTERED_MESSAGE,
+} from "@/lib/db/formatDbError";
 import { computePlayerRating } from "@/lib/ratings/computePlayerRating";
 import { fetchPlayerRankingSummary } from "@/lib/db/playerStats";
 import { mapDbProfile, type DbProfileRow } from "@/lib/db/profileMapper";
@@ -115,6 +118,29 @@ export interface CompleteProfileInput {
   fullName?: string;
 }
 
+async function assertPhoneAvailable(
+  supabase: SupabaseClient,
+  userId: string,
+  phone: string
+): Promise<ProfileResult<true>> {
+  const { data, error } = await supabase.rpc("lookup_profile_by_phone", {
+    p_phone: phone,
+  });
+
+  if (error) throw error;
+
+  const row = (Array.isArray(data) ? data[0] : data) as
+    | { id: string }
+    | null
+    | undefined;
+
+  if (row?.id && row.id !== userId) {
+    return fail(PHONE_ALREADY_REGISTERED_MESSAGE);
+  }
+
+  return ok(true);
+}
+
 export async function applyProfileCompletion(
   supabase: SupabaseClient,
   input: CompleteProfileInput,
@@ -125,6 +151,15 @@ export async function applyProfileCompletion(
   }
 
   try {
+    const phoneCheck = await assertPhoneAvailable(
+      supabase,
+      input.userId,
+      input.phone
+    );
+    if (phoneCheck.error) {
+      return fail(phoneCheck.error);
+    }
+
     const updateRow: Record<string, unknown> = {
       phone: input.phone.trim(),
       city: input.city.trim(),
