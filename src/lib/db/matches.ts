@@ -794,31 +794,15 @@ export interface FetchLiveMatchesResult {
   error: string | null;
 }
 
-export async function fetchLiveMatches(): Promise<FetchLiveMatchesResult> {
+  export async function fetchLiveMatches(): Promise<FetchLiveMatchesResult> {
   if (!isSupabaseConfigured()) {
-<<<<<<< HEAD
-  return {
-    data: [],
-    source: "supabase",
-    error: "Supabase is not configured",
-  };
-}
-=======
-    const { getLandingLiveMatches } = await import(
-      "@/lib/mock/landingMockData"
-    );
-    const mock = getLandingLiveMatches();
     return {
-      data: mock.map((m, index) => ({
-        ...m,
-        courtNumber: `Court ${index + 1}`,
-        createdAt: new Date().toISOString(),
-      })),
-      source: "mock",
-      error: null,
+      data: [],
+      source: "supabase",
+      error: "Supabase is not configured",
     };
   }
->>>>>>> main
+
 
   try {
     const supabase = createClient();
@@ -861,48 +845,20 @@ export async function fetchLiveMatches(): Promise<FetchLiveMatchesResult> {
       });
     }
 
-    if (summaries.length === 0) {
-<<<<<<< HEAD
-  return {
-    data: [],
-    source: "supabase",
-    error: null,
-  };
-}
-=======
-      const { getLandingLiveMatches } = await import(
-        "@/lib/mock/landingMockData"
-      );
-      const mock = getLandingLiveMatches();
+       if (summaries.length === 0) {
       return {
-        data: mock.map((m, index) => ({
-          ...m,
-          courtNumber: `Court ${index + 1}`,
-          createdAt: new Date().toISOString(),
-        })),
-        source: "mock",
+        data: [],
+        source: "supabase",
         error: null,
       };
     }
->>>>>>> main
 
     return { data: summaries, source: "supabase", error: null };
   } catch (e) {
     return {
-<<<<<<< HEAD
-  data: [],
-  source: "supabase",
-  error: e instanceof Error ? e.message : "Could not load live matches",
-};
-=======
-      data: mock.map((m, index) => ({
-        ...m,
-        courtNumber: `Court ${index + 1}`,
-        createdAt: new Date().toISOString(),
-      })),
-      source: "mock",
+      data: [],
+      source: "supabase",
       error: e instanceof Error ? e.message : "Could not load live matches",
     };
->>>>>>> main
   }
 }
