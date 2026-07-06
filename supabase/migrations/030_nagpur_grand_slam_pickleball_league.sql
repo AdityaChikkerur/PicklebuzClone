@@ -35,7 +35,7 @@ begin
     '- Unsold players receive a full refund' || E'\n' ||
     '- Complete the registration form and attach your successful payment screenshot to secure your spot on the auction list' || E'\n\n' ||
     'Organizers: Nagpur Cricket War (NCW) × Alpha Sports' || E'\n' ||
-    'Official registration: https://theplayerauction.com/auction/1351/nagpur-grand-slam-pickleball/register/3e313b9badf12632cdae5452d20e1af6' || E'\n' ||
+    'Official registration: https://theplayerauction.com/auction/1351/nagpur-grand-slam-pickleball-league-2026' || E'\n' ||
     'Contact: Rohit Mirani · +91 93709 98926' || E'\n\n' ||
     'Be a champion. Take home the glory!';
 
@@ -108,7 +108,7 @@ begin
     'league',
     '₹7,00,000 total · Champions ₹3,00,000 · Runners-up ₹2,00,000',
     true,
-    'https://theplayerauction.com/auction/1351/nagpur-grand-slam-pickleball/register/3e313b9badf12632cdae5452d20e1af6'
+    'https://theplayerauction.com/auction/1351/nagpur-grand-slam-pickleball-league-2026'
   )
   returning id into v_tournament;
 
