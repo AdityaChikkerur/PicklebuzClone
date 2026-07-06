@@ -105,6 +105,7 @@ const finalSetup = {
   setup: finalSetup,
   teamAPlayerIds,
   teamBPlayerIds,
+  matchPlayers: setup.players,
 });
 
     setStarting(false);
@@ -133,11 +134,17 @@ const finalSetup = {
     resetMatch(matchState);
     setCurrentMatchId(persistedId);
     const isDraft = created.data?.status === "draft";
+    const isDoubles =
+      setup.matchType === "doubles" || setup.matchType === "mixed";
     toast.success(
       isDraft
-        ? "Match created! Waiting for your opponent to accept before scoring."
+        ? isDoubles
+          ? "Match created! Waiting for an opponent to accept before scoring."
+          : "Match created! Waiting for your opponent to accept before scoring."
         : setup.isPublic
-          ? "Match is live! Opponents can accept invites to start scoring."
+          ? isDoubles
+            ? "Match is live! An opponent can accept to start scoring."
+            : "Match is live! Opponents can accept invites to start scoring."
           : "Match ready. Let's score!"
     );
     router.push(

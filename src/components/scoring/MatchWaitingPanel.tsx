@@ -3,12 +3,14 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { fetchMatchInviteSummary, type MatchInviteSummary } from "@/lib/db/matchPlayerInvites";
+import { inviteWaitingMessage, isDoublesMatchType } from "@/lib/match/inviteRules";
 import { useAuthStore } from "@/store/authStore";
 
 interface MatchWaitingPanelProps {
   matchId: string;
   teamAName: string;
   teamBName: string;
+  matchType?: string;
   onMatchStarted?: () => void;
 }
 
@@ -16,6 +18,7 @@ export function MatchWaitingPanel({
   matchId,
   teamAName,
   teamBName,
+  matchType = "singles",
   onMatchStarted,
 }: MatchWaitingPanelProps) {
   const userId = useAuthStore((s) => s.user?.id ?? s.profile?.id);
@@ -53,9 +56,12 @@ export function MatchWaitingPanel({
 
   const pending = summary?.players.filter((p) => p.inviteStatus === "pending") ?? [];
   const accepted = summary?.players.filter((p) => p.inviteStatus === "accepted") ?? [];
+  const effectiveMatchType = summary?.matchType ?? matchType;
+  const isDoubles = isDoublesMatchType(effectiveMatchType);
   const userPending = pending.some(
     (p) => !p.isGuest && p.playerId === userId
   );
+  const waitingMessage = inviteWaitingMessage(effectiveMatchType);
 
   return (
     <div className="mx-4 my-4 flex flex-col gap-4 rounded-2xl border border-primary/30 bg-primary/5 p-5">
@@ -68,10 +74,7 @@ export function MatchWaitingPanel({
           <span className="mx-2 font-normal text-muted-foreground">vs</span>
           {teamBName}
         </h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Both players must accept before scoring begins. Only then will the match
-          count toward ratings.
-        </p>
+        <p className="mt-2 text-sm text-muted-foreground">{waitingMessage}</p>
       </div>
 
       {userPending && (
@@ -133,9 +136,11 @@ export function MatchWaitingPanel({
         </div>
       )}
 
-      {pending.length === 0 && accepted.length > 0 && (
+      {summary?.allAccepted && accepted.length > 0 && (
         <p className="text-center text-sm text-muted-foreground">
-          All players accepted — starting match…
+          {isDoubles
+            ? "Opponent confirmed — starting match…"
+            : "All players accepted — starting match…"}
         </p>
       )}
     </div>

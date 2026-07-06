@@ -192,7 +192,10 @@ export function LiveScoringSession({ matchId }: LiveScoringSessionProps) {
           <div className="mx-4 mt-3 rounded-xl border border-warning/30 bg-warning/10 px-4 py-3 text-center">
             <p className="text-sm text-foreground">
               {awaitingStart
-                ? "Waiting for your opponent to accept before the match counts toward ratings."
+                ? matchState.matchType === "doubles" ||
+                  matchState.matchType === "mixed"
+                  ? "Waiting for an opponent to accept before the match counts toward ratings."
+                  : "Waiting for your opponent to accept before the match counts toward ratings."
                 : "This match has not started yet. You can cancel it if you no longer want to play."}
             </p>
             <button
@@ -212,6 +215,7 @@ export function LiveScoringSession({ matchId }: LiveScoringSessionProps) {
               matchId={matchId}
               teamAName={matchState.teamAName}
               teamBName={matchState.teamBName}
+              matchType={matchState.matchType}
               onMatchStarted={handleMatchStarted}
             />
           ) : (
