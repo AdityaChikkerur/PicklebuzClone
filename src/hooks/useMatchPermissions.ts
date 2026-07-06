@@ -16,6 +16,8 @@ export interface MatchPermissions {
   isPlayer: boolean;
   isReferee: boolean;
   isDelegatedScorer: boolean;
+  matchStatus: string | null;
+  isAwaitingStart: boolean;
 }
 
 const REFEREE_ROLES: UserRole[] = ["referee", "admin"];
@@ -29,6 +31,7 @@ export function useMatchPermissions(matchId: string | undefined): MatchPermissio
   const [isCreator, setIsCreator] = useState(false);
   const [isPlayer, setIsPlayer] = useState(false);
   const [isDelegatedScorer, setIsDelegatedScorer] = useState(false);
+  const [matchStatus, setMatchStatus] = useState<string | null>(null);
 
   const isReferee = Boolean(role && REFEREE_ROLES.includes(role));
   const isLocalMatch =
@@ -41,6 +44,7 @@ export function useMatchPermissions(matchId: string | undefined): MatchPermissio
     if (!matchId || !isSupabaseConfigured() || !isUuid(matchId)) {
       setIsCreator(isLocalMatch);
       setIsPlayer(isLocalMatch);
+      setMatchStatus(isLocalMatch ? "live" : null);
       setLoading(false);
       return;
     }
@@ -53,7 +57,7 @@ export function useMatchPermissions(matchId: string | undefined): MatchPermissio
 
       const { data: match } = await supabase
         .from("matches")
-        .select("created_by")
+        .select("created_by, status")
         .eq("id", matchId)
         .maybeSingle();
 
@@ -79,10 +83,12 @@ export function useMatchPermissions(matchId: string | undefined): MatchPermissio
       const player = Boolean(
         userId && (players ?? []).some((row) => row.player_id === userId)
       );
+      const status = (match?.status as string) ?? null;
 
       setIsCreator(creator);
       setIsPlayer(player);
       setIsDelegatedScorer(Boolean(scorerRow));
+      setMatchStatus(status);
       setLoading(false);
     }
 
@@ -92,16 +98,23 @@ export function useMatchPermissions(matchId: string | undefined): MatchPermissio
     };
   }, [matchId, userId, isLocalMatch]);
 
+  const isAwaitingStart = matchStatus === "draft";
+  const isLive = isLocalMatch || matchStatus === "live";
+
   const canScore =
-    isLocalMatch || isCreator || isPlayer || isReferee || isDelegatedScorer;
+    isLive &&
+    !isAwaitingStart &&
+    (isLocalMatch || isCreator || isPlayer || isReferee || isDelegatedScorer);
 
   return {
     loading,
     canScore,
-    isSpectator: !canScore,
+    isSpectator: !canScore && !isAwaitingStart,
     isCreator: isLocalMatch || isCreator,
     isPlayer: isLocalMatch || isPlayer,
     isReferee,
     isDelegatedScorer: isLocalMatch || isDelegatedScorer,
+    matchStatus,
+    isAwaitingStart,
   };
 }

@@ -11,7 +11,7 @@ interface ScoringConfigStepProps {
 }
 
 const POINT_PRESETS = [11, 15, 21] as const;
-const BEST_OF_OPTIONS = [1, 3, 5] as const;
+const BEST_OF_OPTIONS = [3, 5] as const;
 const WIN_BY_OPTIONS = [1, 2] as const;
 const TIMEOUT_COUNTS = [0, 1, 2, 3] as const;
 const TIMEOUT_DURATIONS = [30, 60, 90, 120] as const;
@@ -100,7 +100,7 @@ export function ScoringConfigStep({ setup, onChange }: ScoringConfigStepProps) {
           {BEST_OF_OPTIONS.map((n) => (
             <Chip
               key={n}
-              label={n === 1 ? "Single game" : `Best of ${n}`}
+              label={`Best of ${n}`}
               active={setup.bestOf === n}
               onClick={() => onChange({ bestOf: n })}
             />

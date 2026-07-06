@@ -299,7 +299,7 @@ export function PlayerSearchDrawer({
                 </button>
               </div>
               <p className="mt-1.5 text-xs text-muted-foreground">
-                Like CricHeroes — find registered players or add by name + number.
+                Find registered players or add by name or number.
               </p>
             </div>
 

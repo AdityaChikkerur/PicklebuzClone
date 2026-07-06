@@ -860,6 +860,7 @@ export async function createMatchForFixture(input: {
       teamAPlayerIds: teamAIds,
       teamBPlayerIds: teamBIds,
       tournamentId: input.tournament.id,
+      autoStart: true,
     });
 
     if (created.error || !created.data) {

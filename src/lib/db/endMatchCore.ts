@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { formatDbError } from "@/lib/db/formatDbError";
+import { analyzeMatchDuration } from "@/lib/match/timingFlags";
 import type { EndMatchInput } from "@/lib/db/matches";
 import type { DbResult } from "@/lib/db/matches";
 
@@ -17,16 +18,20 @@ export async function executeEndMatch(
   supabase: SupabaseClient,
   userId: string,
   input: EndMatchInput
-): Promise<DbResult<{ status: string; verified: boolean }>> {
+): Promise<DbResult<{ status: string; verified: boolean; timingMessage?: string | null }>> {
   try {
     const { data: match, error: readErr } = await supabase
       .from("matches")
-      .select("id, status, created_by")
+      .select("id, status, created_by, started_at, created_at, best_of")
       .eq("id", input.matchId)
       .single();
 
     if (readErr) throw readErr;
     if (!match) return fail("Match not found");
+
+    if (match.status === "draft") {
+      return fail("Match has not started yet — waiting for opponent to accept.");
+    }
 
     if (match.created_by !== userId) {
       const { data: canScore, error: rpcErr } = await supabase.rpc(
@@ -72,12 +77,23 @@ export async function executeEndMatch(
     }
 
     const completedAt = new Date().toISOString();
+    const startIso =
+      (match.started_at as string | null) ?? (match.created_at as string);
+    const durationMinutes =
+      (new Date(completedAt).getTime() - new Date(startIso).getTime()) / 60_000;
+    const timing = analyzeMatchDuration(
+      durationMinutes,
+      (match.best_of as number) ?? 3
+    );
+
     const { error: updateErr } = await supabase
       .from("matches")
       .update({
         status: "verified",
         winner: input.matchWinner,
         completed_at: completedAt,
+        timing_flag: timing.timingFlag,
+        score_flagged: timing.scoreFlagged,
       })
       .eq("id", input.matchId);
 
@@ -151,8 +167,15 @@ export async function executeEndMatch(
       // Notifications must not block match save.
     }
 
-    const { updateRatingsForMatch } = await import("@/lib/db/profiles");
-    await updateRatingsForMatch(input.matchId, supabase);
+    const { data: ratingEligible } = await supabase.rpc(
+      "match_is_rating_eligible",
+      { p_match_id: input.matchId }
+    );
+
+    if (ratingEligible) {
+      const { updateRatingsForMatch } = await import("@/lib/db/profiles");
+      await updateRatingsForMatch(input.matchId, supabase);
+    }
 
     try {
       const { syncFixtureFromMatch } = await import("@/lib/db/fixtures");
@@ -161,7 +184,12 @@ export async function executeEndMatch(
       // Tournament fixture sync is best-effort.
     }
 
-    return ok({ status: "verified", verified: true });
+    return ok({
+      status: "verified",
+      verified: true,
+      timingFlag: timing.timingFlag,
+      timingMessage: timing.message,
+    });
   } catch (error) {
     return fail(error);
   }

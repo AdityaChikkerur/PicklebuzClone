@@ -18,7 +18,7 @@ export interface MatchRules {
   scoringType: ScoringType;
   targetPoints: number;
   winBy: number;
-  bestOf: 1 | 3 | 5;
+  bestOf: 3 | 5;
   doubles: boolean;
   maxTimeouts: number;
   timeoutDuration: number;
@@ -91,7 +91,7 @@ export interface MatchState {
   matchType: MatchType;
   scoringType: ScoringType;
   targetPoints: number;
-  bestOf: 1 | 3 | 5;
+  bestOf: 3 | 5;
   winBy: 1 | 2;
   maxTimeouts: number;
   timeoutDuration: number;
@@ -111,6 +111,8 @@ export interface MatchState {
   isMatchComplete: boolean;
   matchWinner: Team | null;
   isFirstServeOfGame: boolean;
+  /** True while waiting for opponent invite acceptance. */
+  isAwaitingStart?: boolean;
 }
 
 export interface MatchSetupState {
@@ -127,7 +129,7 @@ export interface MatchSetupState {
   hasReferee: boolean;
   scoringType: ScoringType;
   targetPoints: number;
-  bestOf: 1 | 3 | 5;
+  bestOf: 3 | 5;
   winBy: 1 | 2;
   maxTimeouts: number;
   timeoutDuration: number;

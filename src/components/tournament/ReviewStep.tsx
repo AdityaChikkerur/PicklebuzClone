@@ -25,8 +25,7 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
 
 export function ReviewStep({ form }: ReviewStepProps) {
   const scoringLabel = form.scoringType === "rally" ? "Rally" : "Side-out";
-  const bestOfLabel =
-    form.bestOf === 1 ? "Single game" : `Best of ${form.bestOf} (${gamesToWin(form.bestOf)} to win)`;
+  const bestOfLabel = `Best of ${form.bestOf} (${gamesToWin(form.bestOf)} to win)`;
 
   return (
     <div className="flex flex-col gap-6">

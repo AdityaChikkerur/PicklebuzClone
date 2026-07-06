@@ -29,7 +29,7 @@ async function completeMatchSetup(page: Page) {
   await page.getByRole("switch", { name: "Toggle referee for this match" }).click();
   await page.getByRole("button", { name: "Continue" }).click();
 
-  await page.getByRole("button", { name: "Single game" }).click();
+  await page.getByRole("button", { name: "Best of 3" }).click();
   await page.getByRole("button", { name: "Custom" }).click();
   await page.getByRole("spinbutton", { name: "Custom points to win" }).fill("1");
   await page.getByRole("button", { name: "Win by 1" }).click();
