@@ -10,6 +10,9 @@ export const MATCH_CATEGORIES: { value: MatchCategory; label: string }[] = [
 ];
 
 export const QUICK_VENUES = [
+  { name: "Pickle Haus Arena NIBM", city: "Pune" },
+  { name: "Pickleball One", city: "Pune" },
+  { name: "The Pickle Point", city: "Pune" },
   { name: "Pickle Social Club", city: "Nagpur" },
   { name: "Pickle Co", city: "Nagpur" },
   { name: "The Pickle Park", city: "Nagpur" },
