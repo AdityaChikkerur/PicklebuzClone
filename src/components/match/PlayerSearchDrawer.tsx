@@ -133,8 +133,7 @@ export function PlayerSearchDrawer({
     const q = query.trim().toLowerCase();
     const phoneDigits = normalizePhone(query);
 
-    return players.filter((player) => {
-      if (currentUserId && player.id === currentUserId) return false;
+    const results = players.filter((player) => {
       if (selectedPlayerIds.includes(player.id)) return false;
       if (!q) return true;
 
@@ -150,6 +149,16 @@ export function PlayerSearchDrawer({
         (player.phone?.includes(q) ?? false)
       );
     });
+
+    if (currentUserId) {
+      const selfIndex = results.findIndex((player) => player.id === currentUserId);
+      if (selfIndex > 0) {
+        const [self] = results.splice(selfIndex, 1);
+        results.unshift(self);
+      }
+    }
+
+    return results;
   }, [query, selectedPlayerIds, players, currentUserId]);
 
   const handlePhoneLookup = async () => {
@@ -169,10 +178,6 @@ export function PlayerSearchDrawer({
     }
 
     setPhoneLookup(result.data);
-
-    if (result.data && currentUserId && result.data.id === currentUserId) {
-      toast.error("That's your number — add your opponent's phone instead.");
-    }
   };
 
   const handleAddGuest = () => {
@@ -310,22 +315,12 @@ export function PlayerSearchDrawer({
               </p>
             </div>
 
-            {phoneLookup && phoneLookup.id === currentUserId && (
-              <p className="text-sm text-warning">
-                This is your phone number. Enter your opponent&apos;s number to
-                invite them.
-              </p>
-            )}
-
-            {phoneLookup && phoneLookup.id !== currentUserId && (
+            {phoneLookup && (
               <div className="rounded-xl border border-border bg-muted/40 p-3">
                 <button
                   type="button"
                   onClick={() => handleSelectRegistered(phoneLookup)}
-                  disabled={
-                    selectedPlayerIds.includes(phoneLookup.id) ||
-                    phoneLookup.id === currentUserId
-                  }
+                  disabled={selectedPlayerIds.includes(phoneLookup.id)}
                   className="flex w-full items-center gap-3 text-left disabled:opacity-50"
                 >
                   <Avatar
@@ -336,6 +331,11 @@ export function PlayerSearchDrawer({
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium text-foreground">
                       {phoneLookup.fullName}
+                      {phoneLookup.id === currentUserId ? (
+                        <span className="ml-1.5 text-xs font-normal text-primary">
+                          (You)
+                        </span>
+                      ) : null}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {phoneLookup.city} · BUZZ{" "}
@@ -436,6 +436,11 @@ export function PlayerSearchDrawer({
                       <div className="min-w-0 flex-1">
                         <p className="truncate font-medium text-foreground">
                           {player.fullName}
+                          {player.id === currentUserId ? (
+                            <span className="ml-1.5 text-xs font-normal text-primary">
+                              (You)
+                            </span>
+                          ) : null}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {player.city} · BUZZ{" "}
