@@ -48,7 +48,7 @@ export default function TournamentPage() {
 
         <Link
           href="/create-tournament"
-          className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm"
+          className="btn-primary px-4 py-2 text-sm"
         >
           + Create
         </Link>
