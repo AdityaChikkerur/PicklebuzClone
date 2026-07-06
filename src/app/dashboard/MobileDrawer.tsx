@@ -33,7 +33,7 @@ export default function MobileDrawer({ open, onClose }: MobileDrawerProps) {
             Pickle<span className="text-primary">Buzz</span>
           </h2>
 
-          <button onClick={onClose}>
+          <button type="button" onClick={onClose} aria-label="Close menu">
             <X className="h-6 w-6" />
           </button>
         </div>
@@ -56,7 +56,19 @@ export default function MobileDrawer({ open, onClose }: MobileDrawerProps) {
                 )}
               >
                 <Icon className="h-5 w-5" />
-                <span>{item.label}</span>
+
+                {item.id === "live" ? (
+                  <span
+                    className="font-bold uppercase tracking-wider text-red-500"
+                    style={{
+                      animation: "blink 1s steps(2, start) infinite",
+                    }}
+                  >
+                    LIVE
+                  </span>
+                ) : (
+                  <span>{item.label}</span>
+                )}
               </Link>
             );
           })}
