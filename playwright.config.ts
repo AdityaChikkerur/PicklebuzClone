@@ -28,6 +28,7 @@ export default defineConfig({
         reuseExistingServer: !process.env.CI,
         timeout: 120_000,
         env: {
+          E2E_DEMO_AUTH: "1",
           NEXT_PUBLIC_SUPABASE_URL: "https://your-project.supabase.co",
           NEXT_PUBLIC_SUPABASE_ANON_KEY: "your-anon-key",
           NEXT_PUBLIC_APP_NAME: "PickleBuzz",

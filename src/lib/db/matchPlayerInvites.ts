@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase";
 import { isSupabaseConfigured } from "@/lib/auth/isSupabaseConfigured";
 import { isUuid } from "@/lib/db/config";
+import { areMatchInvitesSatisfied } from "@/lib/match/inviteRules";
 import type { DbResult } from "@/lib/db/matches";
 
 export type MatchPlayerInviteStatus = "pending" | "accepted" | "declined";
@@ -18,6 +19,8 @@ export interface MatchPlayerInvite {
 
 export interface MatchInviteSummary {
   matchStatus: string;
+  matchType: string;
+  createdBy: string;
   startedAt: string | null;
   allAccepted: boolean;
   pendingCount: number;
@@ -89,7 +92,7 @@ export async function fetchMatchInviteSummary(
       await Promise.all([
         supabase
           .from("matches")
-          .select("status, started_at")
+          .select("status, started_at, match_type, created_by")
           .eq("id", matchId)
           .maybeSingle(),
         supabase
@@ -116,10 +119,23 @@ export async function fetchMatchInviteSummary(
       (p) => p.inviteStatus === "pending" && !p.isGuest
     ).length;
 
+    const inviteRows = mapped.map((p) => ({
+      playerId: p.playerId,
+      team: p.team,
+      inviteStatus: p.inviteStatus,
+      isGuest: p.isGuest,
+    }));
+
     return ok({
       matchStatus: match.status as string,
+      matchType: match.match_type as string,
+      createdBy: match.created_by as string,
       startedAt: match.started_at as string | null,
-      allAccepted: pendingCount === 0,
+      allAccepted: areMatchInvitesSatisfied({
+        matchType: match.match_type as string,
+        createdBy: match.created_by as string,
+        players: inviteRows,
+      }),
       pendingCount,
       players: mapped,
     });

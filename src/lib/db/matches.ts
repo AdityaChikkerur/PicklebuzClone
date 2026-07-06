@@ -24,6 +24,7 @@ import {
   computeMatchDurationMinutes,
   isMatchTimingValid,
 } from "@/lib/match/timingFlags";
+import { areMatchInvitesSatisfied } from "@/lib/match/inviteRules";
 import { isUuid } from "@/lib/db/config";
 import type {
   DbMatchRules,
@@ -393,9 +394,15 @@ export async function createMatch(
     });
     if (rulesErr) throw rulesErr;
 
-    const inviteStatusFor = (playerId: string) => {
+    const creatorTeam: "A" | "B" = teamBPlayerIds.includes(createdBy)
+      ? "B"
+      : "A";
+    const isDoubles = setup.matchType === "doubles" || setup.matchType === "mixed";
+
+    const inviteStatusFor = (playerId: string, team: "A" | "B") => {
       if (autoStart) return "accepted";
       if (playerId === createdBy) return "accepted";
+      if (isDoubles && team === creatorTeam) return "accepted";
       return "pending";
     };
 
@@ -405,7 +412,7 @@ export async function createMatch(
         player_id: pid,
         team: "A" as const,
         server_number: i + 1,
-        invite_status: inviteStatusFor(pid),
+        invite_status: inviteStatusFor(pid, "A"),
         invited_by: createdBy,
       })),
       ...teamBPlayerIds.map((pid, i) => ({
@@ -413,7 +420,7 @@ export async function createMatch(
         player_id: pid,
         team: "B" as const,
         server_number: i + 1,
-        invite_status: inviteStatusFor(pid),
+        invite_status: inviteStatusFor(pid, "B"),
         invited_by: createdBy,
       })),
     ];
@@ -451,7 +458,10 @@ export async function createMatch(
           guest_id: guestResult.data.guestId,
           team: slot.team,
           server_number: slotIndex >= 0 ? slotIndex + 1 : 1,
-          invite_status: autoStart ? "accepted" : "pending",
+          invite_status:
+            autoStart || (isDoubles && slot.team === creatorTeam)
+              ? "accepted"
+              : "pending",
           invited_by: createdBy,
         });
       }
@@ -469,14 +479,19 @@ export async function createMatch(
         "@/lib/notifications/sendNotification"
       );
       const matchLabel = `${setup.teamAName} vs ${setup.teamBName}`;
-      const opponentIds = allRegisteredIds.filter((id) => id !== createdBy);
+      const opposingTeam: "A" | "B" = creatorTeam === "A" ? "B" : "A";
+      const opposingPlayerIds = (
+        opposingTeam === "A" ? teamAPlayerIds : teamBPlayerIds
+      ).filter((id) => id !== createdBy);
 
       await sendNotification({
         userId: createdBy,
         icon: "match_invite",
         text:
-          opponentIds.length > 0
-            ? `Match created: ${matchLabel}. Waiting for your opponent to accept.`
+          opposingPlayerIds.length > 0
+            ? isDoubles
+              ? `Match created: ${matchLabel}. Waiting for an opponent to accept.`
+              : `Match created: ${matchLabel}. Waiting for your opponent to accept.`
             : `Confirm your match: ${matchLabel}`,
         link: `/live-scoring/${matchId}`,
       });
@@ -1110,7 +1125,7 @@ export async function fetchLiveMatches(
     const creatorCanCancel = new Map<string, boolean>();
 
     if (matchIds.length > 0) {
-      const [{ data: eventRows }, { data: pendingPlayers }] = await Promise.all([
+      const [{ data: eventRows }, { data: playerRows }] = await Promise.all([
         supabase
           .from("match_events")
           .select("match_id, score_a, score_b, game_number, created_at")
@@ -1118,11 +1133,30 @@ export async function fetchLiveMatches(
           .order("created_at", { ascending: false }),
         supabase
           .from("match_players")
-          .select("match_id")
-          .in("match_id", matchIds)
-          .eq("invite_status", "pending")
-          .not("player_id", "is", null),
+          .select("match_id, player_id, guest_id, team, invite_status")
+          .in("match_id", matchIds),
       ]);
+
+      const playersByMatch = new Map<
+        string,
+        {
+          playerId: string | null;
+          team: "A" | "B";
+          inviteStatus: string;
+          isGuest: boolean;
+        }[]
+      >();
+      for (const row of playerRows ?? []) {
+        const matchId = row.match_id as string;
+        const list = playersByMatch.get(matchId) ?? [];
+        list.push({
+          playerId: row.player_id as string | null,
+          team: row.team as "A" | "B",
+          inviteStatus: (row.invite_status as string) ?? "accepted",
+          isGuest: !row.player_id && Boolean(row.guest_id),
+        });
+        playersByMatch.set(matchId, list);
+      }
 
       for (const event of eventRows ?? []) {
         const matchId = event.match_id as string;
@@ -1134,8 +1168,16 @@ export async function fetchLiveMatches(
         });
       }
 
-      for (const row of pendingPlayers ?? []) {
-        pendingInviteMatchIds.add(row.match_id as string);
+      for (const row of matchRows) {
+        const matchId = row.id as string;
+        const invitesSatisfied = areMatchInvitesSatisfied({
+          matchType: row.match_type as string,
+          createdBy: row.created_by as string,
+          players: playersByMatch.get(matchId) ?? [],
+        });
+        if (!invitesSatisfied) {
+          pendingInviteMatchIds.add(matchId);
+        }
       }
 
       if (userId) {

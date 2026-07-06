@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase";
 import { isSupabaseConfigured } from "@/lib/auth/isSupabaseConfigured";
 import { isUuid } from "@/lib/db/config";
+import { areMatchInvitesSatisfied } from "@/lib/match/inviteRules";
 import { useAuthStore } from "@/store/authStore";
 import { useMatchStore } from "@/store/matchStore";
 import type { UserRole } from "@/types/player";
@@ -65,14 +66,14 @@ export function useMatchPermissions(matchId: string | undefined): MatchPermissio
 
       const { data: match } = await supabase
         .from("matches")
-        .select("created_by, status")
+        .select("created_by, status, match_type")
         .eq("id", matchId)
         .maybeSingle();
 
       const [{ data: players }, { data: scorerRow }, scoreRpc] = await Promise.all([
         supabase
           .from("match_players")
-          .select("player_id, invite_status")
+          .select("player_id, team, invite_status, guest_id")
           .eq("match_id", matchId),
         userId
           ? supabase
@@ -95,11 +96,17 @@ export function useMatchPermissions(matchId: string | undefined): MatchPermissio
         userId && (players ?? []).some((row) => row.player_id === userId)
       );
       const status = (match?.status as string) ?? null;
-      const pendingInvites = (players ?? []).some(
-        (row) =>
-          row.player_id &&
-          (row.invite_status as string | undefined) === "pending"
-      );
+      const invitesSatisfied = areMatchInvitesSatisfied({
+        matchType: (match?.match_type as string) ?? "singles",
+        createdBy: (match?.created_by as string) ?? "",
+        players: (players ?? []).map((row) => ({
+          playerId: row.player_id as string | null,
+          team: row.team as "A" | "B",
+          inviteStatus: (row.invite_status as string) ?? "accepted",
+          isGuest: !row.player_id && Boolean(row.guest_id),
+        })),
+      });
+      const pendingInvites = !invitesSatisfied;
 
       setIsCreator(creator);
       setIsPlayer(player);

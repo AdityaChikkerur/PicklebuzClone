@@ -12,6 +12,10 @@ import {
   respondToMatchInvite,
 } from "@/lib/db/matchPlayerInvites";
 import { getMatchById, mapFullMatchToDetail } from "@/lib/db/matches";
+import {
+  inviteAcceptMessage,
+  isDoublesMatchType,
+} from "@/lib/match/inviteRules";
 import { useAuthStore } from "@/store/authStore";
 import type { MatchDetail } from "@/types/match";
 
@@ -80,7 +84,11 @@ export function MatchInvitePage({ matchId }: MatchInvitePageProps) {
         : "the match";
 
       if (result.data?.matchStarted) {
-        toast.success("Everyone accepted — match is live!");
+        toast.success(
+          isDoublesMatchType(match?.matchType ?? "singles")
+            ? "Opponent confirmed — match is live!"
+            : "Everyone accepted — match is live!"
+        );
         await notifyMatchParticipants(
           matchId,
           `${matchLabel} is live. Let's play!`,
@@ -91,7 +99,9 @@ export function MatchInvitePage({ matchId }: MatchInvitePageProps) {
         toast.success(
           isCreator
             ? "You confirmed! Waiting for your opponent to accept."
-            : "You accepted! Waiting for the other player to confirm."
+            : isDoublesMatchType(match?.matchType ?? "singles")
+              ? "You accepted! Waiting for the match to start."
+              : "You accepted! Waiting for the other player to confirm."
         );
         const waitText = isCreator
           ? `${profileName ?? "Your opponent"} confirmed ${matchLabel}. Accept to start playing.`
@@ -131,6 +141,8 @@ export function MatchInvitePage({ matchId }: MatchInvitePageProps) {
   const statusLabel =
     match.status === "draft" ? "INVITE" : match.status === "live" ? "LIVE" : match.status.toUpperCase();
 
+  const isDoubles = isDoublesMatchType(match.matchType);
+
   return (
     <AppLayout title="Match invite">
       <div className="mx-auto flex max-w-md flex-col gap-5 px-4 py-6">
@@ -143,8 +155,10 @@ export function MatchInvitePage({ matchId }: MatchInvitePageProps) {
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
             {isCreator
-              ? "Both players must accept before scoring starts. Confirm that you're playing this match."
-              : "Accept to confirm you're playing. The match starts only after both players accept."}
+              ? isDoubles
+                ? "An opponent must accept before scoring starts. Confirm that your team is playing."
+                : "Both players must accept before scoring starts. Confirm that you're playing this match."
+              : inviteAcceptMessage(match.matchType)}
           </p>
 
           <p className="mt-6 text-lg font-bold text-foreground">
@@ -186,8 +200,12 @@ export function MatchInvitePage({ matchId }: MatchInvitePageProps) {
             <div className="mt-8">
               <p className="text-sm text-muted-foreground">
                 {match.status === "live"
-                  ? "Everyone accepted — match is live."
-                  : "You already accepted. Waiting for the other player."}
+                  ? isDoubles
+                    ? "Opponent confirmed — match is live."
+                    : "Everyone accepted — match is live."
+                  : isDoubles
+                    ? "You already accepted. Waiting for the match to start."
+                    : "You already accepted. Waiting for the other player."}
               </p>
               <Link
                 href={`/live-scoring/${matchId}`}
