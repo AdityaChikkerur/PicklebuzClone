@@ -22,7 +22,7 @@ import { APP_URL, copyToClipboard } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
 import { createInitialMatchState, useMatchStore } from "@/store/matchStore";
 import type { TournamentTab } from "@/types/tournament";
-import { CATEGORY_TYPE_LABELS } from "@/types/tournament";
+import { getCategoryDisplayName } from "@/types/tournament";
 
 interface TournamentDetailPageProps {
   tournamentId: string;
@@ -178,6 +178,10 @@ export function TournamentDetailPage({ tournamentId }: TournamentDetailPageProps
   };
 
   const handleRegister = () => {
+    if (tournament.registrationUrl) {
+      window.open(tournament.registrationUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
     router.push(`/tournament/${tournament.id}/register`);
   };
 
@@ -249,7 +253,7 @@ export function TournamentDetailPage({ tournamentId }: TournamentDetailPageProps
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                {CATEGORY_TYPE_LABELS[cat.categoryType]}
+                {getCategoryDisplayName(cat)}
               </button>
             ))}
           </div>
@@ -289,7 +293,7 @@ export function TournamentDetailPage({ tournamentId }: TournamentDetailPageProps
                     >
                       {generating
                         ? "Generating…"
-                        : CATEGORY_TYPE_LABELS[cat.categoryType]}
+                        : getCategoryDisplayName(cat)}
                     </button>
                   ))}
                 </div>

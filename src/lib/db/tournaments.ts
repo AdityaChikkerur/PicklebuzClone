@@ -47,11 +47,14 @@ interface DbTournamentRow {
   status: TournamentStatus;
   format?: TournamentFormat | null;
   prize?: string | null;
+  registration_url?: string | null;
+  club_id?: string | null;
 }
 
 interface DbCategoryRow {
   id: string;
   tournament_id: string;
+  name: string | null;
   category_type: CategoryType;
   skill_level: SkillLevel;
   max_teams: number;
@@ -77,6 +80,7 @@ interface ProfileSnippet {
 function mapCategory(row: DbCategoryRow) {
   return {
     id: row.id,
+    name: row.name ?? undefined,
     categoryType: row.category_type,
     skillLevel: row.skill_level,
     maxTeams: row.max_teams,
@@ -109,6 +113,8 @@ function mapTournamentDetail(
     isPublic: row.is_public,
     createdBy: row.created_by,
     prize: row.prize ?? undefined,
+    registrationUrl: row.registration_url ?? undefined,
+    clubId: row.club_id ?? undefined,
     categories: categories.map(mapCategory),
     scoringType: row.scoring_type,
     pointsToWin: row.points_to_win,
@@ -176,7 +182,9 @@ async function loadTournamentBundle(
       is_public,
       status,
       format,
-      prize
+      prize,
+      registration_url,
+      club_id
     `
     )
     .eq("id", tournamentId)
@@ -186,7 +194,7 @@ async function loadTournamentBundle(
 
   const { data: categories } = await supabase
     .from("tournament_categories")
-    .select("id, tournament_id, category_type, skill_level, max_teams, entry_fee")
+    .select("id, tournament_id, name, category_type, skill_level, max_teams, entry_fee")
     .eq("tournament_id", tournamentId)
     .order("category_type", { ascending: true });
 

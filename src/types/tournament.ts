@@ -20,10 +20,19 @@ export type RegistrationStatus = "pending" | "approved" | "rejected";
 
 export interface TournamentCategory {
   id: string;
+  /** Display label, e.g. "Pro Mens Doubles". Falls back to type + skill level. */
+  name?: string;
   categoryType: CategoryType;
   skillLevel: SkillLevel;
   maxTeams: number;
   entryFee: number;
+}
+
+export function getCategoryDisplayName(
+  cat: Pick<TournamentCategory, "name" | "categoryType" | "skillLevel">
+): string {
+  if (cat.name?.trim()) return cat.name.trim();
+  return `${CATEGORY_TYPE_LABELS[cat.categoryType]} · ${cat.skillLevel}`;
 }
 
 export interface TournamentForm {
@@ -105,6 +114,10 @@ export interface TournamentDetail extends UpcomingTournament {
   prize?: string;
   sponsors?: string[];
   weather?: string;
+  /** External registration page (e.g. Global Sports). */
+  registrationUrl?: string;
+  /** Linked club/venue in PickleBuzz. */
+  clubId?: string;
   categories: TournamentCategory[];
   scoringType: ScoringType;
   pointsToWin: number;

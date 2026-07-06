@@ -10,12 +10,15 @@ export const MATCH_CATEGORIES: { value: MatchCategory; label: string }[] = [
 ];
 
 export const QUICK_VENUES = [
+  { name: "Nandanwan Lawn", city: "Nashik" },
+  { name: "The Nova Club", city: "Nashik" },
+  { name: "Nashik Sports Klub", city: "Nashik" },
+  { name: "Pickleball Paradise", city: "Nashik" },
+  { name: "The Spinshot", city: "Nashik" },
   { name: "Smash Arena", city: "Bengaluru" },
-  { name: "Pickle Park", city: "Bengaluru" },
+  { name: "Pickle Park", city: "Mumbai" },
   { name: "Court Central", city: "Mumbai" },
   { name: "Dink Dynasty", city: "Delhi" },
-  { name: "Rally Point", city: "Chennai" },
-  { name: "Net Ninjas Club", city: "Hyderabad" },
 ];
 
 export const MOCK_SEARCH_PLAYERS: Player[] = [

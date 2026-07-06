@@ -79,7 +79,7 @@ export const FAQ_ITEMS: FaqItem[] = [
   {
     question: "Is PickleBuzz available in my city?",
     answer:
-      "PickleBuzz is growing across India — Mumbai, Bengaluru, Delhi NCR, Hyderabad, Pune, Chennai, and more. Browse clubs on the app or visit our city pages.",
+      "PickleBuzz is growing across India — Mumbai, Bengaluru, Delhi NCR, Hyderabad, Pune, Chennai, Nashik, and more. Browse clubs on the app or visit our city pages.",
   },
   {
     question: "How is PickleBuzz different from CricHeroes?",
@@ -205,6 +205,24 @@ export const CITY_PAGES: CityPageContent[] = [
       "pickleball Chennai",
       "pickleball Tamil Nadu",
       "pickleball app Chennai",
+    ],
+  },
+  {
+    slug: "nashik",
+    path: "/pickleball-in-nashik",
+    city: "Nashik",
+    headline: "Pickleball in Nashik — Courts, Clubs & Live Scoring",
+    intro:
+      "Nashik's pickleball scene spans Makhmalabad, Chandshi, Vilholi, and Savarkar Nagar. PickleBuzz lists real local clubs — from Nandanwan Lawn to Big Bounce Sports Arena — so you can find courts and score matches live.",
+    highlights: [
+      "Browse Nashik pickleball clubs and court hours",
+      "Live score friendly matches and league nights",
+      "Discover venues in Chandshi, Makhmalabad, and beyond",
+    ],
+    keywords: [
+      "pickleball Nashik",
+      "pickleball clubs Nashik",
+      "pickleball courts Nashik",
     ],
   },
 ];

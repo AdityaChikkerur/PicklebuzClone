@@ -36,7 +36,7 @@ import { cn, formatCurrency } from "@/lib/utils";
 
 import {
 
-  CATEGORY_TYPE_LABELS,
+  getCategoryDisplayName,
 
   type CategoryType,
 
@@ -242,6 +242,44 @@ export function RegisterTournamentPage({ tournamentId }: RegisterTournamentPageP
 
     );
 
+  }
+
+  if (tournament.registrationUrl) {
+    return (
+      <AppLayout title="Register">
+        <div className="mx-auto max-w-lg">
+          <button
+            type="button"
+            onClick={() => router.push(`/tournament/${tournamentId}`)}
+            className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeftIcon className="h-4 w-4" aria-hidden="true" />
+            {tournament.name}
+          </button>
+
+          <div className="card-base flex flex-col gap-4 p-6 text-center">
+            <h2 className="text-xl font-bold text-foreground">Official registration</h2>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              Registration for {tournament.name} is handled on the organizer&apos;s
+              platform. Complete the form and payment there to join the player
+              auction list.
+            </p>
+            <a
+              href={tournament.registrationUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-primary"
+            >
+              Continue to registration
+            </a>
+            <p className="text-xs text-muted-foreground">
+              PickleBuzz hosts live scores and tournament info — registration
+              opens in a new tab.
+            </p>
+          </div>
+        </div>
+      </AppLayout>
+    );
   }
 
 
@@ -482,7 +520,7 @@ export function RegisterTournamentPage({ tournamentId }: RegisterTournamentPageP
 
                         <p className="font-semibold text-foreground">
 
-                          {CATEGORY_TYPE_LABELS[cat.categoryType]}
+                          {getCategoryDisplayName(cat)}
 
                         </p>
 
@@ -546,7 +584,7 @@ export function RegisterTournamentPage({ tournamentId }: RegisterTournamentPageP
 
             <p className="text-sm text-muted-foreground">
 
-              Select your partner for {CATEGORY_TYPE_LABELS[selectedCategory.categoryType]}
+              Select your partner for {getCategoryDisplayName(selectedCategory)}
 
             </p>
 
@@ -680,7 +718,7 @@ export function RegisterTournamentPage({ tournamentId }: RegisterTournamentPageP
 
                   <dd className="font-semibold text-foreground">
 
-                    {CATEGORY_TYPE_LABELS[selectedCategory.categoryType]}
+                    {getCategoryDisplayName(selectedCategory)}
 
                   </dd>
 
@@ -872,7 +910,7 @@ export function RegisterTournamentPage({ tournamentId }: RegisterTournamentPageP
 
               <p className="mt-4 text-xs text-muted-foreground">
 
-                {CATEGORY_TYPE_LABELS[selectedCategory.categoryType]}
+                {getCategoryDisplayName(selectedCategory)}
 
                 {partner && ` · Partner: ${partner.fullName}`}
 

@@ -44,7 +44,9 @@ export function TournamentHeader({ tournament, onRegister }: TournamentHeaderPro
     (tournament.registeredCount / tournament.maxParticipants) * 100
   );
   const deadlinePassed =
-    new Date(tournament.registrationDeadline) < new Date("2026-06-22");
+    Date.now() >
+    new Date(`${tournament.registrationDeadline}T23:59:59`).getTime();
+  const usesExternalRegistration = Boolean(tournament.registrationUrl);
 
   const registrationLabel = tournament.userRegistration
     ? tournament.userRegistration.status === "approved"
@@ -52,7 +54,9 @@ export function TournamentHeader({ tournament, onRegister }: TournamentHeaderPro
       : tournament.userRegistration.status === "pending"
         ? "Registration Pending"
         : "Registration Rejected"
-    : "Register";
+    : usesExternalRegistration
+      ? "View registration"
+      : "Register";
 
   return (
     <div className="card-base overflow-hidden">
@@ -90,7 +94,18 @@ export function TournamentHeader({ tournament, onRegister }: TournamentHeaderPro
           </span>
           <span className="inline-flex items-center gap-2">
             <MapPinIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
-            {tournament.venue}, {tournament.city}
+            {tournament.clubId ? (
+              <Link
+                href={`/club/${tournament.clubId}`}
+                className="font-medium text-primary underline-offset-2 hover:underline"
+              >
+                {tournament.venue}, {tournament.city}
+              </Link>
+            ) : (
+              <>
+                {tournament.venue}, {tournament.city}
+              </>
+            )}
           </span>
           <span className="inline-flex items-center gap-2">
             <UsersIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
@@ -143,15 +158,39 @@ export function TournamentHeader({ tournament, onRegister }: TournamentHeaderPro
           </div>
         )}
 
+        {usesExternalRegistration && !deadlinePassed && (
+          <p className="text-xs text-muted-foreground">
+            Registration is on the{" "}
+            <a
+              href={tournament.registrationUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-primary underline"
+            >
+              official registration site
+            </a>
+            . PickleBuzz shows live scores and tournament info.
+          </p>
+        )}
+
         <div className="flex flex-col gap-2 sm:flex-row">
           {!deadlinePassed && (
-            tournament.userRegistration ? (
+            tournament.userRegistration && !usesExternalRegistration ? (
               <Link
                 href={`/tournament/${tournament.id}/register`}
                 className="btn-outline text-center text-sm"
               >
                 {registrationLabel}
               </Link>
+            ) : usesExternalRegistration ? (
+              <a
+                href={tournament.registrationUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-primary text-center text-sm"
+              >
+                Register Now
+              </a>
             ) : (
               <button
                 type="button"

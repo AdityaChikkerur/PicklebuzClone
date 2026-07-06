@@ -10,6 +10,7 @@ const CITIES = [
   "Chennai",
   "Hyderabad",
   "Pune",
+  "Nashik",
   "Kolkata",
 ];
 

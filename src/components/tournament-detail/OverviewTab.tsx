@@ -1,10 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import { SponsorBannerSlot } from "@/components/monetization";
 import { formatCurrency } from "@/lib/utils";
 import {
-  CATEGORY_TYPE_LABELS,
+  getCategoryDisplayName,
   type TournamentDetail,
 } from "@/types/tournament";
 
@@ -20,7 +21,20 @@ export function OverviewTab({ tournament }: OverviewTabProps) {
         <p className="text-sm leading-relaxed text-muted-foreground">
           {tournament.description}
         </p>
-        <p className="mt-3 text-xs text-muted-foreground">{tournament.address}</p>
+        {tournament.clubId ? (
+          <p className="mt-3 text-xs text-muted-foreground">
+            Venue:{" "}
+            <Link
+              href={`/club/${tournament.clubId}`}
+              className="font-medium text-primary underline-offset-2 hover:underline"
+            >
+              {tournament.venue}
+            </Link>
+            {tournament.address ? ` · ${tournament.address}` : null}
+          </p>
+        ) : (
+          <p className="mt-3 text-xs text-muted-foreground">{tournament.address}</p>
+        )}
       </div>
 
       <div className="card-base p-4 sm:p-5">
@@ -33,10 +47,12 @@ export function OverviewTab({ tournament }: OverviewTabProps) {
             >
               <div>
                 <p className="text-sm font-semibold text-foreground">
-                  {CATEGORY_TYPE_LABELS[cat.categoryType]}
+                  {getCategoryDisplayName(cat)}
                 </p>
                 <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <Badge variant="outline">{cat.skillLevel}</Badge>
+                  {!cat.name && (
+                    <Badge variant="outline">{cat.skillLevel}</Badge>
+                  )}
                   <span className="text-xs text-muted-foreground">
                     Max {cat.maxTeams} teams
                   </span>

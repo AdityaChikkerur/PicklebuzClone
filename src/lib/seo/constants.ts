@@ -53,6 +53,7 @@ export const MARKETING_ROUTES: Record<string, { priority: number; changeFrequenc
   "/pickleball-in-hyderabad": { priority: 0.85, changeFrequency: "monthly" },
   "/pickleball-in-pune": { priority: 0.85, changeFrequency: "monthly" },
   "/pickleball-in-chennai": { priority: 0.85, changeFrequency: "monthly" },
+  "/pickleball-in-nashik": { priority: 0.85, changeFrequency: "monthly" },
   "/clubs": { priority: 0.85, changeFrequency: "weekly" },
   "/rules": { priority: 0.75, changeFrequency: "yearly" },
   "/privacy": { priority: 0.3, changeFrequency: "yearly" },

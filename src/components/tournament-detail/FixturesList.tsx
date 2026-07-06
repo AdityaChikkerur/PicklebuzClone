@@ -3,8 +3,7 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import { cn, formatDateTime } from "@/lib/utils";
-import type { TournamentCategory, TournamentFixture } from "@/types/tournament";
-import { CATEGORY_TYPE_LABELS } from "@/types/tournament";
+import { getCategoryDisplayName, type TournamentCategory, type TournamentFixture } from "@/types/tournament";
 
 interface FixturesListProps {
   fixtures: TournamentFixture[];
@@ -59,7 +58,7 @@ export function FixturesList({
               >
                 {generating
                   ? "Generating…"
-                  : `Generate ${CATEGORY_TYPE_LABELS[cat.categoryType]}`}
+                  : `Generate ${getCategoryDisplayName(cat)}`}
               </button>
             ))}
           </div>
