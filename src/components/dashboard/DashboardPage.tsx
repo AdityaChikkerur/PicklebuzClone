@@ -32,7 +32,7 @@ export function DashboardPage() {
             <div className="flex flex-col gap-5 lg:gap-6">
               <PremiumUpsellCard compact />
               <CityRankingsCard />
-              <UpcomingTournamentsCard />
+              {/* <UpcomingTournamentsCard /> */}
             </div>
           </div>
         </div>
