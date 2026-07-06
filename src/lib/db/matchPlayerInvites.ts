@@ -168,6 +168,7 @@ export async function notifyMatchParticipants(
   });
 }
 
+export async function respondToMatchInvite(input: {
   matchId: string;
   accept: boolean;
 }): Promise<DbResult<RespondInviteResult>> {
