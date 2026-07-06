@@ -24,15 +24,17 @@ export default function FollowingPage() {
   const [following, setFollowing] = useState<FollowUser[]>([]);
 
   useEffect(() => {
-    if (!userId) return;
+  if (!userId) return;
 
-    async function loadFollowing() {
-      const data = await fetchFollowing(userId);
-      setFollowing(data as FollowUser[]);
-    }
+  const currentUserId = userId;
 
-    void loadFollowing();
-  }, [userId]);
+  async function loadFollowing() {
+    const data = await fetchFollowing(currentUserId);
+    setFollowing(data as unknown as FollowUser[]);
+  }
+
+  void loadFollowing();
+}, [userId]);
 
   return (
     <AppLayout title="Following">

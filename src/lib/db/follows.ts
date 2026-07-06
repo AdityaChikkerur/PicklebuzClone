@@ -122,6 +122,7 @@ export async function fetchFollowingCount(playerId: string): Promise<number> {
 
   return count ?? 0;
 }
+
 export async function fetchFollowers(playerId: string) {
   if (!isSupabaseConfigured()) return [];
 
@@ -131,7 +132,7 @@ export async function fetchFollowers(playerId: string) {
     .from("player_follows")
     .select(`
       follower_id,
-      profiles!player_follows_follower_id_fkey (
+      profiles:follower_id (
         id,
         full_name,
         avatar_url,
@@ -143,7 +144,7 @@ export async function fetchFollowers(playerId: string) {
     .eq("following_id", playerId);
 
   if (error) {
-    console.error(error);
+    console.error("Error fetching followers:", error);
     return [];
   }
 
@@ -159,7 +160,7 @@ export async function fetchFollowing(playerId: string) {
     .from("player_follows")
     .select(`
       following_id,
-      profiles!player_follows_following_id_fkey (
+      profiles:following_id (
         id,
         full_name,
         avatar_url,
@@ -171,7 +172,7 @@ export async function fetchFollowing(playerId: string) {
     .eq("follower_id", playerId);
 
   if (error) {
-    console.error(error);
+    console.error("Error fetching following:", error);
     return [];
   }
 

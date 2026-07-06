@@ -24,15 +24,17 @@ export default function FollowersPage() {
   const [followers, setFollowers] = useState<FollowUser[]>([]);
 
   useEffect(() => {
-    if (!userId) return;
+  if (!userId) return;
 
-    async function loadFollowers() {
-      const data = await fetchFollowers(userId);
-      setFollowers(data as FollowUser[]);
-    }
+  const currentUserId = userId;
 
-    void loadFollowers();
-  }, [userId]);
+  async function loadFollowers() {
+    const data = await fetchFollowers(currentUserId);
+    setFollowers(data as unknown as FollowUser[]);
+  }
+
+  void loadFollowers();
+}, [userId]);
 
   return (
     <AppLayout title="Followers">
@@ -40,9 +42,7 @@ export default function FollowersPage() {
         <h1 className="text-2xl font-bold">Followers</h1>
 
         {followers.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No followers yet.
-          </p>
+          <p className="text-sm text-muted-foreground">No followers yet.</p>
         ) : (
           followers.map((item) => {
             const user = item.profiles;
@@ -70,9 +70,7 @@ export default function FollowersPage() {
                   </p>
                 </div>
 
-                <Badge variant="outline">
-                  {user.skill_level ?? "3.0"}
-                </Badge>
+                <Badge variant="outline">{user.skill_level ?? "3.0"}</Badge>
               </Link>
             );
           })

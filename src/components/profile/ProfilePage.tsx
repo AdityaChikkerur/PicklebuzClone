@@ -13,6 +13,7 @@ import { useProfileBoost } from "@/hooks/useProfileBoost";
 import { formatDupr } from "@/lib/utils";
 import { USER_ROLES } from "@/types/player";
 import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase";
 import {
   fetchFollowerCount,
   fetchFollowingCount,
@@ -23,24 +24,33 @@ export function ProfilePage() {
   const userId = useAuthStore((s) => s.user?.id ?? s.profile?.id);
   const { boosted } = useProfileBoost(userId);
   const [followers, setFollowers] = useState(0);
-const [following, setFollowing] = useState(0);
+  const [following, setFollowing] = useState(0);
+  const [matchesPlayed, setMatchesPlayed] = useState(0);
 
 useEffect(() => {
   if (!userId) return;
 
+  const currentUserId = userId;
+
   async function loadCounts() {
-    const [followersCount, followingCount] = await Promise.all([
-      fetchFollowerCount(userId),
-      fetchFollowingCount(userId),
+    const supabase = createClient();
+
+    const [followersCount, followingCount, matchesResult] = await Promise.all([
+      fetchFollowerCount(currentUserId),
+      fetchFollowingCount(currentUserId),
+      supabase
+        .from("match_players")
+        .select("*", { count: "exact", head: true })
+        .eq("player_id", currentUserId),
     ]);
 
     setFollowers(followersCount);
     setFollowing(followingCount);
+    setMatchesPlayed(matchesResult.count ?? 0);
   }
 
   void loadCounts();
 }, [userId]);
-
   if (!profile) {
     return (
       <AppLayout title="Profile">
@@ -94,7 +104,7 @@ useEffect(() => {
           </p>
           <div className="mt-5 grid w-full grid-cols-3 divide-x rounded-xl border border-border">
   <div className="py-3 text-center">
-    <p className="text-xl font-bold">{profile.matchesPlayed ?? 0}</p>
+    <p className="text-xl font-bold">{matchesPlayed}</p>
     <p className="text-xs text-muted-foreground">Matches</p>
   </div>
 
