@@ -177,11 +177,11 @@ export const CITY_PAGES: CityPageContent[] = [
     city: "Pune",
     headline: "Pickleball in Pune — Community Scoring Made Simple",
     intro:
-      "Pune's pickleball scene spans Hinjawadi, Viman Nagar, Thergaon, Erandwane, and NIBM. PickleBuzz lists verified pickleball-only courts — from Pickle Haus Arena to Pickleball One — for live scoring and court discovery.",
+      "Pune's pickleball scene spans Hinjawadi, Viman Nagar, Aundh, Balewadi, Kothrud, Wagholi, and Punawale. PickleBuzz lists verified dedicated pickleball courts — from Bounzz Pickleden to Pickleball Arena Punawale — for live scoring and court discovery.",
     highlights: [
-      "Browse Pune pickleball courts in Viman Nagar and Hinjawadi",
+      "Browse dedicated pickleball courts across Aundh and Viman Nagar",
       "Live score league and friendly matches",
-      "Discover arenas in Pimpri-Chinchwad and Mohammed Wadi",
+      "Discover arenas in Balewadi, Kothrud, Wagholi, and Punawale",
     ],
     keywords: [
       "pickleball Pune",

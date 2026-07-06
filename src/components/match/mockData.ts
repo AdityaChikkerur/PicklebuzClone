@@ -10,6 +10,8 @@ export const MATCH_CATEGORIES: { value: MatchCategory; label: string }[] = [
 ];
 
 export const QUICK_VENUES = [
+  { name: "Bounzz Pickleden", city: "Pune" },
+  { name: "Pickleball Zone", city: "Pune" },
   { name: "Pickle Haus Arena NIBM", city: "Pune" },
   { name: "Pickleball One", city: "Pune" },
   { name: "The Pickle Point", city: "Pune" },
