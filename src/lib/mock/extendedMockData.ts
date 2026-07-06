@@ -3,14 +3,11 @@ import type { MatchDetail } from "@/types/match";
 import { DEFAULT_FAULTS } from "@/types/match";
 import type { AppNotification } from "@/types/notification";
 import type { Player } from "@/types/player";
-import type { UpcomingTournament } from "@/types/tournament";
 import { avatarUrl } from "@/lib/utils";
 
 /** Demo match IDs for Phase 2 screens */
 export const DEMO_MATCH_IDS = {
   live: "m-live",
-  live2: "m-live-2",
-  live3: "m-live-3",
   pending: "m-pending",
   disputed: "m-disputed",
   verified: "m1",
@@ -24,7 +21,7 @@ function buildVerifiedMatch(): MatchDetail {
     matchType: "doubles",
     matchCategory: "friendly",
     venue: "Smash Arena",
-    city: "Bangalore",
+    city: "Bengaluru",
     status: "verified",
     winner: "A",
     createdBy: "current-user",
@@ -128,7 +125,7 @@ function buildPendingMatch(): MatchDetail {
     matchType: "singles",
     matchCategory: "league",
     venue: "Pickle Park",
-    city: "Bangalore",
+    city: "Bengaluru",
     status: "pending",
     winner: "A",
     createdBy: "current-user",
@@ -238,63 +235,6 @@ function buildDisputedMatch(): MatchDetail {
   };
 }
 
-function buildLiveMatchBase(
-  id: string,
-  teamAName: string,
-  teamBName: string,
-  matchType: MatchDetail["matchType"],
-  venue: string,
-  city: string,
-  gameScores: MatchDetail["gameScores"],
-  scoreA: number,
-  scoreB: number,
-  gameNumber: number
-): MatchDetail {
-  return {
-    id,
-    teamAName,
-    teamBName,
-    matchType,
-    matchCategory: "friendly",
-    venue,
-    city,
-    status: "live",
-    winner: null,
-    createdBy: "current-user",
-    createdAt: new Date().toISOString(),
-    completedAt: null,
-    localRules: "",
-    isCurrentUserCreator: false,
-    isCurrentUserOpponent: false,
-    bestPerformer: "",
-    hasComeback: false,
-    gameScores,
-    players: [],
-    events: [
-      {
-        id: `el-${id}`,
-        matchId: id,
-        eventType: "point",
-        team: scoreA >= scoreB ? "A" : "B",
-        description: "Latest point",
-        scoreA,
-        scoreB,
-        gameNumber,
-        createdAt: new Date().toISOString(),
-      },
-    ],
-    stats: {
-      pointsWonA: scoreA + gameScores.reduce((sum, g) => sum + g.scoreA, 0),
-      pointsWonB: scoreB + gameScores.reduce((sum, g) => sum + g.scoreB, 0),
-      faultsA: { ...DEFAULT_FAULTS },
-      faultsB: { ...DEFAULT_FAULTS },
-      timeoutsUsedA: 0,
-      timeoutsUsedB: 0,
-      durationMinutes: 20 + gameScores.length * 15,
-    },
-  };
-}
-
 function buildLiveMatch(): MatchDetail {
   return {
     id: DEMO_MATCH_IDS.live,
@@ -303,7 +243,7 @@ function buildLiveMatch(): MatchDetail {
     matchType: "doubles",
     matchCategory: "friendly",
     venue: "Smash Arena",
-    city: "Bangalore",
+    city: "Bengaluru",
     status: "live",
     winner: null,
     createdBy: "current-user",
@@ -374,46 +314,11 @@ function buildLiveMatch(): MatchDetail {
   };
 }
 
-function buildLiveMatch2(): MatchDetail {
-  return buildLiveMatchBase(
-    DEMO_MATCH_IDS.live2,
-    "Net Ninjas",
-    "Dink Masters",
-    "doubles",
-    "Pickle Park",
-    "Mumbai",
-    [],
-    7,
-    5,
-    1
-  );
-}
-
-function buildLiveMatch3(): MatchDetail {
-  return buildLiveMatchBase(
-    DEMO_MATCH_IDS.live3,
-    "Rohan Desai",
-    "Karan Patel",
-    "singles",
-    "Court Central",
-    "Bangalore",
-    [
-      { gameNumber: 1, scoreA: 11, scoreB: 8, winner: "A" },
-      { gameNumber: 2, scoreA: 8, scoreB: 11, winner: "B" },
-    ],
-    10,
-    9,
-    3
-  );
-}
-
 export const MATCH_DETAILS: Record<string, MatchDetail> = {
   [DEMO_MATCH_IDS.verified]: buildVerifiedMatch(),
   [DEMO_MATCH_IDS.pending]: buildPendingMatch(),
   [DEMO_MATCH_IDS.disputed]: buildDisputedMatch(),
   [DEMO_MATCH_IDS.live]: buildLiveMatch(),
-  [DEMO_MATCH_IDS.live2]: buildLiveMatch2(),
-  [DEMO_MATCH_IDS.live3]: buildLiveMatch3(),
 };
 
 export function getMatchDetail(id: string): MatchDetail | null {
@@ -425,7 +330,7 @@ export const EXTENDED_CLUBS: Club[] = [
     id: "club-1",
     ownerId: "club-owner",
     name: "Smash Arena Bangalore",
-    city: "Bangalore",
+    city: "Bengaluru",
     location: "Indiranagar, 100 Feet Road",
     amenities: ["indoor", "parking", "showers", "pro shop"],
     contact: "+91 98765 43210",
@@ -540,7 +445,7 @@ export const DISCOVERY_PLAYERS: Player[] = [
     id: "dp1",
     fullName: "Meera Nair",
     avatarUrl: avatarUrl("meera"),
-    city: "Bangalore",
+    city: "Bengaluru",
     skillLevel: "4.0",
     duprRating: 4.05,
     wins: 28,
@@ -613,8 +518,8 @@ export const EXTENDED_NOTIFICATIONS: AppNotification[] = [
     id: "n1",
     userId: "current-user",
     icon: "trophy",
-    text: "Your registration for Bangalore Summer League was approved.",
-    link: "/tournament/t-rr-1",
+    text: "Your registration for Bangalore Summer Open was approved.",
+    link: "/tournament/t1",
     read: false,
     createdAt: "2026-06-22T08:00:00Z",
     type: "registration_approved",
@@ -648,45 +553,5 @@ export const EXTENDED_NOTIFICATIONS: AppNotification[] = [
     read: true,
     createdAt: "2026-06-18T10:00:00Z",
     type: "court_booking",
-  },
-];
-
-export const EXTENDED_TOURNAMENTS: UpcomingTournament[] = [
-  {
-    id: "t-rr-1",
-    name: "Bangalore Summer League",
-    city: "Bangalore",
-    venue: "Smash Arena",
-    startDate: "2026-07-06",
-    endDate: "2026-07-13",
-    registrationDeadline: "2026-06-29",
-    maxParticipants: 32,
-    registeredCount: 24,
-    status: "upcoming",
-    format: "round_robin",
-  },
-  {
-    id: "t-ko-1",
-    name: "Mumbai Knockout Open",
-    city: "Mumbai",
-    venue: "Pickle Park",
-    startDate: "2026-07-22",
-    endDate: "2026-07-24",
-    registrationDeadline: "2026-07-12",
-    maxParticipants: 64,
-    registeredCount: 41,
-    status: "upcoming",
-    format: "knockout",
-  },
-];
-
-export const LIVE_MATCH_CARDS = [
-  {
-    id: DEMO_MATCH_IDS.live,
-    teamA: "Team Smash",
-    teamB: "Court Crushers",
-    score: "11-8, 4-6",
-    venue: "Smash Arena",
-    city: "Bangalore",
   },
 ];

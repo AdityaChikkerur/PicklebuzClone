@@ -4,9 +4,11 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AppLayout } from "@/components/layout";
+import { useMatchMinDuration } from "@/hooks/useMatchMinDuration";
 import { useMatchPermissions } from "@/hooks/useMatchPermissions";
-import { usePointTimer } from "@/hooks/usePointTimer";
+import { useRealtimeMatch } from "@/hooks/useRealtimeMatch";
 import { fetchMatchStateOverrides, fetchMatchStatus } from "@/lib/db/matches";
+import { fetchMatchInviteSummary } from "@/lib/db/matchPlayerInvites";
 import { isUuid } from "@/lib/db/config";
 import { useMatchStore, createInitialMatchState } from "@/store/matchStore";
 import { ActionButtons } from "./ActionButtons";
@@ -18,7 +20,6 @@ import { MatchInfoBar } from "./MatchInfoBar";
 import { MatchRuleChips } from "./MatchRuleChips";
 import { MatchScorerPanel } from "./MatchScorerPanel";
 import { MatchWaitingPanel } from "./MatchWaitingPanel";
-import { PointTimerBar } from "./PointTimerBar";
 import { ScoreDisplay } from "./ScoreDisplay";
 import { TimeoutBar } from "./TimeoutBar";
 
@@ -37,26 +38,26 @@ export function LiveScoringSession({ matchId }: LiveScoringSessionProps) {
   const [showTimeline, setShowTimeline] = useState(false);
   const [awaitingStart, setAwaitingStart] = useState(false);
 
-  const pointTimer = usePointTimer(
-    matchState.events,
-    permissions.canScore && !awaitingStart && !matchState.isMatchComplete
-  );
-
   const reloadMatch = useCallback(async () => {
-    const [overrides, statusResult] = await Promise.all([
+    const [overrides, statusResult, inviteResult] = await Promise.all([
       fetchMatchStateOverrides(matchId),
       fetchMatchStatus(matchId),
+      fetchMatchInviteSummary(matchId),
     ]);
 
-    const isDraft = statusResult.data?.status === "draft";
-    setAwaitingStart(isDraft);
+    const status = statusResult.data?.status;
+    const invitesPending = Boolean(
+      inviteResult.data && !inviteResult.data.allAccepted
+    );
+    const isAwaiting = status === "draft" || invitesPending;
+    setAwaitingStart(isAwaiting);
 
     if (overrides) {
       resetMatch(
         createInitialMatchState({
           matchId,
           ...overrides,
-          isAwaitingStart: isDraft,
+          isAwaitingStart: isAwaiting,
         })
       );
       setCurrentMatchId(matchId);
@@ -90,6 +91,16 @@ export function LiveScoringSession({ matchId }: LiveScoringSessionProps) {
     };
   }, [matchId, reloadMatch, setCurrentMatchId]);
 
+  const realtimeEnabled =
+    isUuid(matchId) && !awaitingStart && !hydrating && !matchState.isMatchComplete;
+  useRealtimeMatch(matchId, realtimeEnabled);
+
+  const { canEnd: canEndMatch } = useMatchMinDuration(
+    matchId,
+    matchState.events,
+    matchState.bestOf >= 3 && !matchState.isMatchComplete
+  );
+
   useEffect(() => {
     if (matchState.isMatchComplete) {
       setEndModalOpen(true);
@@ -113,7 +124,6 @@ export function LiveScoringSession({ matchId }: LiveScoringSessionProps) {
   }
 
   const readOnly = !permissions.canScore || awaitingStart;
-  const scoringBlocked = readOnly || !pointTimer.canScore;
 
   return (
     <AppLayout hideNav>
@@ -123,6 +133,7 @@ export function LiveScoringSession({ matchId }: LiveScoringSessionProps) {
           onEndMatch={() => setEndModalOpen(true)}
           onShowTimeline={() => setShowTimeline((v) => !v)}
           readOnly={readOnly}
+          canEndMatch={canEndMatch}
         />
 
         <MatchRuleChips matchState={matchState} />
@@ -139,11 +150,10 @@ export function LiveScoringSession({ matchId }: LiveScoringSessionProps) {
             <>
               <ScoreDisplay
                 matchState={matchState}
-                readOnly={scoringBlocked}
+                readOnly={readOnly}
               />
               <MatchInfoBar matchState={matchState} />
-              <PointTimerBar timer={pointTimer} />
-              {!readOnly && <ActionButtons disabled={!pointTimer.canScore} />}
+              {!readOnly && <ActionButtons />}
               {!readOnly && <TimeoutBar />}
               {!readOnly && <FaultCounters matchState={matchState} />}
             </>

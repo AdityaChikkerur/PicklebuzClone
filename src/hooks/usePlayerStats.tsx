@@ -70,7 +70,7 @@ export function PlayerStatsProvider({ children }: { children: ReactNode }) {
   const profile = useAuthStore((s) => s.profile);
   const userId = useAuthStore((s) => s.user?.id ?? s.profile?.id);
   const dupr = profile?.playerRating ?? profile?.duprRating ?? DASHBOARD_KPIS.duprRating;
-  const city = profile?.city ?? "Bangalore";
+  const city = profile?.city ?? "Bengaluru";
 
   const [bundle, setBundle] = useState<PlayerStatsBundle>(() =>
     mockBundle(dupr, city, userId)

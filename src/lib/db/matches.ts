@@ -128,6 +128,48 @@ function countTimeoutsUsed(events: DbMatchEventRow[], team: Team): number {
     .length;
 }
 
+function isGameWonFromScores(
+  scoreA: number,
+  scoreB: number,
+  targetPoints: number,
+  winBy: number
+): Team | null {
+  if (scoreA >= targetPoints && scoreA - scoreB >= winBy) return "A";
+  if (scoreB >= targetPoints && scoreB - scoreA >= winBy) return "B";
+  return null;
+}
+
+/** Reconstruct completed games from persisted point/fault events during live play. */
+function deriveGameScoresFromEvents(
+  events: DbMatchEventRow[],
+  rules: MatchRules
+): ReturnType<typeof mapDbGameScore>[] {
+  const chron = [...events].reverse();
+  const seen = new Set<number>();
+  const derived: ReturnType<typeof mapDbGameScore>[] = [];
+
+  for (const event of chron) {
+    if (event.event_type !== "point" && event.event_type !== "fault") continue;
+    const winner = isGameWonFromScores(
+      event.score_a,
+      event.score_b,
+      rules.targetPoints,
+      rules.winBy
+    );
+    if (winner && !seen.has(event.game_number)) {
+      seen.add(event.game_number);
+      derived.push({
+        gameNumber: event.game_number,
+        scoreA: event.score_a,
+        scoreB: event.score_b,
+        winner,
+      });
+    }
+  }
+
+  return derived;
+}
+
 function buildMatchState(
   match: DbMatchRow,
   rules: MatchRules,
@@ -138,6 +180,9 @@ function buildMatchState(
   const latest = events[0];
   const timeoutsUsedA = countTimeoutsUsed(events, "A");
   const timeoutsUsedB = countTimeoutsUsed(events, "B");
+  const derivedGameScores = deriveGameScoresFromEvents(events, rules);
+  const mergedGameScores =
+    gameScores.length >= derivedGameScores.length ? gameScores : derivedGameScores;
 
   const isComplete =
     match.status === "completed" ||
@@ -146,6 +191,26 @@ function buildMatchState(
     match.status === "disputed";
 
   const isAwaitingStart = match.status === "draft";
+
+  let scoreA = latest?.score_a ?? 0;
+  let scoreB = latest?.score_b ?? 0;
+  let currentGame = latest?.game_number ?? mergedGameScores.length + 1;
+
+  if (
+    latest &&
+    (latest.event_type === "point" || latest.event_type === "fault") &&
+    isGameWonFromScores(
+      latest.score_a,
+      latest.score_b,
+      rules.targetPoints,
+      rules.winBy
+    ) &&
+    !isComplete
+  ) {
+    currentGame = latest.game_number + 1;
+    scoreA = 0;
+    scoreB = 0;
+  }
 
   return {
     matchId: match.id,
@@ -158,10 +223,10 @@ function buildMatchState(
     winBy: rules.winBy as 1 | 2,
     maxTimeouts: rules.maxTimeouts,
     timeoutDuration: rules.timeoutDuration,
-    scoreA: latest?.score_a ?? 0,
-    scoreB: latest?.score_b ?? 0,
-    currentGame: latest?.game_number ?? gameScores.length + 1,
-    gameScores,
+    scoreA,
+    scoreB,
+    currentGame,
+    gameScores: mergedGameScores,
     timeoutsA: Math.max(0, rules.maxTimeouts - timeoutsUsedA),
     timeoutsB: Math.max(0, rules.maxTimeouts - timeoutsUsedB),
     events: mappedEvents,
@@ -186,6 +251,59 @@ export interface CreateMatchInput {
   autoStart?: boolean;
 }
 
+type SetupMatchPlayer = import("@/types/match").MatchPlayer;
+
+function registeredIdsForTeam(
+  players: SetupMatchPlayer[],
+  team: "A" | "B"
+): string[] {
+  return [
+    ...new Set(
+      players
+        .filter((p) => p.team === team && !p.isGuest && isUuid(p.playerId))
+        .map((p) => p.playerId)
+    ),
+  ];
+}
+
+/** Build registered rosters from setup rows; place the creator on the open team. */
+function resolveRegisteredTeamIds(input: CreateMatchInput): {
+  teamAPlayerIds: string[];
+  teamBPlayerIds: string[];
+} {
+  const {
+    createdBy,
+    teamAPlayerIds: inputA = [],
+    teamBPlayerIds: inputB = [],
+    matchPlayers = [],
+  } = input;
+
+  let teamAPlayerIds =
+    matchPlayers.length > 0
+      ? registeredIdsForTeam(matchPlayers, "A")
+      : [...new Set(inputA.filter(isUuid))];
+  let teamBPlayerIds =
+    matchPlayers.length > 0
+      ? registeredIdsForTeam(matchPlayers, "B")
+      : [...new Set(inputB.filter(isUuid))];
+
+  const linkedIds = new Set([...teamAPlayerIds, ...teamBPlayerIds]);
+  if (!linkedIds.has(createdBy)) {
+    if (teamAPlayerIds.length > 0 && teamBPlayerIds.length === 0) {
+      teamBPlayerIds = [...teamBPlayerIds, createdBy];
+    } else if (teamBPlayerIds.length > 0 && teamAPlayerIds.length === 0) {
+      teamAPlayerIds = [...teamAPlayerIds, createdBy];
+    } else {
+      teamAPlayerIds = [...teamAPlayerIds, createdBy];
+    }
+  }
+
+  return {
+    teamAPlayerIds: [...new Set(teamAPlayerIds)],
+    teamBPlayerIds: [...new Set(teamBPlayerIds)],
+  };
+}
+
 /**
  * Creates matches + match_rules + match_players and returns the new match id.
  * In mock mode returns a synthetic id so the scorer can run unpersisted.
@@ -196,18 +314,12 @@ export async function createMatch(
   const {
     createdBy,
     setup,
-    teamAPlayerIds: inputTeamA = [],
-    teamBPlayerIds = [],
     matchPlayers = [],
     tournamentId,
     autoStart = false,
   } = input;
 
-  const teamAPlayerIds = [...inputTeamA];
-  const linkedIds = new Set([...teamAPlayerIds, ...teamBPlayerIds]);
-  if (!linkedIds.has(createdBy)) {
-    teamAPlayerIds.push(createdBy);
-  }
+  const { teamAPlayerIds, teamBPlayerIds } = resolveRegisteredTeamIds(input);
 
   const guestSlots = matchPlayers.filter((p) => p.isGuest && p.guestPhone);
 
@@ -222,8 +334,12 @@ export async function createMatch(
 
     const allRegisteredIds = [...new Set([...teamAPlayerIds, ...teamBPlayerIds])];
     const needsInviteAccept = !autoStart && allRegisteredIds.length > 0;
-    const initialStatus = needsInviteAccept ? "draft" : "live";
-    const startedAt = needsInviteAccept ? null : new Date().toISOString();
+    // Public matches are visible in the live feed immediately; private matches
+    // stay draft until all opponents accept their invites.
+    const initialStatus =
+      needsInviteAccept && !setup.isPublic ? "draft" : "live";
+    const startedAt =
+      initialStatus === "live" ? new Date().toISOString() : null;
 
     const insertRow = {
       created_by: createdBy,
@@ -271,7 +387,11 @@ export async function createMatch(
     });
     if (rulesErr) throw rulesErr;
 
-    const inviteStatusFor = () => (autoStart ? "accepted" : "pending");
+    const inviteStatusFor = (playerId: string) => {
+      if (autoStart) return "accepted";
+      if (playerId === createdBy) return "accepted";
+      return "pending";
+    };
 
     const playerRows = [
       ...teamAPlayerIds.map((pid, i) => ({
@@ -279,7 +399,7 @@ export async function createMatch(
         player_id: pid,
         team: "A" as const,
         server_number: i + 1,
-        invite_status: inviteStatusFor(),
+        invite_status: inviteStatusFor(pid),
         invited_by: createdBy,
       })),
       ...teamBPlayerIds.map((pid, i) => ({
@@ -287,7 +407,7 @@ export async function createMatch(
         player_id: pid,
         team: "B" as const,
         server_number: i + 1,
-        invite_status: inviteStatusFor(),
+        invite_status: inviteStatusFor(pid),
         invited_by: createdBy,
       })),
     ];
@@ -305,6 +425,8 @@ export async function createMatch(
         guest_id: string;
         team: "A" | "B";
         server_number: number;
+        invite_status: string;
+        invited_by: string;
       }[] = [];
 
       for (const slot of guestSlots) {
@@ -323,6 +445,8 @@ export async function createMatch(
           guest_id: guestResult.data.guestId,
           team: slot.team,
           server_number: slotIndex >= 0 ? slotIndex + 1 : 1,
+          invite_status: autoStart ? "accepted" : "pending",
+          invited_by: createdBy,
         });
       }
 
@@ -335,32 +459,20 @@ export async function createMatch(
     }
 
     if (needsInviteAccept) {
-      const { sendNotification, sendNotifications } = await import(
+      const { sendNotification } = await import(
         "@/lib/notifications/sendNotification"
       );
-      const { data: creatorProfile } = await supabase
-        .from("profiles")
-        .select("full_name")
-        .eq("id", createdBy)
-        .maybeSingle();
-      const creatorName =
-        (creatorProfile as { full_name?: string } | null)?.full_name ?? "A player";
       const matchLabel = `${setup.teamAName} vs ${setup.teamBName}`;
-
       const opponentIds = allRegisteredIds.filter((id) => id !== createdBy);
-      if (opponentIds.length > 0) {
-        await sendNotifications(opponentIds, {
-          icon: "match_invite",
-          text: `${creatorName} invited you to play ${matchLabel}`,
-          link: `/match-invite/${matchId}`,
-        });
-      }
 
       await sendNotification({
         userId: createdBy,
         icon: "match_invite",
-        text: `Confirm your match: ${matchLabel}`,
-        link: `/match-invite/${matchId}`,
+        text:
+          opponentIds.length > 0
+            ? `Match created: ${matchLabel}. Waiting for your opponent to accept.`
+            : `Confirm your match: ${matchLabel}`,
+        link: `/live-scoring/${matchId}`,
       });
     }
 
@@ -874,7 +986,7 @@ export interface FetchLiveMatchesResult {
   error: string | null;
 }
 
-  export async function fetchLiveMatches(): Promise<FetchLiveMatchesResult> {
+export async function fetchLiveMatches(): Promise<FetchLiveMatchesResult> {
   if (!isSupabaseConfigured()) {
     return {
       data: [],
@@ -882,7 +994,6 @@ export interface FetchLiveMatchesResult {
       error: "Supabase is not configured",
     };
   }
-
 
   try {
     const supabase = createClient();
@@ -893,39 +1004,57 @@ export interface FetchLiveMatchesResult {
         "id, team_a_name, team_b_name, venue, city, court_number, match_type, created_at"
       )
       .eq("status", "live")
+      .eq("is_public", true)
       .order("created_at", { ascending: false })
       .limit(50);
 
     if (error) throw error;
 
-    const summaries: LiveMatchSummary[] = [];
+    const matchRows = rows ?? [];
+    const matchIds = matchRows.map((row) => row.id as string);
+    const latestScores = new Map<
+      string,
+      { scoreA: number; scoreB: number; gameNumber: number }
+    >();
 
-    for (const row of rows ?? []) {
-      const matchId = row.id as string;
-      const { data: latestEvent } = await supabase
+    if (matchIds.length > 0) {
+      const { data: eventRows } = await supabase
         .from("match_events")
-        .select("score_a, score_b, game_number")
-        .eq("match_id", matchId)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .select("match_id, score_a, score_b, game_number, created_at")
+        .in("match_id", matchIds)
+        .order("created_at", { ascending: false });
 
-      summaries.push({
+      for (const event of eventRows ?? []) {
+        const matchId = event.match_id as string;
+        if (latestScores.has(matchId)) continue;
+        latestScores.set(matchId, {
+          scoreA: event.score_a ?? 0,
+          scoreB: event.score_b ?? 0,
+          gameNumber: event.game_number ?? 1,
+        });
+      }
+    }
+
+    const summaries: LiveMatchSummary[] = matchRows.map((row) => {
+      const matchId = row.id as string;
+      const latestEvent = latestScores.get(matchId);
+
+      return {
         id: matchId,
         teamAName: row.team_a_name as string,
         teamBName: row.team_b_name as string,
-        scoreA: latestEvent?.score_a ?? 0,
-        scoreB: latestEvent?.score_b ?? 0,
-        gameNumber: latestEvent?.game_number ?? 1,
+        scoreA: latestEvent?.scoreA ?? 0,
+        scoreB: latestEvent?.scoreB ?? 0,
+        gameNumber: latestEvent?.gameNumber ?? 1,
         venue: (row.venue as string) ?? "",
         city: (row.city as string) ?? "",
         courtNumber: (row.court_number as string) ?? "",
         matchType: row.match_type as string,
         createdAt: row.created_at as string,
-      });
-    }
+      };
+    });
 
-       if (summaries.length === 0) {
+    if (summaries.length === 0) {
       return {
         data: [],
         source: "supabase",

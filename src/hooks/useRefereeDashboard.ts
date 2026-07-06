@@ -6,17 +6,7 @@ import { authFetch } from "@/lib/auth/clientFetch";
 import { fetchRefereeMatches, type RefereeMatch } from "@/lib/db/referee";
 import { isSupabaseConfigured } from "@/lib/db/config";
 
-const MOCK_REFEREE_MATCHES: RefereeMatch[] = [
-  {
-    id: "m-live",
-    teamAName: "Team Alpha",
-    teamBName: "Team Beta",
-    status: "live",
-    hasReferee: true,
-    scoreFlagged: false,
-    createdAt: new Date().toISOString(),
-  },
-];
+const MOCK_REFEREE_MATCHES: RefereeMatch[] = [];
 
 export function useRefereeDashboard(refereeId: string | undefined) {
   const [matches, setMatches] = useState<RefereeMatch[]>([]);

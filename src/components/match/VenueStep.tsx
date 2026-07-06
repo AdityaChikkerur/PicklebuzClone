@@ -4,7 +4,7 @@ import type { MatchSetupState } from "@/types/match";
 import { QUICK_VENUES } from "./mockData";
 
 const CITIES = [
-  "Bangalore",
+  "Bengaluru",
   "Mumbai",
   "Delhi",
   "Chennai",
@@ -126,7 +126,7 @@ export function VenueStep({ setup, onChange }: VenueStepProps) {
             value={setup.city}
             onChange={(e) => onChange({ city: e.target.value })}
             className="input-base"
-            placeholder="e.g. Bangalore"
+            placeholder="e.g. Bengaluru"
           />
           <datalist id="venue-cities">
             {CITIES.map((city) => (

@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/Badge";
 import { formatBuzzRating } from "@/lib/utils";
 import { createClient } from "@/lib/supabase";
 import { lookupPlayerByPhone } from "@/lib/db/playerLookup";
+import { useAuthStore } from "@/store/authStore";
 import {
   formatPhoneDisplay,
   looksLikePhone,
@@ -44,6 +45,7 @@ export function PlayerSearchDrawer({
   onClose,
   onSelect,
 }: PlayerSearchDrawerProps) {
+  const currentUserId = useAuthStore((s) => s.user?.id ?? s.profile?.id);
   const [mode, setMode] = useState<AddMode>("phone");
   const [query, setQuery] = useState("");
   const [players, setPlayers] = useState<Player[]>([]);
@@ -131,7 +133,7 @@ export function PlayerSearchDrawer({
     const q = query.trim().toLowerCase();
     const phoneDigits = normalizePhone(query);
 
-    return players.filter((player) => {
+    const results = players.filter((player) => {
       if (selectedPlayerIds.includes(player.id)) return false;
       if (!q) return true;
 
@@ -147,7 +149,17 @@ export function PlayerSearchDrawer({
         (player.phone?.includes(q) ?? false)
       );
     });
-  }, [query, selectedPlayerIds, players]);
+
+    if (currentUserId) {
+      const selfIndex = results.findIndex((player) => player.id === currentUserId);
+      if (selfIndex > 0) {
+        const [self] = results.splice(selfIndex, 1);
+        results.unshift(self);
+      }
+    }
+
+    return results;
+  }, [query, selectedPlayerIds, players, currentUserId]);
 
   const handlePhoneLookup = async () => {
     const digits = normalizePhone(phoneQuery);
@@ -319,6 +331,11 @@ export function PlayerSearchDrawer({
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium text-foreground">
                       {phoneLookup.fullName}
+                      {phoneLookup.id === currentUserId ? (
+                        <span className="ml-1.5 text-xs font-normal text-primary">
+                          (You)
+                        </span>
+                      ) : null}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {phoneLookup.city} · BUZZ{" "}
@@ -419,6 +436,11 @@ export function PlayerSearchDrawer({
                       <div className="min-w-0 flex-1">
                         <p className="truncate font-medium text-foreground">
                           {player.fullName}
+                          {player.id === currentUserId ? (
+                            <span className="ml-1.5 text-xs font-normal text-primary">
+                              (You)
+                            </span>
+                          ) : null}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {player.city} · BUZZ{" "}

@@ -1,4 +1,5 @@
 import type { MatchSetupState } from "@/types/match";
+import { isUuid } from "@/lib/db/config";
 
 export function playersPerTeam(matchType: MatchSetupState["matchType"]): number {
   return matchType === "singles" ? 1 : 2;
@@ -19,6 +20,19 @@ export function isStep2Valid(state: MatchSetupState): boolean {
     teamA === perTeam &&
     teamB === perTeam
   );
+}
+
+/** True when at least one slot is filled by someone other than the creator. */
+export function hasOpponentSelected(
+  state: MatchSetupState,
+  creatorId?: string | null
+): boolean {
+  if (!creatorId) return state.players.length > 0;
+
+  return state.players.some((p) => {
+    if (p.isGuest) return true;
+    return isUuid(p.playerId) && p.playerId !== creatorId;
+  });
 }
 
 export function isStep3Valid(state: MatchSetupState): boolean {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase";
 import { isSupabaseConfigured } from "@/lib/auth/isSupabaseConfigured";
 import { fetchLiveMatches, type LiveMatchSummary } from "@/lib/db/matches";
@@ -12,14 +12,28 @@ export function useLiveMatches() {
   const [error, setError] = useState<string | null>(null);
   const [source, setSource] = useState<"supabase" | "mock">("mock");
   const [reloadToken, setReloadToken] = useState(0);
+  const reloadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const reload = useCallback(() => setReloadToken((t) => t + 1), []);
+  const reload = useCallback(() => {
+    setReloadToken((t) => t + 1);
+  }, []);
+
+  const scheduleReload = useCallback(() => {
+    if (reloadTimerRef.current) return;
+    reloadTimerRef.current = setTimeout(() => {
+      reloadTimerRef.current = null;
+      reload();
+    }, 400);
+  }, [reload]);
 
   useEffect(() => {
     let cancelled = false;
+    const isInitialLoad = reloadToken === 0;
 
     async function load() {
-      setLoading(true);
+      if (isInitialLoad) {
+        setLoading(true);
+      }
       setError(null);
 
       const result = await fetchLiveMatches();
@@ -41,6 +55,14 @@ export function useLiveMatches() {
   }, [reloadToken]);
 
   useEffect(() => {
+    return () => {
+      if (reloadTimerRef.current) {
+        clearTimeout(reloadTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     if (!isSupabaseConfigured() || source !== "supabase") return;
 
     const supabase = createClient();
@@ -49,24 +71,24 @@ export function useLiveMatches() {
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "match_events" },
-        () => reload()
+        () => scheduleReload()
       )
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "matches" },
-        () => reload()
+        () => scheduleReload()
       )
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "matches" },
-        () => reload()
+        () => scheduleReload()
       )
       .subscribe();
 
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [source, reload]);
+  }, [source, scheduleReload]);
 
   const matchIds = useMemo(() => matches.map((m) => m.id), [matches]);
   const liveScores = useRealtimeLiveScores(matchIds);
