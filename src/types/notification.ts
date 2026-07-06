@@ -5,7 +5,8 @@ export type NotificationType =
   | "result_confirmation"
   | "dispute_raised"
   | "upcoming_match"
-  | "court_booking";
+  | "court_booking"
+  | "scorer_invite";
 
 export interface AppNotification {
   id: string;

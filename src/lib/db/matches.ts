@@ -783,6 +783,7 @@ export interface LiveMatchSummary {
   gameNumber: number;
   venue: string;
   city: string;
+  courtNumber: string;
   matchType: string;
   createdAt: string;
 }
@@ -795,12 +796,29 @@ export interface FetchLiveMatchesResult {
 
 export async function fetchLiveMatches(): Promise<FetchLiveMatchesResult> {
   if (!isSupabaseConfigured()) {
+<<<<<<< HEAD
   return {
     data: [],
     source: "supabase",
     error: "Supabase is not configured",
   };
 }
+=======
+    const { getLandingLiveMatches } = await import(
+      "@/lib/mock/landingMockData"
+    );
+    const mock = getLandingLiveMatches();
+    return {
+      data: mock.map((m, index) => ({
+        ...m,
+        courtNumber: `Court ${index + 1}`,
+        createdAt: new Date().toISOString(),
+      })),
+      source: "mock",
+      error: null,
+    };
+  }
+>>>>>>> main
 
   try {
     const supabase = createClient();
@@ -808,7 +826,7 @@ export async function fetchLiveMatches(): Promise<FetchLiveMatchesResult> {
     const { data: rows, error } = await supabase
       .from("matches")
       .select(
-        "id, team_a_name, team_b_name, venue, city, match_type, created_at"
+        "id, team_a_name, team_b_name, venue, city, court_number, match_type, created_at"
       )
       .eq("status", "live")
       .order("created_at", { ascending: false })
@@ -837,25 +855,54 @@ export async function fetchLiveMatches(): Promise<FetchLiveMatchesResult> {
         gameNumber: latestEvent?.game_number ?? 1,
         venue: (row.venue as string) ?? "",
         city: (row.city as string) ?? "",
+        courtNumber: (row.court_number as string) ?? "",
         matchType: row.match_type as string,
         createdAt: row.created_at as string,
       });
     }
 
     if (summaries.length === 0) {
+<<<<<<< HEAD
   return {
     data: [],
     source: "supabase",
     error: null,
   };
 }
+=======
+      const { getLandingLiveMatches } = await import(
+        "@/lib/mock/landingMockData"
+      );
+      const mock = getLandingLiveMatches();
+      return {
+        data: mock.map((m, index) => ({
+          ...m,
+          courtNumber: `Court ${index + 1}`,
+          createdAt: new Date().toISOString(),
+        })),
+        source: "mock",
+        error: null,
+      };
+    }
+>>>>>>> main
 
     return { data: summaries, source: "supabase", error: null };
   } catch (e) {
     return {
+<<<<<<< HEAD
   data: [],
   source: "supabase",
   error: e instanceof Error ? e.message : "Could not load live matches",
 };
+=======
+      data: mock.map((m, index) => ({
+        ...m,
+        courtNumber: `Court ${index + 1}`,
+        createdAt: new Date().toISOString(),
+      })),
+      source: "mock",
+      error: e instanceof Error ? e.message : "Could not load live matches",
+    };
+>>>>>>> main
   }
 }
