@@ -31,6 +31,7 @@ import {
 import type { ComponentType, SVGProps } from "react";
 import type { UserRole } from "@/types/player";
 import { getDefaultHomeForRole, isPlayerRole } from "@/lib/auth/routeGuards";
+import { SignalIcon } from "lucide-react";
 
 export interface NavItem {
   id: string;
@@ -200,10 +201,10 @@ export const BOTTOM_NAV_ITEMS = getBottomNavForRole("player");
 const SHARED_SIDEBAR: NavItem[] = [
   {
     id: "live",
-    label: "Live matches",
+    label: "Live",
     href: "/live-scoring",
-    icon: TrophyIcon,
-    activeIcon: TrophyIconSolid,
+    icon: SignalIcon,
+activeIcon: SignalIcon,
   },
   {
     id: "clubs",
@@ -240,7 +241,7 @@ const PLAYER_SIDEBAR: NavItem[] = [
   id: "my-matches",
   label: "My Matches",
   href: "/my-matches",
-  icon: TrophyIcon,
+  icon: ClipboardDocumentListIcon,
   activeIcon: TrophyIconSolid,
 },
     {
