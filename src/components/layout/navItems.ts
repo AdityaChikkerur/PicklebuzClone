@@ -237,12 +237,12 @@ const PLAYER_SIDEBAR: NavItem[] = [
     activeIcon: ChartBarIconSolid,
   },
   {
-    id: "match-setup",
-    label: "New match",
-    href: "/match-setup",
-    icon: PlusCircleIcon,
-    activeIcon: PlusCircleIconSolid,
-  },
+  id: "my-matches",
+  label: "My Matches",
+  href: "/my-matches",
+  icon: TrophyIcon,
+  activeIcon: TrophyIconSolid,
+},
     {
     id: "tournaments",
     label: "Tournaments",
