@@ -68,7 +68,7 @@ const TOURNAMENT_DETAILS: Record<string, TournamentDetail> = {
     name: "Bangalore Summer Open",
     description: "Premier knockout open for advanced singles and doubles players.",
     city: "Bangalore",
-    venue: "Smash Arena",
+    venue: "Game Theory",
     address: "100 Feet Road, Indiranagar, Bangalore",
     startDate: "2026-07-05",
     endDate: "2026-07-07",

@@ -79,7 +79,7 @@ export const FAQ_ITEMS: FaqItem[] = [
   {
     question: "Is PickleBuzz available in my city?",
     answer:
-      "PickleBuzz is growing across India — Mumbai, Bengaluru, Delhi NCR, Hyderabad, Pune, Chennai, Nashik, Nagpur, and more. Browse clubs on the app or visit our city pages.",
+      "PickleBuzz is growing across India — Mumbai, Thane, Navi Mumbai, Bengaluru, Delhi NCR, Hyderabad, Pune, Chennai, Nashik, Nagpur, Kolkata, Indore, Jaipur, Lucknow, and more. Browse clubs on the app or visit our city pages.",
   },
   {
     question: "How is PickleBuzz different from CricHeroes?",
@@ -105,15 +105,16 @@ export const CITY_PAGES: CityPageContent[] = [
     city: "Mumbai",
     headline: "Pickleball in Mumbai — Live Scores, Clubs & Tournaments",
     intro:
-      "Mumbai's pickleball scene is booming. PickleBuzz helps players in Bandra, Andheri, Powai, and across the city score matches live, find clubs, and join local tournaments.",
+      "Mumbai's pickleball scene spans Bandra, Andheri, Colaba, Lower Parel, Chembur, Goregaon, Powai, Juhu, and beyond. PickleBuzz lists 63 verified dedicated pickleball courts across Mumbai city — from Smash Dock and BandrArcade at Taj Lands End to Picklehaus Mulund and Pickle Partners at Sahara Star.",
     highlights: [
-      "Discover Mumbai pickleball clubs and courts",
-      "Live score weekend ladder matches and league nights",
-      "Register for Mumbai open tournaments in seconds",
+      "Browse verified pickleball courts across Bandra, Andheri, Powai, and South Mumbai",
+      "Live score league nights at Smash Dock, Score Pickleball, and Maniac arenas",
+      "Discover premium venues like BandrArcade, Picklehaus Mulund, and Torba Juhu",
     ],
     keywords: [
       "pickleball Mumbai",
       "pickleball clubs Mumbai",
+      "pickleball courts Mumbai",
       "pickleball scoring app Mumbai",
     ],
   },
@@ -123,11 +124,11 @@ export const CITY_PAGES: CityPageContent[] = [
     city: "Bengaluru",
     headline: "Pickleball in Bengaluru — India's Tech-Forward Pickleball Hub",
     intro:
-      "From Koramangala to Whitefield, Bengaluru players use PickleBuzz for live scoring, BUZZ-tracked rankings, and seamless tournament registration.",
+      "Bengaluru is India's pickleball hub — from Bellandur and Indiranagar to Chamrajpet and Vasanth Nagar. PickleBuzz lists 5 verified top-rated courts including PaddleX, Game Theory, PykIn Sports, The Pickl Club, and Millers Pickleball.",
     highlights: [
-      "Find Bengaluru clubs with real-time court availability",
-      "Track stats and climb city leaderboards",
-      "Organize corporate pickleball leagues with fixtures",
+      "Browse premium courts at PaddleX and The Pickl Club",
+      "Live score league nights at Game Theory and PykIn Sports",
+      "Discover Indiranagar, Bellandur, and central Bengaluru venues",
     ],
     keywords: [
       "pickleball Bengaluru",
@@ -141,11 +142,11 @@ export const CITY_PAGES: CityPageContent[] = [
     city: "Delhi NCR",
     headline: "Pickleball in Delhi NCR — Noida, Gurgaon & Beyond",
     intro:
-      "Delhi NCR's pickleball community spans Noida, Gurgaon, and South Delhi. PickleBuzz connects players, clubs, and organizers across the capital region.",
+      "Delhi NCR's pickleball scene spans South Delhi, Mayapuri, and Ladha Sarai. PickleBuzz lists 4 verified flagship courts — REPPP, RallyGully, The DinkYard, and Dinkit Delhi — for live scoring and court discovery.",
     highlights: [
-      "Cross-NCR club discovery and court booking",
-      "Live spectator links for league finals",
-      "Tournament management for academies and sports complexes",
+      "Browse mega complexes like REPPP and The DinkYard",
+      "Live score league finals across South Delhi",
+      "Discover rooftop and indoor courts near metro hubs",
     ],
     keywords: [
       "pickleball Delhi",
@@ -159,11 +160,11 @@ export const CITY_PAGES: CityPageContent[] = [
     city: "Hyderabad",
     headline: "Pickleball in Hyderabad — Score, Compete & Grow",
     intro:
-      "Hyderabad's pickleball courts are filling up fast. PickleBuzz gives HITEC City and Gachibowli players the tools to score live and compete in ranked events.",
+      "Hyderabad's pickleball courts span Jubilee Hills, Secunderabad, Madhapur, and Gachibowli. PickleBuzz lists 4 verified venues — from The Kitchen luxury lounge to Pikklle Arena and Gachibowli Stadium Court.",
     highlights: [
-      "Hyderabad club listings with booking support",
-      "Player discovery and follow network",
-      "Weekend tournament brackets with live standings",
+      "Browse HITEC City and Gachibowli pickleball courts",
+      "Live score at The Kitchen and Let's Pickle Arena",
+      "Discover Secunderabad and Jubilee Hills clubs",
     ],
     keywords: [
       "pickleball Hyderabad",
@@ -195,11 +196,11 @@ export const CITY_PAGES: CityPageContent[] = [
     city: "Chennai",
     headline: "Pickleball in Chennai — Live Scores for Tamil Nadu's Fastest-Growing Sport",
     intro:
-      "Chennai's pickleball adoption is accelerating. PickleBuzz helps players score matches courtside and share live results with spectators instantly.",
+      "Chennai's pickleball adoption spans Velachery, ECR, OMR, and Kottivakkam. PickleBuzz lists 4 verified courts — Pickleball Paradise by FC Marina, Paddle Lounge, The Colosseum, and Leap Sports Academy 2.0.",
     highlights: [
-      "Chennai club discovery",
-      "Live scoring for doubles and singles",
-      "Tournament registration with Razorpay",
+      "Browse coastal and OMR pickleball destinations",
+      "Live score at FC Marina and Paddle Lounge",
+      "Discover ECR and Velachery flagship venues",
     ],
     keywords: [
       "pickleball Chennai",
@@ -241,6 +242,114 @@ export const CITY_PAGES: CityPageContent[] = [
       "pickleball Nagpur",
       "pickleball clubs Nagpur",
       "Nagpur Grand Slam pickleball",
+    ],
+  },
+  {
+    slug: "thane",
+    path: "/pickleball-in-thane",
+    city: "Thane",
+    headline: "Pickleball in Thane — Courts, Clubs & Live Scoring",
+    intro:
+      "Thane's pickleball scene covers Ghodbunder Road, Majiwada, Balkum, and Upvan. PickleBuzz lists 7 verified dedicated pickleball courts — from House of Pickle (HOP) and Pickledeck Thane to Mark10 Pickleball Academy and The Thane Club.",
+    highlights: [
+      "Browse verified pickleball courts across Thane West and Thane East",
+      "Live score league nights at HOP, Pickledeck, and Mark10 Academy",
+      "Discover multi-sport venues at Urban Sports Rustomjee and Zion Performance Court",
+    ],
+    keywords: [
+      "pickleball Thane",
+      "pickleball clubs Thane",
+      "pickleball courts Thane",
+    ],
+  },
+  {
+    slug: "navi-mumbai",
+    path: "/pickleball-in-navi-mumbai",
+    city: "Navi Mumbai",
+    headline: "Pickleball in Navi Mumbai — Courts, Clubs & Live Scoring",
+    intro:
+      "Navi Mumbai's pickleball community spans Nerul, Kharghar, Panvel, Juinagar, and Ulwe. PickleBuzz lists 7 verified dedicated pickleball courts — from MatchPoint Pickleball Club and Nerul Gymkhana to PicklePro Club at Raheja District and CAP Club at Karnala Sports.",
+    highlights: [
+      "Browse verified pickleball courts across Nerul, Kharghar, and New Panvel",
+      "Live score friendly matches at school arenas and gymkhana clubs",
+      "Discover PicklePlay venues in Kharghar and Sanpada after school hours",
+    ],
+    keywords: [
+      "pickleball Navi Mumbai",
+      "pickleball clubs Navi Mumbai",
+      "pickleball courts Navi Mumbai",
+    ],
+  },
+  {
+    slug: "kolkata",
+    path: "/pickleball-in-kolkata",
+    city: "Kolkata",
+    headline: "Pickleball in Kolkata — Courts, Clubs & Live Scoring",
+    intro:
+      "Kolkata's pickleball scene spans Newtown, Park Street, and Salt Lake Sector V. PickleBuzz lists 3 verified courts — Playplex Sports Arena, The Pickle Court, and Pickleball XL.",
+    highlights: [
+      "Browse rooftop courts at Axis Mall Newtown",
+      "Live score 24/7 at The Pickle Court off Park Street",
+      "Discover Salt Lake tech corridor venues",
+    ],
+    keywords: [
+      "pickleball Kolkata",
+      "pickleball clubs Kolkata",
+      "pickleball courts Kolkata",
+    ],
+  },
+  {
+    slug: "indore",
+    path: "/pickleball-in-indore",
+    city: "Indore",
+    headline: "Pickleball in Indore — Courts, Clubs & Live Scoring",
+    intro:
+      "Indore's pickleball community is growing across Silicon City, Apollo DB City, and Rajendra Nagar. PickleBuzz lists 3 verified courts — Optimus Pickleball Club & Cafe, Elite Pickleball Club, and Pickle Paradise.",
+    highlights: [
+      "Browse lifestyle courts at Optimus and Pickle Paradise",
+      "Live score league and friendly matches",
+      "Discover pro training grounds at Elite Pickleball Club",
+    ],
+    keywords: [
+      "pickleball Indore",
+      "pickleball clubs Indore",
+      "pickleball courts Indore",
+    ],
+  },
+  {
+    slug: "jaipur",
+    path: "/pickleball-in-jaipur",
+    city: "Jaipur",
+    headline: "Pickleball in Jaipur — Courts, Clubs & Live Scoring",
+    intro:
+      "Jaipur's pickleball scene covers Mansarovar and Sirsi Road. PickleBuzz lists 2 verified courts — The Dink District near Mansarovar Metro and Jaipur Racket Academy.",
+    highlights: [
+      "Browse tournament headliner venues at The Dink District",
+      "Live score at Jaipur Racket Academy",
+      "Discover Mansarovar and Kanakpura corridor courts",
+    ],
+    keywords: [
+      "pickleball Jaipur",
+      "pickleball clubs Jaipur",
+      "pickleball courts Jaipur",
+    ],
+  },
+  {
+    slug: "lucknow",
+    path: "/pickleball-in-lucknow",
+    city: "Lucknow",
+    headline: "Pickleball in Lucknow — Courts, Clubs & Live Scoring",
+    intro:
+      "Lucknow's pickleball hubs span Gomti Nagar and Hazratganj. PickleBuzz lists 3 verified courts — Athletes Pickle Court, Picklepro Arena, and Pickleball by Play Padel at Hotel Clarks Avadh.",
+    highlights: [
+      "Browse premium Gomti Nagar pickleball arenas",
+      "Live score at Athletes Pickle Court and Picklepro Arena",
+      "Discover luxury resort courts in Hazratganj",
+    ],
+    keywords: [
+      "pickleball Lucknow",
+      "pickleball clubs Lucknow",
+      "pickleball courts Lucknow",
     ],
   },
 ];

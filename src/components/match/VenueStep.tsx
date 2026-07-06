@@ -6,13 +6,18 @@ import { QUICK_VENUES } from "./mockData";
 const CITIES = [
   "Bengaluru",
   "Mumbai",
-  "Delhi",
+  "Thane",
+  "Navi Mumbai",
+  "Delhi NCR",
   "Chennai",
   "Hyderabad",
   "Pune",
   "Nashik",
   "Nagpur",
   "Kolkata",
+  "Indore",
+  "Jaipur",
+  "Lucknow",
 ];
 
 interface VenueStepProps {
@@ -73,7 +78,7 @@ export function VenueStep({ setup, onChange }: VenueStepProps) {
           value={setup.venue}
           onChange={(e) => onChange({ venue: e.target.value })}
           className="input-base"
-          placeholder="e.g. Smash Arena"
+          placeholder="e.g. Game Theory"
         />
       </div>
 

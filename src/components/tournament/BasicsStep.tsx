@@ -8,11 +8,16 @@ import type { TournamentForm } from "@/types/tournament";
 const CITIES = [
   "Bengaluru",
   "Mumbai",
-  "Delhi",
+  "Thane",
+  "Navi Mumbai",
+  "Delhi NCR",
   "Chennai",
   "Hyderabad",
   "Pune",
   "Kolkata",
+  "Indore",
+  "Jaipur",
+  "Lucknow",
 ];
 
 interface BasicsStepProps {
@@ -117,7 +122,7 @@ export function BasicsStep({ form, onChange }: BasicsStepProps) {
           value={form.venue}
           onChange={(e) => onChange({ venue: e.target.value })}
           className="input-base"
-          placeholder="e.g. Smash Arena"
+          placeholder="e.g. Game Theory"
         />
       </div>
 

@@ -6,11 +6,18 @@ export const RANKING_CITIES = [
   "All",
   "Bengaluru",
   "Mumbai",
-  "Delhi",
+  "Thane",
+  "Navi Mumbai",
+  "Delhi NCR",
   "Chennai",
   "Hyderabad",
   "Pune",
+  "Nashik",
+  "Nagpur",
   "Kolkata",
+  "Indore",
+  "Jaipur",
+  "Lucknow",
 ] as const;
 
 export const LEADERBOARD_PLAYERS: LeaderboardPlayer[] = [

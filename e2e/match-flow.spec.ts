@@ -28,7 +28,7 @@ async function completeMatchSetup(page: Page) {
 
   await page.getByRole("button", { name: "Continue" }).click();
 
-  await page.getByRole("button", { name: "Smash Arena" }).click();
+  await page.getByRole("button", { name: "Game Theory" }).click();
   await page.getByRole("switch", { name: "Toggle referee for this match" }).click();
   await page.getByRole("button", { name: "Continue" }).click();
 

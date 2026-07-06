@@ -12,11 +12,18 @@ import { cn } from "@/lib/utils";
 const SIGNUP_CITIES = [
   "Bengaluru",
   "Mumbai",
-  "Delhi",
+  "Thane",
+  "Navi Mumbai",
+  "Delhi NCR",
   "Chennai",
   "Hyderabad",
   "Pune",
+  "Nashik",
+  "Nagpur",
   "Kolkata",
+  "Indore",
+  "Jaipur",
+  "Lucknow",
 ];
 import { isPhoneDuplicateError } from "@/lib/db/formatDbError";
 import { completePlayerProfile } from "@/lib/db/profiles";
