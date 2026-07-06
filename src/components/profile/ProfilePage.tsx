@@ -104,7 +104,7 @@ useEffect(() => {
           </p>
           <div className="mt-5 grid w-full grid-cols-3 divide-x rounded-xl border border-border">
   <div className="py-3 text-center">
-    <p className="text-xl font-bold">{matchesPlayed}</p>
+    <p className="text-xl font-bold">{matchesPlayed}npm run </p>
     <p className="text-xs text-muted-foreground">Matches</p>
   </div>
 
