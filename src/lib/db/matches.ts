@@ -176,6 +176,8 @@ export interface CreateMatchInput {
   setup: MatchSetupState;
   teamAPlayerIds?: string[];
   teamBPlayerIds?: string[];
+  /** Full player rows including guests added by phone. */
+  matchPlayers?: import("@/types/match").MatchPlayer[];
   tournamentId?: string;
 }
 
@@ -191,6 +193,7 @@ export async function createMatch(
     setup,
     teamAPlayerIds: inputTeamA = [],
     teamBPlayerIds = [],
+    matchPlayers = [],
     tournamentId,
   } = input;
 
@@ -199,6 +202,8 @@ export async function createMatch(
   if (!linkedIds.has(createdBy)) {
     teamAPlayerIds.push(createdBy);
   }
+
+  const guestSlots = matchPlayers.filter((p) => p.isGuest && p.guestPhone);
 
   if (!isSupabaseConfigured()) {
     const id = `mock-${Date.now()}`;
@@ -275,6 +280,42 @@ export async function createMatch(
       if (playersErr) throw playersErr;
     }
 
+    if (guestSlots.length > 0) {
+      const { createGuestPlayer } = await import("@/lib/db/playerLookup");
+      const guestRows: {
+        match_id: string;
+        guest_id: string;
+        team: "A" | "B";
+        server_number: number;
+      }[] = [];
+
+      for (const slot of guestSlots) {
+        const guestResult = await createGuestPlayer({
+          fullName: slot.fullName,
+          phone: slot.guestPhone!,
+          createdBy,
+        });
+        if (guestResult.error || !guestResult.data) {
+          throw new Error(guestResult.error ?? "Failed to add guest player");
+        }
+        const teamPlayers = matchPlayers.filter((p) => p.team === slot.team);
+        const slotIndex = teamPlayers.findIndex((p) => p.id === slot.id);
+        guestRows.push({
+          match_id: matchId,
+          guest_id: guestResult.data.guestId,
+          team: slot.team,
+          server_number: slotIndex >= 0 ? slotIndex + 1 : 1,
+        });
+      }
+
+      if (guestRows.length > 0) {
+        const { error: guestErr } = await supabase
+          .from("match_players")
+          .insert(guestRows);
+        if (guestErr) throw guestErr;
+      }
+    }
+
     const allPlayerIds = [...teamAPlayerIds, ...teamBPlayerIds].filter(
       (id) => id !== createdBy
     );
@@ -284,7 +325,7 @@ export async function createMatch(
       );
       await sendNotifications(allPlayerIds, {
         icon: "match_invite",
-        text: `Your match ${setup.teamAName} vs ${setup.teamBName} is live`,
+        text: `You were added to ${setup.teamAName} vs ${setup.teamBName}`,
         link: `/spectate/${matchId}`,
       });
     }

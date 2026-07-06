@@ -48,9 +48,19 @@ export function rankPlayers(
   players: LeaderboardPlayer[],
   category: RankingCategory
 ): LeaderboardPlayer[] {
-  const sorted = [...players].sort(
-    (a, b) => getPrimaryStat(b, category) - getPrimaryStat(a, category)
-  );
+  const sorted = [...players].sort((a, b) => {
+    const primaryDiff = getPrimaryStat(b, category) - getPrimaryStat(a, category);
+    if (primaryDiff !== 0) return primaryDiff;
+
+    // Players with match history outrank same-stat players with no games.
+    const matchDiff = b.wins + b.losses - (a.wins + a.losses);
+    if (matchDiff !== 0) return matchDiff;
+
+    const duprDiff = b.duprRating - a.duprRating;
+    if (duprDiff !== 0) return duprDiff;
+
+    return a.fullName.localeCompare(b.fullName);
+  });
 
   return sorted.map((player, index) => ({
     ...player,

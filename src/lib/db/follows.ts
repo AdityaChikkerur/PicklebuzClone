@@ -4,22 +4,42 @@ import { sendNotification } from "@/lib/notifications/sendNotification";
 
 const FOLLOWS_KEY = "pb_player_follows";
 
-function readMockFollows(userId: string): Set<string> {
-  if (typeof window === "undefined") return new Set();
-  try {
-    const raw = localStorage.getItem(FOLLOWS_KEY);
-    const all = raw ? (JSON.parse(raw) as Record<string, string[]>) : {};
-    return new Set(all[userId] ?? []);
-  } catch {
-    return new Set();
+export const FOLLOWS_UPDATED_EVENT = "pb-follows-updated";
+
+function dispatchFollowsUpdated(): void {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(FOLLOWS_UPDATED_EVENT));
   }
 }
 
+function readAllMockFollows(): Record<string, string[]> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = localStorage.getItem(FOLLOWS_KEY);
+    return raw ? (JSON.parse(raw) as Record<string, string[]>) : {};
+  } catch {
+    return {};
+  }
+}
+function readMockFollows(userId: string): Set<string> {
+  const all = readAllMockFollows();
+  return new Set(all[userId] ?? []);
+}
+
 function writeMockFollows(userId: string, following: Set<string>): void {
-  const raw = localStorage.getItem(FOLLOWS_KEY);
-  const all = raw ? (JSON.parse(raw) as Record<string, string[]>) : {};
+  const all = readAllMockFollows();
   all[userId] = [...following];
   localStorage.setItem(FOLLOWS_KEY, JSON.stringify(all));
+  dispatchFollowsUpdated();
+}
+
+function countMockFollowers(playerId: string): number {
+  const all = readAllMockFollows();
+  return Object.values(all).filter((ids) => ids.includes(playerId)).length;
+}
+
+function countMockFollowing(playerId: string): number {
+  return readMockFollows(playerId).size;
 }
 
 export async function fetchFollowingIds(userId: string): Promise<Set<string>> {
@@ -52,7 +72,7 @@ export async function followPlayer(
       userId: followingId,
       icon: "invite",
       text: `${followerName ?? "Someone"} started following you`,
-      link: "/discover",
+      link: "/profile",
     });
     return true;
   }
@@ -68,8 +88,9 @@ export async function followPlayer(
       userId: followingId,
       icon: "invite",
       text: `${followerName ?? "Someone"} started following you`,
-      link: "/discover",
+      link: "/profile",
     });
+    dispatchFollowsUpdated();
   }
 
   return !error;
@@ -93,11 +114,15 @@ export async function unfollowPlayer(
     .eq("follower_id", followerId)
     .eq("following_id", followingId);
 
+  if (!error) {
+    dispatchFollowsUpdated();
+  }
+
   return !error;
 }
 
 export async function fetchFollowerCount(playerId: string): Promise<number> {
-  if (!isSupabaseConfigured()) return 0;
+  if (!isSupabaseConfigured()) return countMockFollowers(playerId);
 
   const supabase = createClient();
   const { count, error } = await supabase
@@ -109,7 +134,7 @@ export async function fetchFollowerCount(playerId: string): Promise<number> {
   return count ?? 0;
 }
 export async function fetchFollowingCount(playerId: string): Promise<number> {
-  if (!isSupabaseConfigured()) return 0;
+  if (!isSupabaseConfigured()) return countMockFollowing(playerId);
 
   const supabase = createClient();
 

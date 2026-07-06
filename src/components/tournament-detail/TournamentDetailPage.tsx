@@ -307,6 +307,8 @@ export function TournamentDetailPage({ tournamentId }: TournamentDetailPageProps
           </>
         ) : activeTab === "participants" ? (
           <ParticipantsManager
+            tournamentId={tournament.id}
+            tournamentName={tournament.name}
             registrations={registrations}
             isOrganizer={tournament.isOrganizer}
             onApprove={(id) => handleRegistrationStatus(id, "approved")}

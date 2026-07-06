@@ -12,7 +12,7 @@ export const DEFAULT_TITLE =
   "PickleBuzz — India's #1 Pickleball Scoring App | Live Scores & Tournaments";
 
 export const DEFAULT_DESCRIPTION =
-  "PickleBuzz is India's top free pickleball app for live match scoring, tournaments, club court bookings, player rankings, and DUPR sync. Built for players, clubs, and organizers.";
+  "PickleBuzz is India's top free pickleball app for live match scoring, tournaments, club court bookings, player rankings, and BUZZ ratings. Built for players, clubs, and organizers.";
 
 export const DEFAULT_KEYWORDS = [
   "pickleball app India",
@@ -21,7 +21,7 @@ export const DEFAULT_KEYWORDS = [
   "pickleball tournament app",
   "pickleball rankings India",
   "pickleball club booking",
-  "DUPR pickleball India",
+  "BUZZ pickleball India",
   "pickleball match scoring",
   "pickleball league management",
   "PickleBuzz",

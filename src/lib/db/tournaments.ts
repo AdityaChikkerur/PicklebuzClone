@@ -89,7 +89,8 @@ function mapTournamentDetail(
   categories: DbCategoryRow[],
   registeredCount: number,
   currentUserId?: string,
-  userRegistration?: UserTournamentRegistration | null
+  userRegistration?: UserTournamentRegistration | null,
+  isCoAdmin = false
 ): TournamentDetail {
   return {
     id: row.id,
@@ -115,7 +116,10 @@ function mapTournamentDetail(
     winBy: row.win_by as 1 | 2,
     maxTimeouts: row.max_timeouts,
     timeoutDuration: row.timeout_duration,
-    isOrganizer: Boolean(currentUserId && currentUserId === row.created_by),
+    isOrganizer: Boolean(
+      currentUserId &&
+        (currentUserId === row.created_by || isCoAdmin)
+    ),
     userRegistration: userRegistration ?? null,
   };
 }
@@ -193,8 +197,11 @@ async function loadTournamentBundle(
     .neq("status", "rejected");
 
   let userRegistration: UserTournamentRegistration | null = null;
+  let isCoAdmin = false;
   if (currentUserId) {
     userRegistration = await fetchUserRegistration(tournamentId, currentUserId);
+    const { isTournamentCoAdmin } = await import("@/lib/db/tournamentAdmins");
+    isCoAdmin = await isTournamentCoAdmin(tournamentId, currentUserId);
   }
 
   return mapTournamentDetail(
@@ -202,7 +209,8 @@ async function loadTournamentBundle(
     (categories ?? []) as DbCategoryRow[],
     count ?? 0,
     currentUserId,
-    userRegistration
+    userRegistration,
+    isCoAdmin
   );
 }
 

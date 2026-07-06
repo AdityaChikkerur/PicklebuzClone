@@ -109,7 +109,7 @@ export function CategoriesStep({ form, onChange }: CategoriesStepProps) {
         </div>
 
         <div>
-          <p className="mb-2 text-sm font-medium">Skill level (DUPR)</p>
+          <p className="mb-2 text-sm font-medium">Skill level (BUZZ)</p>
           <div className="flex flex-wrap gap-2">
             {SKILL_LEVELS.map((level) => (
               <Chip

@@ -6,7 +6,7 @@ import { buildPageMetadata, breadcrumbJsonLd, softwareApplicationJsonLd } from "
 export const metadata: Metadata = buildPageMetadata({
   title: "Pickleball Scoring App India — Free Live Match Scoring",
   description:
-    "PickleBuzz is India's best free pickleball scoring app. Score rally-by-rally, share live spectator links, track stats, and sync DUPR — built for Indian courts.",
+    "PickleBuzz is India's best free pickleball scoring app. Score rally-by-rally, share live spectator links, track stats, and climb the BUZZ rankings — built for Indian courts.",
   path: "/pickleball-scoring-app",
   keywords: [
     "pickleball scoring app",
@@ -40,7 +40,7 @@ export default function PickleballScoringAppPage() {
           },
           {
             heading: "Verified stats that matter",
-            body: "Every scored match feeds your player profile — win rate, streaks, head-to-head records, and strength-weighted rankings. Sync DUPR to reflect your official rating.",
+            body: "Every scored match feeds your player profile — win rate, streaks, head-to-head records, and strength-weighted BUZZ rankings.",
           },
           {
             heading: "Free for players, powerful for organizers",

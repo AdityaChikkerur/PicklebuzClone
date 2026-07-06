@@ -78,6 +78,10 @@ export interface MatchPlayer {
   avatarUrl: string | null;
   team: Team;
   serverNumber: 1 | 2 | null;
+  /** Set when the player was added by phone but is not registered yet. */
+  guestId?: string | null;
+  guestPhone?: string | null;
+  isGuest?: boolean;
 }
 
 export interface MatchState {

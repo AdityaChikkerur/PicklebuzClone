@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { MultiMatchLiveGrid } from "@/components/scoring/MultiMatchLiveGrid";
 import { Badge } from "@/components/ui/Badge";
@@ -36,6 +36,8 @@ export function LiveTab({
   onStartMatch,
   onStartMultiple,
 }: LiveTabProps) {
+  const [courtCount, setCourtCount] = useState(4);
+
   const live = fixtures.filter((f) => f.status === "live" && f.matchId);
   const startable = fixtures.filter(canStartFixture);
   const liveMatchIds = live.map((f) => f.matchId!).filter(Boolean);
@@ -61,6 +63,12 @@ export function LiveTab({
     [live, liveScores]
   );
 
+  const handleStartCourts = () => {
+    if (!onStartMultiple || startable.length === 0) return;
+    const count = Math.min(courtCount, startable.length);
+    onStartMultiple(startable.slice(0, count).map((f) => f.id));
+  };
+
   const handleStartAll = () => {
     if (!onStartMultiple || startable.length === 0) return;
     onStartMultiple(startable.map((f) => f.id));
@@ -69,25 +77,57 @@ export function LiveTab({
   return (
     <div className="flex flex-col gap-4">
       {isOrganizer && startable.length > 0 && onStartMultiple && (
-        <div className="card-base flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="card-base flex flex-col gap-3 p-4">
           <div>
             <p className="text-sm font-semibold text-foreground">
               Go live on multiple courts
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Start {startable.length} scheduled match
-              {startable.length === 1 ? "" : "es"} at once — like CricHeroes multi-court
-              scoring.
+              {startable.length} match{startable.length === 1 ? "" : "es"} ready —
+              score {live.length > 0 ? `${live.length} live, ` : ""}
+              up to {courtCount} courts at once.
             </p>
           </div>
-          <button
-            type="button"
-            disabled={bulkStarting || Boolean(startingFixtureId)}
-            onClick={handleStartAll}
-            className="btn-primary shrink-0 text-sm"
-          >
-            {bulkStarting ? "Starting matches…" : `Start all (${startable.length})`}
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="flex items-center gap-2 text-sm text-foreground">
+              <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Courts
+              </span>
+              <select
+                value={courtCount}
+                onChange={(e) => setCourtCount(Number(e.target.value))}
+                className="input-base w-20 py-1.5 text-sm"
+              >
+                {[1, 2, 3, 4, 5, 6, 8].map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              disabled={bulkStarting || Boolean(startingFixtureId)}
+              onClick={handleStartCourts}
+              className="btn-primary shrink-0 text-sm"
+            >
+              {bulkStarting
+                ? "Starting matches…"
+                : `Start ${Math.min(courtCount, startable.length)} court${
+                    Math.min(courtCount, startable.length) === 1 ? "" : "s"
+                  }`}
+            </button>
+            {startable.length > courtCount && (
+              <button
+                type="button"
+                disabled={bulkStarting || Boolean(startingFixtureId)}
+                onClick={handleStartAll}
+                className="btn-outline shrink-0 text-sm"
+              >
+                Start all ({startable.length})
+              </button>
+            )}
+          </div>
         </div>
       )}
 

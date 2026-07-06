@@ -144,7 +144,7 @@ export const PRIVACY_POLICY: LegalDocument = {
             <li>Phone number (where provided)</li>
             <li>City, location, and other profile details you choose to provide</li>
             <li>User role (player, organizer, referee, club owner, administrator)</li>
-            <li>Skill level, DUPR rating, and competitive profile information</li>
+            <li>Skill level, BUZZ rating, and competitive profile information</li>
           </ul>
           <h3 className="mt-4 font-semibold text-foreground">Match & Activity Data</h3>
           <ul className="list-disc space-y-1 pl-5">

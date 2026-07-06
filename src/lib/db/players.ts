@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase";
+import { normalizePhone } from "@/lib/phone/normalizePhone";
 import type { Player, SkillLevel } from "@/types/player";
 
 export interface DiscoveryFilters {
@@ -18,6 +19,7 @@ interface DbProfileRow {
   dupr_rating: number;
   looking_for_partner: boolean;
   looking_for_match: boolean;
+  phone: string | null;
 }
 
 function mapDiscoveryPlayer(row: DbProfileRow): Player {
@@ -28,6 +30,8 @@ function mapDiscoveryPlayer(row: DbProfileRow): Player {
     city: row.city,
     skillLevel: row.skill_level,
     duprRating: Number(row.dupr_rating),
+    playerRating: Number(row.dupr_rating),
+    phone: row.phone,
     lookingForPartner: row.looking_for_partner,
     lookingForMatch: row.looking_for_match,
   };
@@ -50,7 +54,8 @@ export async function fetchDiscoveryPlayers(
       skill_level,
       dupr_rating,
       looking_for_partner,
-      looking_for_match
+      looking_for_match,
+      phone
     `
     )
     .eq("role", "player")
@@ -83,10 +88,15 @@ export async function fetchDiscoveryPlayers(
 
   const q = filters.search?.trim().toLowerCase();
   if (q) {
+    const phoneDigits = normalizePhone(q);
     players = players.filter(
       (p) =>
         p.fullName.toLowerCase().includes(q) ||
-        p.city.toLowerCase().includes(q)
+        p.city.toLowerCase().includes(q) ||
+        (phoneDigits.length >= 6 &&
+          p.phone &&
+          normalizePhone(p.phone) === phoneDigits) ||
+        (p.phone?.includes(q) ?? false)
     );
   }
 

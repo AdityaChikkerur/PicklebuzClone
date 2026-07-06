@@ -298,7 +298,7 @@ export function PerformanceChart() {
 
                   dataKey="rating"
 
-                  name="DUPR"
+                  name="BUZZ"
 
                   stroke="var(--secondary)"
 
