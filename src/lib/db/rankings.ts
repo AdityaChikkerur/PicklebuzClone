@@ -150,9 +150,8 @@ export async function fetchPlayerRankings(
       `
       )
       .eq("role", "player")
-      .gt("total_matches", 0)
-      .order("win_pct", { ascending: false })
-      .order("wins", { ascending: false }),
+      .order("dupr_rating", { ascending: false })
+      .order("full_name", { ascending: true }),
     fetchMatchTypeAggregates(),
     fetchStrengthRatings(),
   ]);

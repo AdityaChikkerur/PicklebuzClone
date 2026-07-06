@@ -325,7 +325,7 @@ export async function createMatch(
       );
       await sendNotifications(allPlayerIds, {
         icon: "match_invite",
-        text: `Your match ${setup.teamAName} vs ${setup.teamBName} is live`,
+        text: `You were added to ${setup.teamAName} vs ${setup.teamBName}`,
         link: `/spectate/${matchId}`,
       });
     }

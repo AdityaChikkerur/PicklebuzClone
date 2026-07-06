@@ -15,6 +15,7 @@ import { playersPerTeam } from "./validation";
 interface PlayersStepProps {
   setup: MatchSetupState;
   onChange: (values: Partial<MatchSetupState>) => void;
+  onDrawerOpenChange?: (open: boolean) => void;
 }
 
 interface ActiveSlot {
@@ -108,16 +109,25 @@ function TeamPanel({
   );
 }
 
-export function PlayersStep({ setup, onChange }: PlayersStepProps) {
+export function PlayersStep({
+  setup,
+  onChange,
+  onDrawerOpenChange,
+}: PlayersStepProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [activeSlot, setActiveSlot] = useState<ActiveSlot | null>(null);
+
+  const setDrawer = (open: boolean) => {
+    setDrawerOpen(open);
+    onDrawerOpenChange?.(open);
+  };
 
   const slots = playersPerTeam(setup.matchType);
   const selectedIds = setup.players.map((p) => p.playerId);
 
   const openDrawer = (team: Team, slotIndex: number) => {
     setActiveSlot({ team, slotIndex });
-    setDrawerOpen(true);
+    setDrawer(true);
   };
 
   const removePlayer = (playerId: string) => {
@@ -184,7 +194,7 @@ export function PlayersStep({ setup, onChange }: PlayersStepProps) {
         team={activeSlot?.team ?? "A"}
         selectedPlayerIds={selectedIds}
         onClose={() => {
-          setDrawerOpen(false);
+          setDrawer(false);
           setActiveSlot(null);
         }}
         onSelect={addPlayer}

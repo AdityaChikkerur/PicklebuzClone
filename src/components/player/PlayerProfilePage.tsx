@@ -9,10 +9,6 @@ import { createClient } from "@/lib/supabase";
 import { formatDupr } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
 import { useFollows } from "@/hooks/useFollows";
-import {
-  fetchFollowerCount,
-  fetchFollowingCount,
-} from "@/lib/db/follows";
 import type { SkillLevel } from "@/types/player";
 
 type PublicProfile = {
@@ -30,8 +26,6 @@ export function PlayerProfilePage({ playerId }: { playerId: string }) {
   const { isFollowing, toggleFollow } = useFollows(currentUserId);
 
   const [profile, setProfile] = useState<PublicProfile | null>(null);
-  const [followers, setFollowers] = useState(0);
-  const [following, setFollowing] = useState(0);
   const [matches, setMatches] = useState(0);
   const [loading, setLoading] = useState(true);
 
@@ -51,18 +45,11 @@ export function PlayerProfilePage({ playerId }: { playerId: string }) {
 
       setProfile(data as PublicProfile | null);
 
-      const [followersCount, followingCount, matchesCountResult] =
-        await Promise.all([
-          fetchFollowerCount(playerId),
-          fetchFollowingCount(playerId),
-          supabase
-            .from("match_players")
-            .select("*", { count: "exact", head: true })
-            .eq("player_id", playerId),
-        ]);
+      const matchesCountResult = await supabase
+        .from("match_players")
+        .select("*", { count: "exact", head: true })
+        .eq("player_id", playerId);
 
-      setFollowers(followersCount);
-      setFollowing(followingCount);
       setMatches(matchesCountResult.count ?? 0);
 
       setLoading(false);
@@ -118,21 +105,9 @@ export function PlayerProfilePage({ playerId }: { playerId: string }) {
             </Badge>
           </div>
 
-          <div className="mt-4 grid w-full grid-cols-3 divide-x rounded-xl border border-border">
-            <div className="py-3 text-center">
-              <p className="text-xl font-bold">{matches}</p>
-              <p className="text-xs text-muted-foreground">Matches</p>
-            </div>
-
-            <div className="py-3 text-center">
-              <p className="text-xl font-bold">{followers}</p>
-              <p className="text-xs text-muted-foreground">Followers</p>
-            </div>
-
-            <div className="py-3 text-center">
-              <p className="text-xl font-bold">{following}</p>
-              <p className="text-xs text-muted-foreground">Following</p>
-            </div>
+          <div className="mt-4 w-full rounded-xl border border-border py-3 text-center">
+            <p className="text-xl font-bold">{matches}</p>
+            <p className="text-xs text-muted-foreground">Matches played</p>
           </div>
 
           {isOwnProfile ? (

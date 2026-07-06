@@ -22,6 +22,7 @@ export function MatchSetupWizard() {
   const userId = useAuthStore((s) => s.user?.id ?? s.profile?.id);
   const [setup, setSetup] = useState<MatchSetupState>(INITIAL_MATCH_SETUP);
   const [starting, setStarting] = useState(false);
+  const [playerDrawerOpen, setPlayerDrawerOpen] = useState(false);
 
   const updateSetup = useCallback((partial: Partial<MatchSetupState>) => {
     setSetup((prev) => {
@@ -128,7 +129,11 @@ export function MatchSetupWizard() {
           />
         )}
         {setup.step === 2 && (
-          <PlayersStep setup={setup} onChange={updateSetup} />
+          <PlayersStep
+            setup={setup}
+            onChange={updateSetup}
+            onDrawerOpenChange={setPlayerDrawerOpen}
+          />
         )}
         {setup.step === 3 && (
           <VenueStep setup={setup} onChange={updateSetup} />
@@ -138,14 +143,20 @@ export function MatchSetupWizard() {
         )}
       </div>
 
-      <button
-        type="button"
-        onClick={() => void goNext()}
-        disabled={!canContinue || starting}
-        className="btn-primary w-full"
-      >
-        {starting ? "Starting…" : isLastStep ? "Start Live Scoring" : "Continue"}
-      </button>
+      {!playerDrawerOpen && (
+        <button
+          type="button"
+          onClick={() => void goNext()}
+          disabled={!canContinue || starting}
+          className="btn-primary w-full"
+        >
+          {starting
+            ? "Starting…"
+            : isLastStep
+              ? "Start Live Scoring"
+              : "Continue"}
+        </button>
+      )}
     </div>
   );
 }

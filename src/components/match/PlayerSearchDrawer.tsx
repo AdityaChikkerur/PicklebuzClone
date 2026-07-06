@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { MagnifyingGlassIcon, PhoneIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import { Avatar } from "@/components/ui/Avatar";
@@ -53,6 +54,11 @@ export function PlayerSearchDrawer({
     undefined
   );
   const [phoneSearching, setPhoneSearching] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!open) {
@@ -197,13 +203,13 @@ export function PlayerSearchDrawer({
     onClose();
   };
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
+  const drawer = (
+    <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center sm:p-4">
       <button
         type="button"
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         aria-label="Close player search"
         onClick={onClose}
       />
@@ -212,15 +218,15 @@ export function PlayerSearchDrawer({
         role="dialog"
         aria-modal="true"
         aria-labelledby="player-search-title"
-        className="relative z-10 flex max-h-[85vh] w-full max-w-lg flex-col rounded-t-2xl border border-border bg-card shadow-xl sm:rounded-2xl"
+        className="relative z-10 flex max-h-[min(85vh,720px)] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl border border-border bg-card shadow-2xl sm:max-h-[min(80vh,720px)] sm:rounded-2xl"
       >
-        <div className="flex items-center justify-between border-b border-border px-4 py-3">
+        <div className="shrink-0 flex items-center justify-between border-b border-border px-4 py-3">
           <div>
             <h2 id="player-search-title" className="font-bold text-foreground">
               Add player
             </h2>
             <p className="text-xs text-muted-foreground">
-              Team {team} · add by phone or search by name
+              Team {team} · search by name or city
             </p>
           </div>
 
@@ -234,7 +240,7 @@ export function PlayerSearchDrawer({
           </button>
         </div>
 
-        <div className="flex gap-1 border-b border-border px-4 py-2">
+        <div className="shrink-0 flex gap-1 border-b border-border px-4 py-2">
           <button
             type="button"
             onClick={() => setMode("phone")}
@@ -262,7 +268,7 @@ export function PlayerSearchDrawer({
         </div>
 
         {mode === "phone" ? (
-          <div className="flex flex-col gap-4 p-4">
+          <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
             <div>
               <label
                 htmlFor="phone-lookup"
@@ -363,8 +369,8 @@ export function PlayerSearchDrawer({
             )}
           </div>
         ) : (
-          <>
-            <div className="border-b border-border px-4 py-3">
+          <div className="flex min-h-0 flex-1 flex-col">
+            <div className="shrink-0 border-b border-border px-4 py-3">
               <div className="relative">
                 <MagnifyingGlassIcon
                   className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
@@ -378,7 +384,7 @@ export function PlayerSearchDrawer({
                   placeholder={
                     looksLikePhone(query)
                       ? "Searching by phone…"
-                      : "Name, city, or phone…"
+                      : "Search players…"
                   }
                   className="input-base pl-9"
                   autoFocus
@@ -386,7 +392,7 @@ export function PlayerSearchDrawer({
               </div>
             </div>
 
-            <ul className="flex-1 overflow-y-auto p-2">
+            <ul className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
               {loading ? (
                 <li className="px-4 py-8 text-center text-sm text-muted-foreground">
                   Loading players...
@@ -431,11 +437,13 @@ export function PlayerSearchDrawer({
                 ))
               )}
             </ul>
-          </>
+          </div>
         )}
       </div>
     </div>
   );
+
+  return createPortal(drawer, document.body);
 }
 
 export function playerToMatchPlayer(

@@ -36,8 +36,8 @@ export function PlayerCard({ player, className }: PlayerCardProps) {
     await sendNotification({
       userId: player.id,
       icon: "match_invite",
-      text: `${senderName} invited you to a match`,
-      link: "/discover",
+      text: `${senderName} invited you to play`,
+      link: "/match-setup",
     });
 
     toast.success(`Invite sent to ${player.fullName}`);

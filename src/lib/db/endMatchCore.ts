@@ -102,25 +102,47 @@ export async function executeEndMatch(
     }
 
     try {
+      const { data: matchMeta } = await supabase
+        .from("matches")
+        .select("team_a_name, team_b_name, winner")
+        .eq("id", input.matchId)
+        .maybeSingle();
+
       const { data: players } = await supabase
         .from("match_players")
         .select("player_id")
         .eq("match_id", input.matchId);
 
-      const opponentIds = (players ?? [])
-        .map((row) => row.player_id as string)
-        .filter((playerId) => playerId !== userId);
+      const participantIds = [
+        ...new Set(
+          (players ?? [])
+            .map((row) => row.player_id as string)
+            .filter(Boolean)
+        ),
+      ];
 
-      if (opponentIds.length > 0) {
+      if (participantIds.length > 0) {
         const { createNotificationsWithClient } = await import(
           "@/lib/db/notifications"
         );
+
+        const winnerLabel =
+          matchMeta?.winner === "A"
+            ? matchMeta.team_a_name
+            : matchMeta?.winner === "B"
+              ? matchMeta.team_b_name
+              : "Tie";
+
+        const summary = matchMeta
+          ? `${matchMeta.team_a_name} vs ${matchMeta.team_b_name}`
+          : "Your match";
+
         await createNotificationsWithClient(
           supabase,
-          opponentIds.map((opponentId) => ({
-            userId: opponentId,
-            icon: "✅",
-            text: "Match result recorded",
+          participantIds.map((participantId) => ({
+            userId: participantId,
+            icon: "result_confirmation",
+            text: `Match complete: ${summary}. Winner: ${winnerLabel}`,
             link: `/match/${input.matchId}`,
           }))
         );

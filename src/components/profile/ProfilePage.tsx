@@ -17,6 +17,7 @@ import { createClient } from "@/lib/supabase";
 import {
   fetchFollowerCount,
   fetchFollowingCount,
+  FOLLOWS_UPDATED_EVENT,
 } from "@/lib/db/follows";
 
 export function ProfilePage() {
@@ -27,30 +28,36 @@ export function ProfilePage() {
   const [following, setFollowing] = useState(0);
   const [matchesPlayed, setMatchesPlayed] = useState(0);
 
-useEffect(() => {
-  if (!userId) return;
+  useEffect(() => {
+    if (!userId) return;
 
-  const currentUserId = userId;
+    const currentUserId = userId;
 
-  async function loadCounts() {
-    const supabase = createClient();
+    async function loadCounts() {
+      const supabase = createClient();
 
-    const [followersCount, followingCount, matchesResult] = await Promise.all([
-      fetchFollowerCount(currentUserId),
-      fetchFollowingCount(currentUserId),
-      supabase
-        .from("match_players")
-        .select("*", { count: "exact", head: true })
-        .eq("player_id", currentUserId),
-    ]);
+      const [followersCount, followingCount, matchesResult] = await Promise.all([
+        fetchFollowerCount(currentUserId),
+        fetchFollowingCount(currentUserId),
+        supabase
+          .from("match_players")
+          .select("*", { count: "exact", head: true })
+          .eq("player_id", currentUserId),
+      ]);
 
-    setFollowers(followersCount);
-    setFollowing(followingCount);
-    setMatchesPlayed(matchesResult.count ?? 0);
-  }
+      setFollowers(followersCount);
+      setFollowing(followingCount);
+      setMatchesPlayed(matchesResult.count ?? 0);
+    }
 
-  void loadCounts();
-}, [userId]);
+    void loadCounts();
+
+    const onFollowsUpdated = () => {
+      void loadCounts();
+    };
+    window.addEventListener(FOLLOWS_UPDATED_EVENT, onFollowsUpdated);
+    return () => window.removeEventListener(FOLLOWS_UPDATED_EVENT, onFollowsUpdated);
+  }, [userId]);
   if (!profile) {
     return (
       <AppLayout title="Profile">
@@ -103,27 +110,27 @@ useEffect(() => {
             Rating updates automatically after verified matches.
           </p>
           <div className="mt-5 grid w-full grid-cols-3 divide-x rounded-xl border border-border">
-  <div className="py-3 text-center">
-    <p className="text-xl font-bold">{matchesPlayed}</p>
-    <p className="text-xs text-muted-foreground">Matches</p>
-  </div>
+            <div className="py-3 text-center">
+              <p className="text-xl font-bold">{matchesPlayed}</p>
+              <p className="text-xs text-muted-foreground">Matches</p>
+            </div>
 
-  <Link
-  href="/profile/followers"
-  className="py-3 text-center transition hover:bg-muted/50"
->
-  <p className="text-xl font-bold">{followers}</p>
-  <p className="text-xs text-muted-foreground">Followers</p>
-</Link>
+            <Link
+              href="/profile/followers"
+              className="py-3 text-center transition hover:bg-muted/50"
+            >
+              <p className="text-xl font-bold">{followers}</p>
+              <p className="text-xs text-muted-foreground">Followers</p>
+            </Link>
 
-<Link
-  href="/profile/following"
-  className="py-3 text-center transition hover:bg-muted/50"
->
-  <p className="text-xl font-bold">{following}</p>
-  <p className="text-xs text-muted-foreground">Following</p>
-</Link>
-</div>
+            <Link
+              href="/profile/following"
+              className="py-3 text-center transition hover:bg-muted/50"
+            >
+              <p className="text-xl font-bold">{following}</p>
+              <p className="text-xs text-muted-foreground">Following</p>
+            </Link>
+          </div>
           
         </div>
 
