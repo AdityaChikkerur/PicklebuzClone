@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   FireIcon,
   MapPinIcon,
@@ -28,13 +29,17 @@ export function PlayerCard({ player, className }: PlayerCardProps) {
   const senderName = profile?.fullName ?? "A player";
 
   const handleInvite = async () => {
-    const { sendNotification } = await import("@/lib/notifications/sendNotification");
+    const { sendNotification } = await import(
+      "@/lib/notifications/sendNotification"
+    );
+
     await sendNotification({
       userId: player.id,
       icon: "match_invite",
       text: `${senderName} invited you to a match`,
       link: "/discover",
     });
+
     toast.success(`Invite sent to ${player.fullName}`);
   };
 
@@ -46,21 +51,28 @@ export function PlayerCard({ player, className }: PlayerCardProps) {
       )}
     >
       <div className="flex items-start gap-3">
-        <Avatar
-          src={player.avatarUrl}
-          name={player.fullName}
-          size="md"
-          ring
-        />
+        <Link href={`/player/${player.id}`} className="shrink-0">
+          <Avatar
+            src={player.avatarUrl}
+            name={player.fullName}
+            size="md"
+            ring
+          />
+        </Link>
+
         <div className="min-w-0 flex-1">
-          <h3 className="truncate text-base font-bold text-foreground">
-            {player.fullName}
-          </h3>
+          <Link href={`/player/${player.id}`}>
+            <h3 className="truncate text-base font-bold text-foreground transition hover:text-primary">
+              {player.fullName}
+            </h3>
+          </Link>
+
           <p className="mt-0.5 flex items-center gap-1 text-sm text-muted-foreground">
             <MapPinIcon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
             {player.city}
           </p>
         </div>
+
         <Badge variant="primary">{player.skillLevel}</Badge>
       </div>
 
@@ -68,12 +80,14 @@ export function PlayerCard({ player, className }: PlayerCardProps) {
         <span className="font-semibold text-foreground">
           DUPR {formatDupr(player.duprRating)}
         </span>
+
         {player.winPct != null && player.wins != null && (
           <span className="text-muted-foreground">
             · {player.winPct}% ({player.wins}W
             {player.losses != null ? `-${player.losses}L` : ""})
           </span>
         )}
+
         {(player.currentStreak ?? 0) > 0 && (
           <Badge variant="warning" className="gap-1">
             <FireIcon className="h-3 w-3" aria-hidden="true" />
@@ -89,33 +103,31 @@ export function PlayerCard({ player, className }: PlayerCardProps) {
             Partner
           </Badge>
         )}
-        {player.lookingForMatch && (
-          <Badge variant="outline">Open match</Badge>
-        )}
+
+        {player.lookingForMatch && <Badge variant="outline">Open match</Badge>}
       </div>
 
-      
       <div className="mt-1 grid w-full grid-cols-2 gap-2 overflow-hidden">
-<button
-  type="button"
-  onClick={() => void toggleFollow(player.id, player.fullName)}
-  className={cn(
-    "btn-outline w-full min-w-0 text-sm",
-    following && "border-primary text-primary"
-  )}
->
-  <UserPlusIcon className="mr-1 inline h-4 w-4" aria-hidden="true" />
-  {following ? "Following" : "Follow"}
-</button>
+        <button
+          type="button"
+          onClick={() => void toggleFollow(player.id, player.fullName)}
+          className={cn(
+            "btn-outline w-full min-w-0 text-sm",
+            following && "border-primary text-primary"
+          )}
+        >
+          <UserPlusIcon className="mr-1 inline h-4 w-4" aria-hidden="true" />
+          {following ? "Following" : "Follow"}
+        </button>
 
-<button
-  type="button"
-  onClick={handleInvite}
-  className="btn-primary w-full min-w-0 text-sm"
->
-  Invite
-</button>
-</div>
-  </article>
-);
+        <button
+          type="button"
+          onClick={handleInvite}
+          className="btn-primary w-full min-w-0 text-sm"
+        >
+          Invite
+        </button>
+      </div>
+    </article>
+  );
 }

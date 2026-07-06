@@ -108,3 +108,72 @@ export async function fetchFollowerCount(playerId: string): Promise<number> {
   if (error) return 0;
   return count ?? 0;
 }
+export async function fetchFollowingCount(playerId: string): Promise<number> {
+  if (!isSupabaseConfigured()) return 0;
+
+  const supabase = createClient();
+
+  const { count, error } = await supabase
+    .from("player_follows")
+    .select("*", { count: "exact", head: true })
+    .eq("follower_id", playerId);
+
+  if (error) return 0;
+
+  return count ?? 0;
+}
+export async function fetchFollowers(playerId: string) {
+  if (!isSupabaseConfigured()) return [];
+
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from("player_follows")
+    .select(`
+      follower_id,
+      profiles!player_follows_follower_id_fkey (
+        id,
+        full_name,
+        avatar_url,
+        city,
+        skill_level,
+        dupr_rating
+      )
+    `)
+    .eq("following_id", playerId);
+
+  if (error) {
+    console.error(error);
+    return [];
+  }
+
+  return data ?? [];
+}
+
+export async function fetchFollowing(playerId: string) {
+  if (!isSupabaseConfigured()) return [];
+
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from("player_follows")
+    .select(`
+      following_id,
+      profiles!player_follows_following_id_fkey (
+        id,
+        full_name,
+        avatar_url,
+        city,
+        skill_level,
+        dupr_rating
+      )
+    `)
+    .eq("follower_id", playerId);
+
+  if (error) {
+    console.error(error);
+    return [];
+  }
+
+  return data ?? [];
+}
