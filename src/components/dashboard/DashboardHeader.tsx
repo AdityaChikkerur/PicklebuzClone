@@ -1,6 +1,6 @@
 "use client";
 
-import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+
 import { AppIcon } from "@/components/ui/AppIcon";
 import { AccountMenu } from "@/components/layout/AccountMenu";
 import { NotificationBell } from "@/components/layout/NotificationBell";
@@ -30,13 +30,7 @@ export function DashboardHeader() {
         </div>
 
         <div className="flex shrink-0 items-center gap-1 sm:gap-2">
-          <button
-            type="button"
-            className="relative flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground transition-all hover:bg-muted/60 hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-label="Search"
-          >
-            <MagnifyingGlassIcon className="h-5 w-5" />
-          </button>
+          
           <NotificationBell />
           <AccountMenu variant="compact" />
         </div>

@@ -125,73 +125,34 @@ export function RecentMatchesTable() {
         </div>
       </div>
 
-      {/* Mobile card layout */}
-      <div className="block divide-y divide-border bg-card sm:hidden">
-        {loading ? (
-          <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-            Loading matches…
-          </div>
-        ) : matches.length === 0 ? (
-          <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-            No verified matches yet. Finish and verify a match to see it here.
-          </div>
-        ) : (
-          matches.map((match) => (
-            <Link
-              key={match.id}
-              href={`/match/${match.id}`}
-              className="block bg-card px-4 py-4 transition hover:bg-muted/30"
-            >
-              <div className="mb-3 flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-bold text-foreground">
-                    {match.opponent}
-                  </p>
-                  <p className="mt-1 text-xs capitalize text-muted-foreground">
-                    {match.matchType}
-                  </p>
-                </div>
+      {/* Mobile compact layout */}
+<div className="block divide-y divide-border bg-card sm:hidden">
+  {loading ? (
+    <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+      Loading matches…
+    </div>
+  ) : matches.length === 0 ? (
+    <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+      No verified matches yet.
+    </div>
+  ) : (
+    matches.map((match) => (
+      <Link
+        key={match.id}
+        href={`/match/${match.id}`}
+        className="flex items-center justify-between gap-3 bg-card px-4 py-4 transition hover:bg-muted/30"
+      >
+        <p className="min-w-0 truncate text-sm font-bold text-foreground">
+          {match.opponent}
+        </p>
 
-                <Badge variant={match.result === "W" ? "win" : "loss"}>
-                  {match.result === "W" ? "Win" : "Loss"}
-                </Badge>
-              </div>
-
-              <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-xs">
-                <div>
-                  <p className="text-muted-foreground">Score</p>
-                  <p className="mt-1 font-semibold tabular-nums text-foreground">
-                    {match.score}
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-muted-foreground">Status</p>
-                  <div className="mt-1">
-                    <Badge variant={statusVariant(match.status)}>
-                      {match.status}
-                    </Badge>
-                  </div>
-                </div>
-
-                <div>
-                  <p className="text-muted-foreground">Venue</p>
-                  <p className="mt-1 truncate font-medium text-foreground">
-                    {match.venue || "Not specified"}
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-muted-foreground">Date</p>
-                  <p className="mt-1 font-medium text-foreground">
-                    {formatRelativeTime(match.playedAt)}
-                  </p>
-                </div>
-              </div>
-            </Link>
-          ))
-        )}
-      </div>
+        <Badge variant={match.result === "W" ? "win" : "loss"}>
+          {match.result === "W" ? "Win" : "Loss"}
+        </Badge>
+      </Link>
+    ))
+  )}
+</div>
 
       {/* Desktop table layout */}
       <div className="hidden overflow-x-auto sm:block">

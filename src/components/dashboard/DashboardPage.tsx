@@ -2,7 +2,7 @@
 
 import { AppLayout } from "@/components/layout";
 import { PlayerStatsProvider } from "@/hooks/usePlayerStats";
-import { CityRankingsCard } from "./CityRankingsCard";
+
 import { CurrentFormStrip } from "./CurrentFormStrip";
 import { DashboardHeader } from "./DashboardHeader";
 import { KpiBentoGrid } from "./KpiBentoGrid";
@@ -31,7 +31,7 @@ export function DashboardPage() {
 
             <div className="flex flex-col gap-5 lg:gap-6">
               <PremiumUpsellCard compact />
-              <CityRankingsCard />
+              
               {/* <UpcomingTournamentsCard /> */}
             </div>
           </div>
