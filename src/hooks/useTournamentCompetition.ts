@@ -1,24 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
+import { useCallback, useEffect, useState } from "react";
 import { isSupabaseConfigured, isUuid } from "@/lib/db/config";
-import {
-  createMatchForFixture,
-  fetchTournamentBracket,
-  fetchTournamentFixtures,
-  fetchTournamentPointsTable,
-  generateTournamentFixtures,
-} from "@/lib/db/fixtures";
-import {
-  getTournamentBracket,
-  getTournamentFixtures,
-  getTournamentPointsTable,
-} from "@/lib/mock/tournamentMockData";
-import { getBracketRounds } from "@/lib/tournament/bracketUtils";
-import { useAuthStore } from "@/store/authStore";
+import { createClient } from "@/lib/supabase";
+import { fetchTournamentPointsTable } from "@/lib/db/fixtures";
+import { getTournamentPointsTable } from "@/lib/mock/tournamentMockData";
 import type {
-  BracketMatch,
   PointsTableRow,
   TournamentDetail,
   TournamentFixture,
@@ -28,54 +15,61 @@ import type {
 export interface UseTournamentCompetitionResult {
   fixtures: TournamentFixture[];
   points: PointsTableRow[];
-  bracket: BracketMatch[];
-  bracketRounds: string[];
   loading: boolean;
   source: "mock" | "supabase";
   generating: boolean;
   startingFixtureId: string | null;
   bulkStarting: boolean;
-  generateFixtures: (categoryId: string) => Promise<boolean>;
   startFixtureMatch: (fixtureId: string) => Promise<string | null>;
   startMultipleFixtureMatches: (fixtureIds: string[]) => Promise<string[]>;
   reload: () => void;
 }
 
+type MatchRow = {
+  id: string;
+  team_a_name: string;
+  team_b_name: string;
+  match_type: string;
+  status: string;
+  winner: "A" | "B" | null;
+  venue: string | null;
+  city: string | null;
+  court_number: string | null;
+  created_at: string;
+  completed_at: string | null;
+};
+
 export function useTournamentCompetition(
   tournament: TournamentDetail | null,
-  registrations: TournamentRegistration[],
+  _registrations: TournamentRegistration[],
   dataSource: "mock" | "supabase" | "none"
 ): UseTournamentCompetitionResult {
-  const userId = useAuthStore((s) => s.user?.id ?? s.profile?.id);
   const [fixtures, setFixtures] = useState<TournamentFixture[]>([]);
   const [points, setPoints] = useState<PointsTableRow[]>([]);
-  const [bracket, setBracket] = useState<BracketMatch[]>([]);
   const [loading, setLoading] = useState(false);
-  const [generating, setGenerating] = useState(false);
-  const [startingFixtureId, setStartingFixtureId] = useState<string | null>(null);
-  const [bulkStarting, setBulkStarting] = useState(false);
   const [reloadToken, setReloadToken] = useState(0);
 
   const tournamentId = tournament?.id ?? "";
+
   const useDb =
     dataSource === "supabase" &&
     isSupabaseConfigured() &&
     isUuid(tournamentId);
 
-  const reload = useCallback(() => setReloadToken((t) => t + 1), []);
+  const reload = useCallback(() => {
+    setReloadToken((t) => t + 1);
+  }, []);
 
   useEffect(() => {
     if (!tournament) {
       setFixtures([]);
       setPoints([]);
-      setBracket([]);
       return;
     }
 
     if (dataSource === "mock") {
-      setFixtures(getTournamentFixtures(tournament.id));
+      setFixtures([]);
       setPoints(getTournamentPointsTable(tournament.id));
-      setBracket(getTournamentBracket(tournament.id));
       setLoading(false);
       return;
     }
@@ -83,7 +77,6 @@ export function useTournamentCompetition(
     if (!useDb) {
       setFixtures([]);
       setPoints([]);
-      setBracket([]);
       return;
     }
 
@@ -91,164 +84,84 @@ export function useTournamentCompetition(
 
     async function load() {
       setLoading(true);
+
       try {
-        const [fx, pt, br] = await Promise.all([
-          fetchTournamentFixtures(tournamentId),
+        const supabase = createClient();
+
+        const [pointsData, matchesResult] = await Promise.all([
           fetchTournamentPointsTable(tournamentId),
-          fetchTournamentBracket(tournamentId),
+          supabase
+            .from("matches")
+            .select(
+              "id, team_a_name, team_b_name, match_type, status, winner, venue, city, court_number, created_at, completed_at"
+            )
+            .eq("tournament_id", tournamentId)
+            .order("created_at", { ascending: false }),
         ]);
 
-        if (!cancelled) {
-          setFixtures(fx);
-          setPoints(pt);
-          setBracket(br);
+        if (matchesResult.error) {
+          throw matchesResult.error;
         }
-      } catch {
+
+        const mappedFixtures: TournamentFixture[] = (
+          (matchesResult.data ?? []) as MatchRow[]
+        ).map((match) => ({
+          id: match.id,
+          tournamentId,
+          categoryId: "default",
+          round: match.match_type,
+          teamA: match.team_a_name,
+          teamB: match.team_b_name,
+          matchId: match.id,
+          score: "",
+          court: match.court_number ?? match.venue ?? "",
+          scheduledAt: match.completed_at ?? match.created_at,
+          status:
+            match.status === "live"
+              ? "live"
+              : match.status === "verified" ||
+                  match.status === "completed" ||
+                  match.status === "pending"
+                ? "completed"
+                : "scheduled",
+          isUpset: false,
+        }));
+
+        if (!cancelled) {
+          setPoints(pointsData);
+          setFixtures(mappedFixtures);
+        }
+      } catch (error) {
+        console.error("Error loading tournament competition:", error);
+
         if (!cancelled) {
           setFixtures([]);
           setPoints([]);
-          setBracket([]);
         }
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     }
 
     void load();
+
     return () => {
       cancelled = true;
     };
   }, [tournament, tournamentId, dataSource, useDb, reloadToken]);
 
-  const bracketRounds = useMemo(() => getBracketRounds(bracket), [bracket]);
-
-  const generateFixtures = useCallback(
-    async (categoryId: string): Promise<boolean> => {
-      if (!tournament || !userId) {
-        toast.error("Sign in as organizer to generate fixtures");
-        return false;
-      }
-
-      if (dataSource === "mock") {
-        toast.info("Fixture generation is available on real tournaments only");
-        return false;
-      }
-
-      setGenerating(true);
-      const result = await generateTournamentFixtures({
-        tournament,
-        categoryId,
-        registrations,
-        createdBy: userId,
-      });
-      setGenerating(false);
-
-      if (result.error) {
-        toast.error(result.error);
-        return false;
-      }
-
-      toast.success(`Generated ${result.data?.count ?? 0} fixtures`);
-      reload();
-      return true;
-    },
-    [tournament, userId, dataSource, registrations, reload]
-  );
-
-  const startFixtureMatch = useCallback(
-    async (fixtureId: string): Promise<string | null> => {
-      if (!tournament || !userId) {
-        toast.error("Sign in to start a match");
-        return null;
-      }
-
-      if (dataSource === "mock") {
-        toast.info("Start match is available on real tournaments only");
-        return null;
-      }
-
-      setStartingFixtureId(fixtureId);
-      const courtIndex =
-        fixtures.filter((f) => f.status === "live").length + 1;
-      const result = await createMatchForFixture({
-        fixtureId,
-        tournament,
-        registrations,
-        createdBy: userId,
-        courtNumber: `Court ${courtIndex}`,
-      });
-      setStartingFixtureId(null);
-
-      if (result.error || !result.data) {
-        toast.error(result.error ?? "Could not start match");
-        return null;
-      }
-
-      toast.success("Match created — open live scoring");
-      reload();
-      return result.data.matchId;
-    },
-    [tournament, userId, dataSource, registrations, reload, fixtures]
-  );
-
-  const startMultipleFixtureMatches = useCallback(
-    async (fixtureIds: string[]): Promise<string[]> => {
-      if (!tournament || !userId || fixtureIds.length === 0) {
-        toast.error("Sign in to start matches");
-        return [];
-      }
-
-      if (dataSource === "mock") {
-        toast.info("Bulk start is available on real tournaments only");
-        return [];
-      }
-
-      setBulkStarting(true);
-      const matchIds: string[] = [];
-      const liveCount = fixtures.filter((f) => f.status === "live").length;
-
-      for (const [index, fixtureId] of fixtureIds.entries()) {
-        const result = await createMatchForFixture({
-          fixtureId,
-          tournament,
-          registrations,
-          createdBy: userId,
-          courtNumber: `Court ${liveCount + index + 1}`,
-        });
-        if (result.data?.matchId) {
-          matchIds.push(result.data.matchId);
-        }
-      }
-
-      setBulkStarting(false);
-
-      if (matchIds.length === 0) {
-        toast.error("Could not start any matches");
-        return [];
-      }
-
-      toast.success(
-        `Started ${matchIds.length} match${matchIds.length === 1 ? "" : "es"} — open each court to score`
-      );
-      reload();
-      return matchIds;
-    },
-    [tournament, userId, dataSource, registrations, reload, fixtures]
-  );
-
   return {
     fixtures,
     points,
-    bracket,
-    bracketRounds,
     loading,
     source: dataSource === "mock" ? "mock" : useDb ? "supabase" : "mock",
-    generating,
-    startingFixtureId,
-    bulkStarting,
-    generateFixtures,
-    startFixtureMatch,
-    startMultipleFixtureMatches,
+    generating: false,
+    startingFixtureId: null,
+    bulkStarting: false,
+    startFixtureMatch: async () => null,
+    startMultipleFixtureMatches: async () => [],
     reload,
   };
 }
