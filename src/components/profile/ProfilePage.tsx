@@ -23,6 +23,7 @@ import {
 
 export function ProfilePage() {
   const profile = useAuthStore((s) => s.profile);
+  const loading = useAuthStore((s) => s.loading);
   const userId = useAuthStore((s) => s.user?.id ?? s.profile?.id);
   const { boosted } = useProfileBoost(userId);
   const [followers, setFollowers] = useState(0);
@@ -59,6 +60,21 @@ export function ProfilePage() {
     window.addEventListener(FOLLOWS_UPDATED_EVENT, onFollowsUpdated);
     return () => window.removeEventListener(FOLLOWS_UPDATED_EVENT, onFollowsUpdated);
   }, [userId]);
+
+  if (loading) {
+    return (
+      <AppLayout title="Profile">
+        <div className="flex justify-center py-16">
+          <div
+            className="h-10 w-10 animate-spin rounded-full border-2 border-primary border-t-transparent"
+            role="status"
+            aria-label="Loading profile"
+          />
+        </div>
+      </AppLayout>
+    );
+  }
+
   if (!profile) {
     return (
       <AppLayout title="Profile">
