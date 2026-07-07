@@ -12,6 +12,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { Badge } from "@/components/ui/Badge";
 import { formatDate } from "@/lib/utils";
+import { deleteTournament } from "@/lib/db/tournaments";
 import { updateTournamentStatus } from "@/lib/db/tournamentMatches";
 import {
   TOURNAMENT_FORMAT_LABELS,
@@ -25,6 +26,8 @@ interface TournamentHeaderProps {
   onStatusChange?: () => void;
   onManageSchedule?: () => void;
   onManagePlayers?: () => void;
+  canDeletePermanent?: boolean;
+  onDeleted?: () => void;
 }
 
 function statusVariant(
@@ -50,8 +53,12 @@ export function TournamentHeader({
   onStatusChange,
   onManageSchedule,
   onManagePlayers,
+  canDeletePermanent = false,
+  onDeleted,
 }: TournamentHeaderProps) {
   const [statusBusy, setStatusBusy] = useState(false);
+  const [deleteConfirmed, setDeleteConfirmed] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
   const spotsLeft = tournament.maxParticipants - tournament.registeredCount;
   const fillPct = Math.round(
     (tournament.registeredCount / tournament.maxParticipants) * 100
@@ -81,6 +88,22 @@ export function TournamentHeader({
 
     toast.success(`Tournament ${status}`);
     onStatusChange?.();
+  };
+
+  const handleDeletePermanent = async () => {
+    if (!deleteConfirmed) return;
+
+    setDeleteBusy(true);
+    const result = await deleteTournament(tournament.id);
+    setDeleteBusy(false);
+
+    if (result.error) {
+      toast.error(result.error);
+      return;
+    }
+
+    toast.success("Tournament deleted permanently");
+    onDeleted?.();
   };
 
   const registrationLabel = tournament.userRegistration
@@ -295,6 +318,38 @@ export function TournamentHeader({
               </div>
             </div>
           )}
+
+        {canDeletePermanent && (
+          <div className="flex flex-col gap-3 border-t border-danger/20 pt-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-danger">
+              Danger zone
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Permanently delete this tournament, including all registrations,
+              fixtures, and results. This cannot be undone.
+            </p>
+            <label className="flex cursor-pointer items-start gap-2.5 text-sm text-foreground">
+              <input
+                type="checkbox"
+                checked={deleteConfirmed}
+                onChange={(event) => setDeleteConfirmed(event.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-border accent-danger"
+              />
+              <span>
+                I understand this will permanently delete &ldquo;
+                {tournament.name}&rdquo; and cannot be undone.
+              </span>
+            </label>
+            <button
+              type="button"
+              disabled={!deleteConfirmed || deleteBusy}
+              onClick={() => void handleDeletePermanent()}
+              className="w-full rounded-xl border border-danger/40 bg-danger/10 px-4 py-2.5 text-sm font-semibold text-danger transition-opacity hover:bg-danger/15 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
+            >
+              {deleteBusy ? "Deleting…" : "Delete permanently"}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

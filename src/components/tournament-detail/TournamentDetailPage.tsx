@@ -260,6 +260,10 @@ export function TournamentDetailPage({
           onManagePlayers={
             isOrganizer ? () => handleTabChange("participants") : undefined
           }
+          canDeletePermanent={Boolean(
+            userId && tournament.createdBy === userId
+          )}
+          onDeleted={() => router.push("/tournament")}
         />
 
         <TournamentTabBar
