@@ -136,21 +136,28 @@ export function RecentMatchesTable() {
       No verified matches yet.
     </div>
   ) : (
-    matches.map((match) => (
-      <Link
-        key={match.id}
-        href={`/match/${match.id}`}
-        className="flex items-center justify-between gap-3 bg-card px-4 py-4 transition hover:bg-muted/30"
-      >
-        <p className="min-w-0 truncate text-sm font-bold text-foreground">
-          {match.opponent}
-        </p>
+    <>
+      <div className="flex items-center justify-between border-b border-border px-4 py-3 text-xs font-semibold text-muted-foreground">
+        <span>Opponent</span>
+        <span>Result</span>
+      </div>
 
-        <Badge variant={match.result === "W" ? "win" : "loss"}>
-          {match.result === "W" ? "Win" : "Loss"}
-        </Badge>
-      </Link>
-    ))
+      {matches.map((match) => (
+        <Link
+          key={match.id}
+          href={`/match/${match.id}`}
+          className="flex items-center justify-between gap-3 bg-card px-4 py-4 transition hover:bg-muted/30"
+        >
+          <p className="min-w-0 truncate text-sm font-bold text-foreground">
+            {match.opponent}
+          </p>
+
+          <Badge variant={match.result === "W" ? "win" : "loss"}>
+            {match.result === "W" ? "Win" : "Loss"}
+          </Badge>
+        </Link>
+      ))}
+    </>
   )}
 </div>
 
