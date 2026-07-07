@@ -24,6 +24,8 @@ const SIGNUP_CITIES = [
   "Indore",
   "Jaipur",
   "Lucknow",
+  "Goa",
+  "Surat",
 ];
 import { isPhoneDuplicateError } from "@/lib/db/formatDbError";
 import { completePlayerProfile } from "@/lib/db/profiles";

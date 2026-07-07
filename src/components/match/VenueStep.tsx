@@ -18,6 +18,8 @@ const CITIES = [
   "Indore",
   "Jaipur",
   "Lucknow",
+  "Goa",
+  "Surat",
 ];
 
 interface VenueStepProps {

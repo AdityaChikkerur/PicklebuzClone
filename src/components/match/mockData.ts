@@ -43,6 +43,10 @@ export const QUICK_VENUES = [
   { name: "Optimus Pickleball Club & Cafe", city: "Indore" },
   { name: "The Dink District", city: "Jaipur" },
   { name: "Athletes Pickle Court", city: "Lucknow" },
+  { name: "Clube De Floresta", city: "Goa" },
+  { name: "The Racquet Clube by SOGOfit", city: "Goa" },
+  { name: "DINK Pickle & Tennis Club", city: "Surat" },
+  { name: "CIDCO Exhibition Centre", city: "Navi Mumbai" },
 ];
 
 export const MOCK_SEARCH_PLAYERS: Player[] = [

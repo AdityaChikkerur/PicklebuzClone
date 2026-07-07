@@ -18,6 +18,8 @@ export const RANKING_CITIES = [
   "Indore",
   "Jaipur",
   "Lucknow",
+  "Goa",
+  "Surat",
 ] as const;
 
 export const LEADERBOARD_PLAYERS: LeaderboardPlayer[] = [
