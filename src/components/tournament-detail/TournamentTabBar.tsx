@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import type { TournamentFormat, TournamentTab } from "@/types/tournament";
+import type { TournamentTab } from "@/types/tournament";
 
 interface TabOption {
   id: TournamentTab;
@@ -10,38 +10,23 @@ interface TabOption {
 
 interface TournamentTabBarProps {
   active: TournamentTab;
-  format: TournamentFormat | undefined;
-  isOrganizer: boolean;
   onChange: (tab: TournamentTab) => void;
 }
 
-function getTabs(format: TournamentFormat | undefined, isOrganizer: boolean): TabOption[] {
-  const tabs: TabOption[] = [
+function getTabs(): TabOption[] {
+  return [
     { id: "overview", label: "Overview" },
-    { id: "fixtures", label: "Fixtures" },
+    { id: "points", label: "Points" },
+    { id: "live", label: "Live" },
+    { id: "results", label: "Results" },
   ];
-
-  if (format === "knockout" || format === "group_knockout") {
-    tabs.push({ id: "bracket", label: "Bracket" });
-  }
-  if (format === "round_robin" || format === "league" || format === "group_knockout") {
-    tabs.push({ id: "points", label: "Points" });
-  }
-
-  tabs.push({ id: "participants", label: isOrganizer ? "Manage" : "Players" });
-  tabs.push({ id: "live", label: "Live" });
-  tabs.push({ id: "results", label: "Results" });
-
-  return tabs;
 }
 
 export function TournamentTabBar({
   active,
-  format,
-  isOrganizer,
   onChange,
 }: TournamentTabBarProps) {
-  const tabs = getTabs(format, isOrganizer);
+  const tabs = getTabs();
 
   return (
     <div className="card-base overflow-hidden">

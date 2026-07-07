@@ -51,13 +51,21 @@ export function PlayerCard({ player, className }: PlayerCardProps) {
       )}
     >
       <div className="flex items-start gap-3">
-        <Link href={`/player/${player.id}`} className="shrink-0">
+        <Link href={`/player/${player.id}`} className="relative shrink-0">
           <Avatar
             src={player.avatarUrl}
             name={player.fullName}
             size="md"
             ring
           />
+          {player.isBoosted && (
+            <span
+              className="absolute -right-0.5 -top-0.5 rounded-full bg-amber-brand px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm"
+              aria-label="Boosted profile"
+            >
+              Boost
+            </span>
+          )}
         </Link>
 
         <div className="min-w-0 flex-1">

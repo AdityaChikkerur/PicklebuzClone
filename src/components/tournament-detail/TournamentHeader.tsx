@@ -138,11 +138,7 @@ export function TournamentHeader({
               </>
             )}
           </span>
-          <span className="inline-flex items-center gap-2">
-            <UsersIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
-            {tournament.registeredCount}/{tournament.maxParticipants} registered
-            · {spotsLeft} spots left
-          </span>
+          
           {tournament.weather && (
             <span className="inline-flex items-center gap-2">
               <SunIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
@@ -153,8 +149,7 @@ export function TournamentHeader({
 
         <div>
           <div className="mb-1 flex justify-between text-xs text-muted-foreground">
-            <span>Registration fill</span>
-            <span>{fillPct}%</span>
+            
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-muted">
             <div

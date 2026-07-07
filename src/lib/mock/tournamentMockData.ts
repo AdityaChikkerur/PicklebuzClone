@@ -187,40 +187,40 @@ const POINTS_TABLES: Record<string, PointsTableRow[]> = {
   ],
 };
 
-const FIXTURES: Record<string, TournamentFixture[]> = {};
+// const FIXTURES: Record<string, TournamentFixture[]> = {};
 
-const BRACKETS: Record<string, BracketMatch[]> = {
-  t1: [
-    {
-      id: "t1-b1",
-      round: "SF",
-      position: 0,
-      teamA: "Arjun Mehta",
-      teamB: "Rohan Desai",
-      seedA: 4,
-      seedB: 1,
-      status: "scheduled",
-    },
-    {
-      id: "t1-b2",
-      round: "SF",
-      position: 1,
-      teamA: "Priya Sharma",
-      teamB: "Ananya Iyer",
-      seedA: 2,
-      seedB: 3,
-      status: "scheduled",
-    },
-    {
-      id: "t1-final",
-      round: "Final",
-      position: 0,
-      teamA: null,
-      teamB: null,
-      status: "scheduled",
-    },
-  ],
-};
+// const BRACKETS: Record<string, BracketMatch[]> = {
+//   t1: [
+//     {
+//       id: "t1-b1",
+//       round: "SF",
+//       position: 0,
+//       teamA: "Arjun Mehta",
+//       teamB: "Rohan Desai",
+//       seedA: 4,
+//       seedB: 1,
+//       status: "scheduled",
+//     },
+//     {
+//       id: "t1-b2",
+//       round: "SF",
+//       position: 1,
+//       teamA: "Priya Sharma",
+//       teamB: "Ananya Iyer",
+//       seedA: 2,
+//       seedB: 3,
+//       status: "scheduled",
+//     },
+//     {
+//       id: "t1-final",
+//       round: "Final",
+//       position: 0,
+//       teamA: null,
+//       teamB: null,
+//       status: "scheduled",
+//     },
+//   ],
+// };
 
 /** Demo tournaments owned by the organizer demo account */
 const ORGANIZER_DEMO_OWNERS = new Set(["organizer-1", "current-user"]);
@@ -284,23 +284,23 @@ export function getTournamentPointsTable(
   return rows.filter((r) => r.categoryId === categoryId);
 }
 
-export function getTournamentFixtures(
-  tournamentId: string,
-  categoryId?: string
-): TournamentFixture[] {
-  const rows = FIXTURES[tournamentId] ?? [];
-  if (!categoryId) return rows;
-  return rows.filter((f) => f.categoryId === categoryId);
-}
+// export function getTournamentFixtures(
+//   tournamentId: string,
+//   categoryId?: string
+// ): TournamentFixture[] {
+//   const rows = FIXTURES[tournamentId] ?? [];
+//   if (!categoryId) return rows;
+//   return rows.filter((f) => f.categoryId === categoryId);
+// }
 
-export function getTournamentBracket(
-  tournamentId: string
-): BracketMatch[] {
-  return BRACKETS[tournamentId] ?? [];
-}
+// export function getTournamentBracket(
+//   tournamentId: string
+// ): BracketMatch[] {
+//   return BRACKETS[tournamentId] ?? [];
+// }
 
-export function getBracketRounds(tournamentId: string): string[] {
-  const rounds = [...new Set(getTournamentBracket(tournamentId).map((m) => m.round))];
-  const order = ["R64", "R32", "R16", "QF", "SF", "Final", "RR"];
-  return rounds.sort((a, b) => order.indexOf(a) - order.indexOf(b));
-}
+// export function getBracketRounds(tournamentId: string): string[] {
+//   const rounds = [...new Set(getTournamentBracket(tournamentId).map((m) => m.round))];
+//   const order = ["R64", "R32", "R16", "QF", "SF", "Final", "RR"];
+//   return rounds.sort((a, b) => order.indexOf(a) - order.indexOf(b));
+// }
