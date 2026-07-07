@@ -14,7 +14,7 @@ export function PointsTableView({ rows }: PointsTableViewProps) {
       <div className="card-base p-8 text-center">
         <p className="text-sm font-medium text-foreground">No standings yet</p>
         <p className="mt-1 text-xs text-muted-foreground">
-          Points table updates as round-robin matches are completed.
+          Standings update as round-robin matches are completed.
         </p>
       </div>
     );

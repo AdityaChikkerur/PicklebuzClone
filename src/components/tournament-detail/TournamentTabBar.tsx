@@ -16,7 +16,7 @@ interface TournamentTabBarProps {
 function getTabs(): TabOption[] {
   return [
     { id: "overview", label: "Overview" },
-    { id: "points", label: "Points" },
+    { id: "points", label: "Standings" },
     { id: "live", label: "Live" },
     { id: "results", label: "Results" },
   ];
