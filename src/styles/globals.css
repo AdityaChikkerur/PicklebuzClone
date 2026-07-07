@@ -226,7 +226,16 @@
   }
 
   .bottom-nav-item {
-    @apply flex flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-semibold text-muted-foreground transition-all duration-200;
+    @apply flex flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-semibold text-muted-foreground transition-all duration-200 outline-none;
+    -webkit-tap-highlight-color: transparent;
+    tap-highlight-color: transparent;
+  }
+
+  .bottom-nav-item:focus,
+  .bottom-nav-item:focus-visible,
+  .bottom-nav-item:active {
+    outline: none;
+    box-shadow: none;
   }
 
   .bottom-nav-item.active {

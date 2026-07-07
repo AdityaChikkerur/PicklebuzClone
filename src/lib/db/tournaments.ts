@@ -547,6 +547,28 @@ export async function fetchUpcomingTournaments(
   }));
 }
 
+/** Permanently delete a tournament (creator only; cascades to related rows). */
+export async function deleteTournament(
+  tournamentId: string
+): Promise<DbResult<{ deleted: boolean }>> {
+  if (!isSupabaseConfigured() || !isUuid(tournamentId)) {
+    return ok({ deleted: true });
+  }
+
+  try {
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("tournaments")
+      .delete()
+      .eq("id", tournamentId);
+
+    if (error) throw error;
+    return ok({ deleted: true });
+  } catch (e) {
+    return fail(e);
+  }
+}
+
 export async function fetchOrganizerTournaments(
   organizerId: string
 ): Promise<TournamentDetail[]> {
