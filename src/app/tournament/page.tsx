@@ -24,6 +24,7 @@ export default function TournamentPage() {
       const { data, error } = await supabase
         .from("tournaments")
         .select("id, name, city, start_date, status")
+        .neq("status", "completed")
         .order("start_date", { ascending: true });
 
       if (error) {
