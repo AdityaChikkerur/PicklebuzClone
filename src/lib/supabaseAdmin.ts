@@ -17,5 +17,6 @@ export function createAdminSupabaseClient() {
 export function isSupabaseAdminConfigured(): boolean {
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!serviceKey) return false;
-  return serviceKey !== "your-service-role-key";
+  const placeholders = ["your-service-role-key", "your-secret-api-key"];
+  return !placeholders.includes(serviceKey);
 }

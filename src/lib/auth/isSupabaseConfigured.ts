@@ -10,6 +10,8 @@ export function isSupabaseConfigured(): boolean {
   const placeholders = [
     "https://your-project.supabase.co",
     "your-anon-key",
+    "your-publishable-or-anon-key",
+    "your-service-role-key",
   ];
   if (placeholders.includes(url) || placeholders.includes(key)) return false;
 
