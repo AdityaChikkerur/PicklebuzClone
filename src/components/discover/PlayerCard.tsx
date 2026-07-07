@@ -73,7 +73,12 @@ export function PlayerCard({ player, className }: PlayerCardProps) {
           </p>
         </div>
 
-        <Badge variant="primary">{player.skillLevel}</Badge>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          {player.isBoosted && (
+            <Badge variant="warning">Boosted</Badge>
+          )}
+          <Badge variant="primary">{player.skillLevel}</Badge>
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-2 text-sm">

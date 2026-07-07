@@ -3,6 +3,7 @@ import {
   createAdminSupabaseClient,
   isSupabaseAdminConfigured,
 } from "@/lib/supabaseAdmin";
+import { PAID_BOOST_DAYS } from "@/lib/monetization/profileBoost";
 import { isRazorpayConfigured } from "@/lib/payments/isRazorpayConfigured";
 import { verifyWebhookSignature } from "@/lib/payments/razorpayServer";
 
@@ -49,6 +50,13 @@ export async function POST(request: Request) {
     paymentId
   ) {
     const supabase = createAdminSupabaseClient();
+
+    const { data: paymentRow } = await supabase
+      .from("payments")
+      .select("user_id, kind, status")
+      .eq("gateway_order_id", orderId)
+      .maybeSingle();
+
     await supabase
       .from("payments")
       .update({
@@ -57,6 +65,17 @@ export async function POST(request: Request) {
       })
       .eq("gateway_order_id", orderId)
       .eq("status", "pending");
+
+    if (
+      paymentRow?.kind === "profile_boost" &&
+      paymentRow.user_id &&
+      paymentRow.status !== "paid"
+    ) {
+      await supabase.rpc("activate_paid_profile_boost_for_user", {
+        p_user_id: paymentRow.user_id,
+        p_days: PAID_BOOST_DAYS,
+      });
+    }
   }
 
   return NextResponse.json({ received: true });

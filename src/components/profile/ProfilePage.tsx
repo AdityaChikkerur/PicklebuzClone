@@ -10,7 +10,7 @@ import { AccountSection } from "@/components/profile/AccountSection";
 import { EditAvatarSection } from "@/components/profile/EditAvatarSection";
 import { EditNameSection } from "@/components/profile/EditNameSection";
 import { useAuthStore } from "@/store/authStore";
-import { useProfileBoost } from "@/hooks/useProfileBoost";
+import { useProfileBoost, getBoostStatusLabel } from "@/hooks/useProfileBoost";
 import { formatBuzzRating } from "@/lib/utils";
 import { USER_ROLES } from "@/types/player";
 import { useEffect, useState } from "react";
@@ -25,7 +25,7 @@ export function ProfilePage() {
   const profile = useAuthStore((s) => s.profile);
   const loading = useAuthStore((s) => s.loading);
   const userId = useAuthStore((s) => s.user?.id ?? s.profile?.id);
-  const { boosted } = useProfileBoost(userId);
+  const { boostStatus } = useProfileBoost(userId);
   const [followers, setFollowers] = useState(0);
   const [following, setFollowing] = useState(0);
   const [matchesPlayed, setMatchesPlayed] = useState(0);
@@ -109,7 +109,12 @@ export function ProfilePage() {
               <h2 className="text-xl font-bold text-foreground">
                 {profile.fullName}
               </h2>
-              {boosted && <Badge variant="warning">Boosted</Badge>}
+              {boostStatus.active && (
+                <Badge variant="warning">{getBoostStatusLabel(boostStatus)}</Badge>
+              )}
+              {boostStatus.status === "expired" && (
+                <Badge variant="outline">Boost Expired</Badge>
+              )}
             </div>
             <p className="mt-1 text-sm text-muted-foreground">{profile.city}</p>
             {profile.phone ? (

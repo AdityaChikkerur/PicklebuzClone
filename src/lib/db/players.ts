@@ -1,5 +1,7 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase";
 import { normalizePhone } from "@/lib/phone/normalizePhone";
+import type { BoostSortablePlayer } from "@/lib/monetization/profileBoost";
 import type { Player, SkillLevel } from "@/types/player";
 
 export interface DiscoveryFilters {
@@ -20,9 +22,34 @@ interface DbProfileRow {
   looking_for_partner: boolean;
   looking_for_match: boolean;
   phone: string | null;
+  boosted?: boolean;
+  profile_boosts?:
+    | { boost_type: string; expires_at: string }
+    | { boost_type: string; expires_at: string }[]
+    | null;
 }
 
-function mapDiscoveryPlayer(row: DbProfileRow): Player {
+export type DiscoveryPlayer = Player & BoostSortablePlayer;
+
+function boostFromRow(row: DbProfileRow): {
+  boostType: "free" | "paid" | null;
+  boostExpiresAt: string | null;
+} {
+  const nested = row.profile_boosts;
+  if (!nested) return { boostType: null, boostExpiresAt: null };
+  const record = Array.isArray(nested) ? nested[0] : nested;
+  const boostType =
+    record?.boost_type === "free" || record?.boost_type === "paid"
+      ? record.boost_type
+      : null;
+  return {
+    boostType,
+    boostExpiresAt: record?.expires_at ?? null,
+  };
+}
+
+function mapDiscoveryPlayer(row: DbProfileRow): DiscoveryPlayer {
+  const boost = boostFromRow(row);
   return {
     id: row.id,
     fullName: row.full_name,
@@ -34,6 +61,9 @@ function mapDiscoveryPlayer(row: DbProfileRow): Player {
     phone: row.phone,
     lookingForPartner: row.looking_for_partner,
     lookingForMatch: row.looking_for_match,
+    boostType: boost.boostType,
+    boostExpiresAt: boost.boostExpiresAt,
+    adminBoosted: Boolean(row.boosted),
   };
 }
 
@@ -41,8 +71,17 @@ function mapDiscoveryPlayer(row: DbProfileRow): Player {
 export async function fetchDiscoveryPlayers(
   filters: DiscoveryFilters = {}
 ): Promise<Player[]> {
-  const supabase = createClient();
+  const players = await fetchDiscoveryPlayersWithBoost(createClient(), filters);
+  return players.map(
+    ({ boostType: _t, boostExpiresAt: _e, adminBoosted: _a, ...player }) => player
+  );
+}
 
+/** Discover feed including hidden boost metadata for server-side ranking. */
+export async function fetchDiscoveryPlayersWithBoost(
+  supabase: SupabaseClient,
+  filters: DiscoveryFilters = {}
+): Promise<DiscoveryPlayer[]> {
   let query = supabase
     .from("profiles")
     .select(
@@ -55,7 +94,9 @@ export async function fetchDiscoveryPlayers(
       dupr_rating,
       looking_for_partner,
       looking_for_match,
-      phone
+      phone,
+      boosted,
+      profile_boosts ( boost_type, expires_at )
     `
     )
     .eq("role", "player")

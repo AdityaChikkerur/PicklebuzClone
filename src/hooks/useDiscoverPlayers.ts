@@ -1,10 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { authFetch } from "@/lib/auth/clientFetch";
 import { isSupabaseConfigured } from "@/lib/db/config";
-import { fetchDiscoveryPlayers } from "@/lib/db/players";
 import { fetchFollowingIds } from "@/lib/db/follows";
 import { DISCOVERY_PLAYERS } from "@/lib/mock/extendedMockData";
+import {
+  getMockDiscoverBoostMeta,
+} from "@/lib/mock/paymentMockData";
+import {
+  isAnyBoostActive,
+  rankDiscoveryPlayers,
+} from "@/lib/monetization/profileBoost";
 import { useAuthStore } from "@/store/authStore";
 import type { Player } from "@/types/player";
 
@@ -58,6 +65,48 @@ function filterMockPlayers(
   });
 }
 
+function rankMockDiscoveryPlayers(players: Player[]): Player[] {
+  const sortable = players.map((player) => {
+    const boost = getMockDiscoverBoostMeta(player.id);
+    return {
+      ...player,
+      boostType: boost.boostType,
+      boostExpiresAt: boost.boostExpiresAt,
+      adminBoosted: false,
+    };
+  });
+
+  return rankDiscoveryPlayers(sortable).map(
+    ({ boostType: _t, boostExpiresAt: _e, adminBoosted: _a, ...player }) => ({
+      ...player,
+      isBoosted: isAnyBoostActive({
+        id: player.id,
+        boostType: _t,
+        boostExpiresAt: _e,
+        adminBoosted: _a,
+      }),
+    })
+  );
+}
+
+function buildDiscoverQuery(
+  filters: DiscoverFilters,
+  excludeUserId?: string
+): string {
+  const params = new URLSearchParams();
+  if (filters.city && filters.city !== "All") params.set("city", filters.city);
+  if (filters.skillLevel && filters.skillLevel !== "All") {
+    params.set("skillLevel", filters.skillLevel);
+  }
+  if (filters.intent && filters.intent !== "following") {
+    params.set("intent", filters.intent);
+  }
+  if (filters.search.trim()) params.set("search", filters.search.trim());
+  if (excludeUserId) params.set("excludeUserId", excludeUserId);
+  const qs = params.toString();
+  return qs ? `?${qs}` : "";
+}
+
 export function useDiscoverPlayers(
   filters: DiscoverFilters
 ): UseDiscoverPlayersResult {
@@ -85,13 +134,12 @@ export function useDiscoverPlayers(
             filters.intent === "following" && excludeUserId
               ? await fetchFollowingIds(excludeUserId)
               : undefined;
-          setPlayers(
-            filterMockPlayers(
-              DISCOVERY_PLAYERS,
-              { ...filters, followingIds },
-              excludeUserId
-            )
+          const filtered = filterMockPlayers(
+            DISCOVERY_PLAYERS,
+            { ...filters, followingIds },
+            excludeUserId
           );
+          setPlayers(rankMockDiscoveryPlayers(filtered));
           setSource("mock");
           setLoading(false);
         }
@@ -104,22 +152,33 @@ export function useDiscoverPlayers(
             ? await fetchFollowingIds(excludeUserId)
             : undefined;
 
-        const rows = await fetchDiscoveryPlayers({
-          city: filters.city,
-          skillLevel: filters.skillLevel,
-          intent: filters.intent === "following" ? "all" : filters.intent,
-          search: filters.search,
-          excludeUserId,
-        });
+        const query = buildDiscoverQuery(
+          {
+            ...filters,
+            intent:
+              filters.intent === "following" ? "all" : filters.intent,
+          },
+          excludeUserId
+        );
 
-        const filtered =
-          filters.intent === "following" && followingIds
-            ? rows.filter((p) => followingIds.has(p.id))
-            : rows;
+        const response = await authFetch(`/api/discover/players${query}`);
+        const payload = (await response.json().catch(() => null)) as
+          | { players?: Player[]; error?: string }
+          | null;
+
+        if (!response.ok) {
+          throw new Error(payload?.error ?? "Failed to load players");
+        }
+
+        let rows = payload?.players ?? [];
+
+        if (filters.intent === "following" && followingIds) {
+          rows = rows.filter((p) => followingIds.has(p.id));
+        }
 
         if (cancelled) return;
 
-        setPlayers(filtered);
+        setPlayers(rows);
         setSource("supabase");
       } catch (err) {
         if (!cancelled) {

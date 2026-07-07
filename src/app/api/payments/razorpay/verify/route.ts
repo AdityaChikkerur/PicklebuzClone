@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAuthenticatedSupabaseClient } from "@/lib/supabaseServer";
+import { activatePaidProfileBoostForUser } from "@/lib/db/profileBoostServer";
 import {
   getPaymentByOrderIdServer,
   markPaymentPaidServer,
@@ -68,6 +69,10 @@ export async function POST(request: Request) {
         { error: "Could not update payment" },
         { status: 500 }
       );
+    }
+
+    if (payment.kind === "profile_boost") {
+      await activatePaidProfileBoostForUser(supabase);
     }
 
     return NextResponse.json({ ok: true, payment });

@@ -75,6 +75,8 @@ export interface Player {
   currentStreak?: number;
   lookingForPartner?: boolean;
   lookingForMatch?: boolean;
+  /** True when an active profile boost is in effect (Discover badge). */
+  isBoosted?: boolean;
 }
 
 export interface RankedPlayer extends Player {
