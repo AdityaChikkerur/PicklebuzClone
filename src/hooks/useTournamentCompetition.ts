@@ -11,6 +11,13 @@ import {
   generateTournamentFixtures,
 } from "@/lib/db/fixtures";
 import {
+  abandonTournamentMatch,
+  removeTournamentFixture,
+  resolveFixtureOutcome,
+  scheduleFixture,
+  tournamentCancelMatch,
+} from "@/lib/db/tournamentMatches";
+import {
   getTournamentBracket,
   getTournamentFixtures,
   getTournamentPointsTable,
@@ -24,6 +31,7 @@ import type {
   TournamentFixture,
   TournamentRegistration,
 } from "@/types/tournament";
+import type { FixtureAction } from "@/components/tournament-detail/FixtureManageMenu";
 
 export interface UseTournamentCompetitionResult {
   fixtures: TournamentFixture[];
@@ -35,9 +43,15 @@ export interface UseTournamentCompetitionResult {
   generating: boolean;
   startingFixtureId: string | null;
   bulkStarting: boolean;
+  fixtureActionBusy: boolean;
   generateFixtures: (categoryId: string) => Promise<boolean>;
   startFixtureMatch: (fixtureId: string) => Promise<string | null>;
   startMultipleFixtureMatches: (fixtureIds: string[]) => Promise<string[]>;
+  handleFixtureAction: (
+    fixtureId: string,
+    action: FixtureAction,
+    extra?: { winner?: "A" | "B"; notes?: string; scheduledAt?: string; court?: string }
+  ) => Promise<boolean>;
   reload: () => void;
 }
 
@@ -54,6 +68,7 @@ export function useTournamentCompetition(
   const [generating, setGenerating] = useState(false);
   const [startingFixtureId, setStartingFixtureId] = useState<string | null>(null);
   const [bulkStarting, setBulkStarting] = useState(false);
+  const [fixtureActionBusy, setFixtureActionBusy] = useState(false);
   const [reloadToken, setReloadToken] = useState(0);
 
   const tournamentId = tournament?.id ?? "";
@@ -236,6 +251,83 @@ export function useTournamentCompetition(
     [tournament, userId, dataSource, registrations, reload, fixtures]
   );
 
+  const handleFixtureAction = useCallback(
+    async (
+      fixtureId: string,
+      action: FixtureAction,
+      extra?: { winner?: "A" | "B"; notes?: string; scheduledAt?: string; court?: string }
+    ): Promise<boolean> => {
+      if (!tournament || dataSource === "mock") {
+        toast.info("Fixture management is available on real tournaments only");
+        return false;
+      }
+
+      setFixtureActionBusy(true);
+      let success = false;
+
+      try {
+        const fixture = fixtures.find((f) => f.id === fixtureId);
+
+        if (action === "schedule" && extra?.scheduledAt) {
+          const result = await scheduleFixture({
+            fixtureId,
+            scheduledAt: extra.scheduledAt,
+            court: extra.court,
+          });
+          if (result.error) throw new Error(result.error);
+          toast.success("Match scheduled");
+          success = true;
+        } else if (action === "walkover" || action === "no_show") {
+          const result = await resolveFixtureOutcome({
+            fixtureId,
+            outcome: action,
+            winner: extra?.winner,
+            notes: extra?.notes,
+          });
+          if (result.error) throw new Error(result.error);
+          toast.success(
+            action === "no_show" ? "No-show recorded" : "Walkover recorded"
+          );
+          success = true;
+        } else if (action === "cancel_fixture") {
+          const result = await resolveFixtureOutcome({
+            fixtureId,
+            outcome: "cancelled",
+            notes: extra?.notes,
+          });
+          if (result.error) throw new Error(result.error);
+          toast.success("Fixture cancelled");
+          success = true;
+        } else if (action === "cancel_match" && fixture?.matchId) {
+          const result = await tournamentCancelMatch(fixture.matchId);
+          if (result.error) throw new Error(result.error);
+          toast.success("Match cancelled — fixture is scheduled again");
+          success = true;
+        } else if (action === "abandon" && fixture?.matchId) {
+          const result = await abandonTournamentMatch(
+            fixture.matchId,
+            extra?.notes
+          );
+          if (result.error) throw new Error(result.error);
+          toast.success("Match abandoned");
+          success = true;
+        } else if (action === "remove") {
+          const result = await removeTournamentFixture(fixtureId);
+          if (result.error) throw new Error(result.error);
+          toast.success("Fixture removed");
+          success = true;
+        }
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Action failed");
+      }
+
+      setFixtureActionBusy(false);
+      if (success) reload();
+      return success;
+    },
+    [tournament, dataSource, fixtures, reload]
+  );
+
   return {
     fixtures,
     points,
@@ -246,9 +338,11 @@ export function useTournamentCompetition(
     generating,
     startingFixtureId,
     bulkStarting,
+    fixtureActionBusy,
     generateFixtures,
     startFixtureMatch,
     startMultipleFixtureMatches,
+    handleFixtureAction,
     reload,
   };
 }

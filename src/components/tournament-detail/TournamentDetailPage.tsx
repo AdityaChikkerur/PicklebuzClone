@@ -12,6 +12,7 @@ import { OverviewTab } from "./OverviewTab";
 import { ParticipantsManager } from "./ParticipantsManager";
 import { PointsTableView } from "./PointsTableView";
 import { ResultsTab } from "./ResultsTab";
+import { CategoryTypeFilterBar } from "./CategoryTypeFilterBar";
 import { TournamentHeader } from "./TournamentHeader";
 import { TournamentTabBar } from "./TournamentTabBar";
 import { useTournamentCompetition } from "@/hooks/useTournamentCompetition";
@@ -21,7 +22,7 @@ import { getDefaultHomeForRole } from "@/lib/auth/routeGuards";
 import { APP_URL, copyToClipboard } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
 import { createInitialMatchState, useMatchStore } from "@/store/matchStore";
-import type { TournamentTab } from "@/types/tournament";
+import type { TournamentTab, CategoryTypeFilter } from "@/types/tournament";
 import { getCategoryDisplayName } from "@/types/tournament";
 
 interface TournamentDetailPageProps {
@@ -63,11 +64,14 @@ export function TournamentDetailPage({ tournamentId }: TournamentDetailPageProps
     generateFixtures,
     startFixtureMatch,
     startMultipleFixtureMatches,
+    fixtureActionBusy,
+    handleFixtureAction,
     reload: reloadCompetition,
   } = useTournamentCompetition(tournament, registrations, source);
 
   const [activeTab, setActiveTab] = useState<TournamentTab>("overview");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [typeFilter, setTypeFilter] = useState<CategoryTypeFilter>("all");
 
   useEffect(() => {
     if (tournament) {
@@ -76,8 +80,32 @@ export function TournamentDetailPage({ tournamentId }: TournamentDetailPageProps
   }, [tournament?.id, tournament?.format, tournament]);
 
   const filteredFixtures = useMemo(() => {
-    if (categoryFilter === "all") return fixtures;
-    return fixtures.filter((f) => f.categoryId === categoryFilter);
+    let list = fixtures;
+    if (categoryFilter !== "all") {
+      list = list.filter((f) => f.categoryId === categoryFilter);
+    }
+    if (typeFilter !== "all") {
+      list = list.filter(
+        (f) =>
+          f.categoryType === typeFilter ||
+          tournament?.categories.find((c) => c.id === f.categoryId)
+            ?.categoryType === typeFilter
+      );
+    }
+    return list;
+  }, [fixtures, categoryFilter, typeFilter, tournament?.categories]);
+
+  const typeFilterCounts = useMemo(() => {
+    const base =
+      categoryFilter === "all"
+        ? fixtures
+        : fixtures.filter((f) => f.categoryId === categoryFilter);
+    return {
+      all: base.length,
+      singles: base.filter((f) => f.categoryType === "singles").length,
+      doubles: base.filter((f) => f.categoryType === "doubles").length,
+      mixed: base.filter((f) => f.categoryType === "mixed").length,
+    };
   }, [fixtures, categoryFilter]);
 
   const filteredPoints = useMemo(() => {
@@ -187,8 +215,12 @@ export function TournamentDetailPage({ tournamentId }: TournamentDetailPageProps
 
   const showCategoryFilter =
     tournament.categories.length > 1 &&
-    ["fixtures", "points", "bracket"].includes(activeTab) &&
+    ["fixtures", "points", "bracket", "live", "results"].includes(activeTab) &&
     (source === "mock" || fixtures.length > 0 || points.length > 0);
+
+  const showTypeFilter =
+    ["fixtures", "live", "results", "bracket"].includes(activeTab) &&
+    (source === "mock" || fixtures.length > 0);
 
   const showGenerateOnPoints =
     tournament.isOrganizer &&
@@ -220,7 +252,11 @@ export function TournamentDetailPage({ tournamentId }: TournamentDetailPageProps
           </button>
         </div>
 
-        <TournamentHeader tournament={tournament} onRegister={handleRegister} />
+        <TournamentHeader
+          tournament={tournament}
+          onRegister={handleRegister}
+          onStatusChange={reloadDetail}
+        />
 
         <TournamentTabBar
           active={activeTab}
@@ -228,6 +264,14 @@ export function TournamentDetailPage({ tournamentId }: TournamentDetailPageProps
           isOrganizer={tournament.isOrganizer}
           onChange={setActiveTab}
         />
+
+        {showTypeFilter && (
+          <CategoryTypeFilterBar
+            value={typeFilter}
+            onChange={setTypeFilter}
+            counts={typeFilterCounts}
+          />
+        )}
 
         {showCategoryFilter && (
           <div className="flex flex-wrap gap-2">
@@ -270,8 +314,16 @@ export function TournamentDetailPage({ tournamentId }: TournamentDetailPageProps
             categories={tournament.categories}
             generating={generating}
             startingFixtureId={startingFixtureId}
+            fixtureActionBusy={fixtureActionBusy}
             onGenerate={tournament.isOrganizer ? handleGenerateFixtures : undefined}
             onStartMatch={tournament.isOrganizer ? handleStartFixture : undefined}
+            onFixtureAction={
+              tournament.isOrganizer
+                ? async (id, action, extra) => {
+                    await handleFixtureAction(id, action, extra);
+                  }
+                : undefined
+            }
           />
         ) : activeTab === "bracket" ? (
           <BracketView matches={bracket} rounds={bracketRounds} />

@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
+import { toast } from "sonner";
 import {
   CalendarIcon,
   MapPinIcon,
@@ -10,6 +12,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { Badge } from "@/components/ui/Badge";
 import { formatDate } from "@/lib/utils";
+import { updateTournamentStatus } from "@/lib/db/tournamentMatches";
 import {
   TOURNAMENT_FORMAT_LABELS,
   type TournamentDetail,
@@ -19,6 +22,7 @@ import {
 interface TournamentHeaderProps {
   tournament: TournamentDetail;
   onRegister?: () => void;
+  onStatusChange?: () => void;
 }
 
 function statusVariant(
@@ -38,7 +42,12 @@ function statusVariant(
   }
 }
 
-export function TournamentHeader({ tournament, onRegister }: TournamentHeaderProps) {
+export function TournamentHeader({
+  tournament,
+  onRegister,
+  onStatusChange,
+}: TournamentHeaderProps) {
+  const [statusBusy, setStatusBusy] = useState(false);
   const spotsLeft = tournament.maxParticipants - tournament.registeredCount;
   const fillPct = Math.round(
     (tournament.registeredCount / tournament.maxParticipants) * 100
@@ -47,6 +56,28 @@ export function TournamentHeader({ tournament, onRegister }: TournamentHeaderPro
     Date.now() >
     new Date(`${tournament.registrationDeadline}T23:59:59`).getTime();
   const usesExternalRegistration = Boolean(tournament.registrationUrl);
+
+  const handleStatusUpdate = async (status: TournamentStatus) => {
+    const labels: Record<string, string> = {
+      cancelled: "cancel this tournament",
+      completed: "mark this tournament as completed",
+      live: "set tournament to live",
+    };
+    const label = labels[status] ?? `update status to ${status}`;
+    if (!window.confirm(`Are you sure you want to ${label}?`)) return;
+
+    setStatusBusy(true);
+    const result = await updateTournamentStatus(tournament.id, status);
+    setStatusBusy(false);
+
+    if (result.error) {
+      toast.error(result.error);
+      return;
+    }
+
+    toast.success(`Tournament ${status}`);
+    onStatusChange?.();
+  };
 
   const registrationLabel = tournament.userRegistration
     ? tournament.userRegistration.status === "approved"
@@ -207,6 +238,42 @@ export function TournamentHeader({ tournament, onRegister }: TournamentHeaderPro
             </span>
           )}
         </div>
+
+        {tournament.isOrganizer &&
+          tournament.status !== "cancelled" &&
+          tournament.status !== "completed" && (
+            <div className="flex flex-wrap gap-2 border-t border-border pt-4">
+              <p className="w-full text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Organizer actions
+              </p>
+              {tournament.status !== "live" && (
+                <button
+                  type="button"
+                  disabled={statusBusy}
+                  onClick={() => void handleStatusUpdate("live")}
+                  className="btn-outline text-xs"
+                >
+                  Set live
+                </button>
+              )}
+              <button
+                type="button"
+                disabled={statusBusy}
+                onClick={() => void handleStatusUpdate("completed")}
+                className="btn-outline text-xs"
+              >
+                Mark completed
+              </button>
+              <button
+                type="button"
+                disabled={statusBusy}
+                onClick={() => void handleStatusUpdate("cancelled")}
+                className="rounded-xl border border-danger/30 px-3 py-1.5 text-xs font-semibold text-danger hover:bg-danger/10"
+              >
+                Cancel tournament
+              </button>
+            </div>
+          )}
       </div>
     </div>
   );

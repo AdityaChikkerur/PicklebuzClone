@@ -6,6 +6,7 @@ import { isSupabaseConfigured } from "@/lib/auth/isSupabaseConfigured";
 import { fetchLiveMatches, type LiveMatchSummary } from "@/lib/db/matches";
 import { useRealtimeLiveScores } from "@/hooks/useRealtimeLiveScores";
 import { useAuthStore } from "@/store/authStore";
+import type { MatchTypeFilter } from "@/types/match";
 
 function withCancelForUser(
   matches: LiveMatchSummary[],
@@ -24,7 +25,7 @@ function withCancelForUser(
   });
 }
 
-export function useLiveMatches() {
+export function useLiveMatches(matchTypeFilter: MatchTypeFilter = "all") {
   const [matches, setMatches] = useState<LiveMatchSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +59,9 @@ export function useLiveMatches() {
       }
       setError(null);
 
-      const result = await fetchLiveMatches(userId);
+      const result = await fetchLiveMatches(userId, {
+        matchType: matchTypeFilter === "all" ? undefined : matchTypeFilter,
+      });
       if (cancelled) return;
 
       if (result.error) {
@@ -74,7 +77,7 @@ export function useLiveMatches() {
     return () => {
       cancelled = true;
     };
-  }, [reloadToken, authLoading, userId]);
+  }, [reloadToken, authLoading, userId, matchTypeFilter]);
 
   useEffect(() => {
     return () => {

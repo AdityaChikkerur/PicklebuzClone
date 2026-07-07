@@ -9,8 +9,28 @@ interface ResultsTabProps {
   fixtures: TournamentFixture[];
 }
 
+function winnerLabel(fixture: TournamentFixture): string {
+  if (fixture.outcomeWinner === "A") return fixture.teamA;
+  if (fixture.outcomeWinner === "B") return fixture.teamB;
+  if (fixture.outcome === "walkover" || fixture.outcome === "no_show") {
+    return fixture.score?.includes("0-11") ? fixture.teamB : fixture.teamA;
+  }
+  return fixture.teamA;
+}
+
+function resultSuffix(fixture: TournamentFixture): string {
+  if (fixture.outcome === "walkover") return " (walkover)";
+  if (fixture.outcome === "no_show") return " (no-show)";
+  return "";
+}
+
 export function ResultsTab({ fixtures }: ResultsTabProps) {
-  const completed = fixtures.filter((f) => f.status === "completed");
+  const completed = fixtures.filter(
+    (f) =>
+      f.status === "completed" ||
+      f.status === "walkover" ||
+      f.status === "no_show"
+  );
 
   if (completed.length === 0) {
     return (
@@ -27,10 +47,9 @@ export function ResultsTab({ fixtures }: ResultsTabProps) {
     <div className="card-base divide-y divide-border overflow-hidden">
       <ul>
         {completed.map((fixture) => {
-          const winner =
-            fixture.score && fixture.teamA
-              ? fixture.teamA
-              : fixture.teamB;
+          const winner = winnerLabel(fixture);
+          const loser =
+            winner === fixture.teamA ? fixture.teamB : fixture.teamA;
 
           return (
             <li key={fixture.id} className="px-4 py-3">
@@ -38,14 +57,28 @@ export function ResultsTab({ fixtures }: ResultsTabProps) {
                 <div className="min-w-0">
                   <div className="mb-1 flex flex-wrap items-center gap-2">
                     <Badge variant="outline">{fixture.round}</Badge>
+                    {fixture.categoryType && (
+                      <Badge variant="outline" className="text-[10px] capitalize">
+                        {fixture.categoryType === "mixed"
+                          ? "Mixed doubles"
+                          : fixture.categoryType}
+                      </Badge>
+                    )}
                     {fixture.isUpset && (
                       <Badge variant="warning">UPSET</Badge>
                     )}
+                    {(fixture.outcome === "walkover" ||
+                      fixture.outcome === "no_show") && (
+                      <Badge variant="warning" className="text-[10px] uppercase">
+                        {fixture.outcome === "no_show" ? "No-show" : "W/O"}
+                      </Badge>
+                    )}
                   </div>
                   <p className="text-sm text-foreground">
-                    <span className="font-semibold">{fixture.teamA}</span>
+                    <span className="font-semibold">{winner}</span>
                     <span className="mx-1.5 text-muted-foreground">def.</span>
-                    <span>{fixture.teamB}</span>
+                    <span>{loser}</span>
+                    {resultSuffix(fixture)}
                   </p>
                   <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
                     <TrophyIcon className="h-3.5 w-3.5 text-warning" aria-hidden="true" />
@@ -54,7 +87,7 @@ export function ResultsTab({ fixtures }: ResultsTabProps) {
                 </div>
                 <div className="shrink-0 text-right">
                   <p className="text-sm font-bold tabular-nums text-foreground">
-                    {fixture.score}
+                    {fixture.score ?? "—"}
                   </p>
                   {fixture.matchId && (
                     <Link

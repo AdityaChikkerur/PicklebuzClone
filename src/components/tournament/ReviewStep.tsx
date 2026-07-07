@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/Badge";
 import { formatCurrency, formatDate, gamesToWin } from "@/lib/utils";
 import {
   CATEGORY_TYPE_LABELS,
+  TOURNAMENT_FORMAT_LABELS,
   type TournamentForm,
 } from "@/types/tournament";
 
@@ -50,6 +51,15 @@ export function ReviewStep({ form }: ReviewStepProps) {
         </div>
 
         <div className="divide-y divide-border px-4">
+          <div className="py-3">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Format
+            </p>
+            <SummaryRow
+              label="Competition"
+              value={TOURNAMENT_FORMAT_LABELS[form.format]}
+            />
+          </div>
           <div className="py-3">
             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Venue & schedule

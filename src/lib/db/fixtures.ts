@@ -7,6 +7,7 @@ import type { SkillLevel } from "@/types/player";
 import type {
   BracketMatch,
   CategoryType,
+  FixtureOutcome,
   FixtureStatus,
   PointsTableRow,
   TournamentDetail,
@@ -34,6 +35,11 @@ interface DbFixtureRow {
   team_a: string | null;
   team_b: string | null;
   created_at: string;
+  scheduled_at: string | null;
+  court: string | null;
+  outcome: string | null;
+  outcome_winner: string | null;
+  outcome_notes: string | null;
 }
 
 interface DbPointsRow {
@@ -91,11 +97,24 @@ function teamFromRegistration(reg: TournamentRegistration): CompetitionTeam {
   };
 }
 
-function matchStatusToFixtureStatus(matchStatus: string): FixtureStatus {
+function matchStatusToFixtureStatus(
+  matchStatus: string,
+  outcome?: string | null
+): FixtureStatus {
+  if (outcome === "cancelled") return "cancelled";
+  if (outcome === "abandoned") return "abandoned";
+  if (outcome === "walkover") return "walkover";
+  if (outcome === "no_show") return "no_show";
+
   if (matchStatus === "live") return "live";
-  if (matchStatus === "verified" || matchStatus === "completed") {
-    return "completed";
+  if (
+    matchStatus === "verified" ||
+    matchStatus === "completed" ||
+    matchStatus === "walkover"
+  ) {
+    return outcome === "no_show" ? "no_show" : "completed";
   }
+  if (matchStatus === "cancelled") return "cancelled";
   if (matchStatus === "pending" || matchStatus === "disputed") return "live";
   return "scheduled";
 }
@@ -159,16 +178,23 @@ async function loadMatchContext(matchId: string): Promise<{
 function mapFixtureRow(
   row: DbFixtureRow,
   match?: DbMatchSnippet | null,
-  gameScores: DbGameScoreRow[] = []
+  gameScores: DbGameScoreRow[] = [],
+  categoryType?: CategoryType
 ): TournamentFixture {
-  const status: FixtureStatus = match
-    ? matchStatusToFixtureStatus(match.status)
-    : "scheduled";
+  const status: FixtureStatus = row.outcome
+    ? matchStatusToFixtureStatus(match?.status ?? "", row.outcome)
+    : match
+      ? matchStatusToFixtureStatus(match.status)
+      : "scheduled";
 
   const score =
     gameScores.length > 0
       ? formatScoreString(gameScores)
-      : undefined;
+      : row.outcome === "walkover" || row.outcome === "no_show"
+        ? row.outcome_winner === "B"
+          ? "0-11 (W/O)"
+          : "11-0 (W/O)"
+        : undefined;
 
   return {
     id: row.id,
@@ -181,6 +207,12 @@ function mapFixtureRow(
     score,
     status,
     isUpset: false,
+    scheduledAt: row.scheduled_at ?? undefined,
+    court: row.court ?? undefined,
+    outcome: (row.outcome as FixtureOutcome | undefined) ?? undefined,
+    outcomeWinner: (row.outcome_winner as "A" | "B" | undefined) ?? undefined,
+    outcomeNotes: row.outcome_notes ?? undefined,
+    categoryType,
   };
 }
 
@@ -247,8 +279,11 @@ export async function fetchTournamentFixtures(
   const supabase = createClient();
   let query = supabase
     .from("fixtures")
-    .select("id, tournament_id, category_id, round, match_id, team_a, team_b, created_at")
+    .select(
+      "id, tournament_id, category_id, round, match_id, team_a, team_b, created_at, scheduled_at, court, outcome, outcome_winner, outcome_notes"
+    )
     .eq("tournament_id", tournamentId)
+    .order("scheduled_at", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: true });
 
   if (categoryId && categoryId !== "all") {
@@ -259,6 +294,20 @@ export async function fetchTournamentFixtures(
   if (error || !data?.length) return [];
 
   const rows = data as DbFixtureRow[];
+  const categoryIds = [...new Set(rows.map((r) => r.category_id).filter(Boolean))];
+  const categoryTypeMap = new Map<string, CategoryType>();
+
+  if (categoryIds.length > 0) {
+    const { data: categories } = await supabase
+      .from("tournament_categories")
+      .select("id, category_type")
+      .in("id", categoryIds as string[]);
+
+    for (const cat of categories ?? []) {
+      categoryTypeMap.set(cat.id as string, cat.category_type as CategoryType);
+    }
+  }
+
   const matchIds = rows
     .map((r) => r.match_id)
     .filter((id): id is string => Boolean(id));
@@ -293,7 +342,10 @@ export async function fetchTournamentFixtures(
   return rows.map((row) => {
     const match = row.match_id ? matchMap.get(row.match_id) : null;
     const gameScores = row.match_id ? (scoresMap.get(row.match_id) ?? []) : [];
-    const fixture = mapFixtureRow(row, match, gameScores);
+    const categoryType = row.category_id
+      ? categoryTypeMap.get(row.category_id)
+      : undefined;
+    const fixture = mapFixtureRow(row, match, gameScores, categoryType);
 
     if (match && fixture.status === "completed") {
       const side = winnerSide(match, gameScores);
@@ -555,7 +607,7 @@ export async function syncFixtureFromMatch(
   if (!fixture) return;
 
   const ctx = await loadMatchContext(matchId);
-  if (!ctx || ctx.match.status !== "verified") return;
+  if (!ctx || !["verified", "walkover"].includes(ctx.match.status)) return;
 
   const side = winnerSide(ctx.match, ctx.gameScores);
   if (!side) return;
@@ -806,12 +858,15 @@ export async function createMatchForFixture(input: {
     const supabase = createClient();
     const { data: fixture, error: fErr } = await supabase
       .from("fixtures")
-      .select("id, tournament_id, category_id, round, team_a, team_b, match_id")
+      .select(
+        "id, tournament_id, category_id, round, team_a, team_b, match_id, court, scheduled_at, outcome"
+      )
       .eq("id", input.fixtureId)
       .maybeSingle();
 
     if (fErr || !fixture) throw fErr ?? new Error("Fixture not found");
     if (fixture.match_id) return fail("Match already linked to this fixture");
+    if (fixture.outcome) return fail("This fixture has been resolved");
 
     const category = input.tournament.categories.find(
       (c) => c.id === fixture.category_id
@@ -847,7 +902,10 @@ export async function createMatchForFixture(input: {
         players: [],
         venue: input.tournament.venue,
         city: input.tournament.city,
-        courtNumber: input.courtNumber ?? "",
+        courtNumber:
+          input.courtNumber ??
+          (fixture.court as string | null) ??
+          "",
         scoringType: input.tournament.scoringType,
         targetPoints: input.tournament.pointsToWin,
         bestOf: input.tournament.bestOf,

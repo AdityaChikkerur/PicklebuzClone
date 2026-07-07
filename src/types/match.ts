@@ -44,7 +44,11 @@ export type MatchStatus =
   | "pending"
   | "verified"
   | "disputed"
-  | "completed";
+  | "completed"
+  | "cancelled"
+  | "walkover";
+
+export type MatchTypeFilter = "all" | MatchType;
 
 export interface MatchEvent {
   id: string;

@@ -46,6 +46,7 @@ export function TournamentAdminsPanel({
   const [searching, setSearching] = useState(false);
   const [results, setResults] = useState<Player[]>([]);
   const [invitingId, setInvitingId] = useState<string | null>(null);
+  const [inviteRole, setInviteRole] = useState<"admin" | "scorer">("admin");
 
   const reload = async () => {
     const result = await fetchTournamentAdmins(tournamentId);
@@ -85,7 +86,7 @@ export function TournamentAdminsPanel({
       userId: player.id,
       invitedBy: userId,
       tournamentName,
-      role: "admin",
+      role: inviteRole,
     });
     setInvitingId(null);
 
@@ -94,7 +95,9 @@ export function TournamentAdminsPanel({
       return;
     }
 
-    toast.success(`Invited ${player.fullName} as co-admin`);
+    toast.success(
+      `Invited ${player.fullName} as ${inviteRole === "scorer" ? "scorer" : "co-admin"}`
+    );
     setOpen(false);
     setSearch("");
     setResults([]);
@@ -178,6 +181,30 @@ export function TournamentAdminsPanel({
 
       {canManage && open && (
         <div className="rounded-xl border border-border bg-muted/30 p-3">
+          <div className="mb-2 flex gap-2">
+            <button
+              type="button"
+              onClick={() => setInviteRole("admin")}
+              className={`rounded-lg px-3 py-1 text-xs font-semibold ${
+                inviteRole === "admin"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground"
+              }`}
+            >
+              Co-admin
+            </button>
+            <button
+              type="button"
+              onClick={() => setInviteRole("scorer")}
+              className={`rounded-lg px-3 py-1 text-xs font-semibold ${
+                inviteRole === "scorer"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground"
+              }`}
+            >
+              Scorer
+            </button>
+          </div>
           <div className="flex gap-2">
             <input
               type="search"

@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { cn } from "@/lib/utils";
+import { updateRegistrationSeed } from "@/lib/db/tournaments";
 import type { TournamentRegistration } from "@/types/tournament";
 import { TournamentAdminsPanel } from "./TournamentAdminsPanel";
 
@@ -75,14 +76,13 @@ export function ParticipantsManager({
     toast.error("Registration rejected");
   };
 
-  const handleSeedChange = (id: string, seed: number) => {
-    updateRegistration(id, { seed: seed || undefined });
-  };
-
-  const handleGenerateFixtures = () => {
-    toast.success("Fixtures generated (demo)", {
-      description: "Schedule published to all approved participants.",
-    });
+  const handleSeedChange = async (id: string, seed: number) => {
+    const value = seed > 0 ? seed : undefined;
+    updateRegistration(id, { seed: value });
+    const result = await updateRegistrationSeed(id, value ?? null);
+    if (result.error) {
+      toast.error(result.error);
+    }
   };
 
   if (registrations.length === 0) {
@@ -103,23 +103,13 @@ export function ParticipantsManager({
         tournamentName={tournamentName}
         canManage={isOrganizer}
       />
-      {isOrganizer && (
-        <div className="card-base flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm font-bold text-foreground">Organizer controls</p>
-            <p className="text-xs text-muted-foreground">
-              {pendingCount > 0
-                ? `${pendingCount} pending approval`
-                : "All registrations reviewed"}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={handleGenerateFixtures}
-            className="btn-primary text-sm"
-          >
-            Generate Fixtures
-          </button>
+      {isOrganizer && pendingCount > 0 && (
+        <div className="card-base p-4">
+          <p className="text-sm font-bold text-foreground">Pending approvals</p>
+          <p className="text-xs text-muted-foreground">
+            {pendingCount} registration{pendingCount === 1 ? "" : "s"} awaiting review.
+            Approve players before generating fixtures from the Fixtures tab.
+          </p>
         </div>
       )}
 
@@ -192,7 +182,10 @@ export function ParticipantsManager({
                     max={32}
                     value={reg.seed ?? ""}
                     onChange={(e) =>
-                      handleSeedChange(reg.id, parseInt(e.target.value, 10) || 0)
+                      void handleSeedChange(
+                        reg.id,
+                        parseInt(e.target.value, 10) || 0
+                      )
                     }
                     className={cn(
                       "input-base w-20 py-1.5 text-center text-sm"

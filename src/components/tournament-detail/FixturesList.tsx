@@ -3,7 +3,15 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import { cn, formatDateTime } from "@/lib/utils";
-import { getCategoryDisplayName, type TournamentCategory, type TournamentFixture } from "@/types/tournament";
+import {
+  getCategoryDisplayName,
+  type TournamentCategory,
+  type TournamentFixture,
+} from "@/types/tournament";
+import {
+  FixtureManageMenu,
+  type FixtureAction,
+} from "./FixtureManageMenu";
 
 interface FixturesListProps {
   fixtures: TournamentFixture[];
@@ -11,8 +19,14 @@ interface FixturesListProps {
   categories?: TournamentCategory[];
   generating?: boolean;
   startingFixtureId?: string | null;
+  fixtureActionBusy?: boolean;
   onGenerate?: (categoryId: string) => void;
   onStartMatch?: (fixtureId: string) => void;
+  onFixtureAction?: (
+    fixtureId: string,
+    action: FixtureAction,
+    extra?: { winner?: "A" | "B"; notes?: string; scheduledAt?: string; court?: string }
+  ) => Promise<void>;
 }
 
 function statusVariant(
@@ -20,13 +34,31 @@ function statusVariant(
 ): "success" | "warning" | "danger" | "default" {
   switch (status) {
     case "completed":
+    case "walkover":
+    case "no_show":
       return "success";
     case "live":
       return "danger";
     case "scheduled":
       return "default";
+    case "cancelled":
+    case "abandoned":
+      return "warning";
     default:
       return "default";
+  }
+}
+
+function statusLabel(status: TournamentFixture["status"]): string {
+  switch (status) {
+    case "walkover":
+      return "walkover";
+    case "no_show":
+      return "no-show";
+    case "abandoned":
+      return "abandoned";
+    default:
+      return status;
   }
 }
 
@@ -36,8 +68,10 @@ export function FixturesList({
   categories = [],
   generating = false,
   startingFixtureId = null,
+  fixtureActionBusy = false,
   onGenerate,
   onStartMatch,
+  onFixtureAction,
 }: FixturesListProps) {
   if (fixtures.length === 0) {
     return (
@@ -69,11 +103,12 @@ export function FixturesList({
 
   return (
     <div className="card-base divide-y divide-border overflow-hidden">
-      <div className="hidden border-b border-border bg-muted/30 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground sm:grid sm:grid-cols-[5rem_1fr_6rem_5rem] sm:gap-3">
+      <div className="hidden border-b border-border bg-muted/30 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground sm:grid sm:grid-cols-[5rem_1fr_6rem_5rem_auto] sm:gap-3">
         <span>Round</span>
         <span>Matchup</span>
         <span>Score</span>
         <span className="text-right">Status</span>
+        <span />
       </div>
 
       <ul>
@@ -82,7 +117,7 @@ export function FixturesList({
             key={fixture.id}
             className="px-4 py-3 transition-colors hover:bg-muted/20"
           >
-            <div className="grid items-center gap-2 sm:grid-cols-[5rem_1fr_6rem_5rem] sm:gap-3">
+            <div className="grid items-center gap-2 sm:grid-cols-[5rem_1fr_6rem_5rem_auto] sm:gap-3">
               <Badge variant="outline" className="w-fit">
                 {fixture.round}
               </Badge>
@@ -94,6 +129,13 @@ export function FixturesList({
                   {fixture.teamB}
                 </p>
                 <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                  {fixture.categoryType && (
+                    <Badge variant="outline" className="text-[10px] capitalize">
+                      {fixture.categoryType === "mixed"
+                        ? "Mixed doubles"
+                        : fixture.categoryType}
+                    </Badge>
+                  )}
                   {fixture.scheduledAt && (
                     <span>{formatDateTime(fixture.scheduledAt)}</span>
                   )}
@@ -102,6 +144,9 @@ export function FixturesList({
                     <Badge variant="warning" className="text-[10px]">
                       UPSET
                     </Badge>
+                  )}
+                  {fixture.outcomeNotes && (
+                    <span className="italic">· {fixture.outcomeNotes}</span>
                   )}
                 </div>
               </div>
@@ -117,7 +162,7 @@ export function FixturesList({
 
               <div className="flex items-center justify-between gap-2 sm:justify-end">
                 <Badge variant={statusVariant(fixture.status)} dot={fixture.status === "live"}>
-                  {fixture.status}
+                  {statusLabel(fixture.status)}
                 </Badge>
                 {fixture.matchId ? (
                   <Link
@@ -148,6 +193,17 @@ export function FixturesList({
                   )
                 )}
               </div>
+
+              {isOrganizer && onFixtureAction && (
+                <FixtureManageMenu
+                  fixture={fixture}
+                  isOrganizer={isOrganizer}
+                  starting={startingFixtureId === fixture.id}
+                  busy={fixtureActionBusy}
+                  onAction={onFixtureAction}
+                  onStartMatch={onStartMatch}
+                />
+              )}
             </div>
           </li>
         ))}

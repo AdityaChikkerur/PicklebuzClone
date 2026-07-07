@@ -3,7 +3,11 @@
 import { MapPinIcon } from "@heroicons/react/24/outline";
 import { cn } from "@/lib/utils";
 import { QUICK_VENUES } from "@/components/match/mockData";
-import type { TournamentForm } from "@/types/tournament";
+import {
+  TOURNAMENT_FORMAT_LABELS,
+  type TournamentForm,
+  type TournamentFormat,
+} from "@/types/tournament";
 
 const CITIES = [
   "Bengaluru",
@@ -110,6 +114,29 @@ export function BasicsStep({ form, onChange }: BasicsStepProps) {
           onChange={(isPublic) => onChange({ isPublic })}
           label="Toggle public tournament visibility"
         />
+      </div>
+
+      <div>
+        <p className="mb-2 text-sm font-medium">Tournament format</p>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {(Object.keys(TOURNAMENT_FORMAT_LABELS) as TournamentFormat[]).map(
+            (format) => (
+              <button
+                key={format}
+                type="button"
+                onClick={() => onChange({ format })}
+                className={cn(
+                  "rounded-xl border px-4 py-3 text-left text-sm transition-colors",
+                  form.format === format
+                    ? "border-primary bg-primary/10 font-semibold text-foreground"
+                    : "border-border text-muted-foreground hover:border-primary/40"
+                )}
+              >
+                {TOURNAMENT_FORMAT_LABELS[format]}
+              </button>
+            )
+          )}
+        </div>
       </div>
 
       <div>

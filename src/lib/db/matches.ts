@@ -1090,7 +1090,8 @@ export async function cancelMatchByCreator(
 }
 
 export async function fetchLiveMatches(
-  userId?: string | null
+  userId?: string | null,
+  options?: { matchType?: string }
 ): Promise<FetchLiveMatchesResult> {
   if (!isSupabaseConfigured()) {
     return {
@@ -1103,15 +1104,21 @@ export async function fetchLiveMatches(
   try {
     const supabase = createClient();
 
-    const { data: rows, error } = await supabase
+    let query = supabase
       .from("matches")
       .select(
-        "id, team_a_name, team_b_name, venue, city, court_number, match_type, created_at, created_by"
+        "id, team_a_name, team_b_name, venue, city, court_number, match_type, created_at, created_by, tournament_id"
       )
       .eq("status", "live")
       .eq("is_public", true)
       .order("created_at", { ascending: false })
       .limit(50);
+
+    if (options?.matchType && options.matchType !== "all") {
+      query = query.eq("match_type", options.matchType);
+    }
+
+    const { data: rows, error } = await query;
 
     if (error) throw error;
 

@@ -37,6 +37,7 @@ export function getCategoryDisplayName(
 
 export interface TournamentForm {
   step: 1 | 2 | 3 | 4;
+  format: TournamentFormat;
   name: string;
   description: string;
   isPublic: boolean;
@@ -72,6 +73,7 @@ export interface UpcomingTournament {
 
 export const INITIAL_TOURNAMENT_FORM: TournamentForm = {
   step: 1,
+  format: "knockout",
   name: "",
   description: "",
   isPublic: true,
@@ -104,7 +106,22 @@ export const TOURNAMENT_FORMAT_LABELS: Record<TournamentFormat, string> = {
   group_knockout: "Group + Knockout",
 };
 
-export type FixtureStatus = "scheduled" | "live" | "completed";
+export type FixtureOutcome =
+  | "walkover"
+  | "no_show"
+  | "cancelled"
+  | "abandoned";
+
+export type FixtureStatus =
+  | "scheduled"
+  | "live"
+  | "completed"
+  | "cancelled"
+  | "walkover"
+  | "no_show"
+  | "abandoned";
+
+export type CategoryTypeFilter = "all" | CategoryType;
 
 export interface TournamentDetail extends UpcomingTournament {
   description: string;
@@ -165,6 +182,10 @@ export interface TournamentFixture {
   isUpset?: boolean;
   scheduledAt?: string;
   court?: string;
+  outcome?: FixtureOutcome;
+  outcomeWinner?: "A" | "B";
+  outcomeNotes?: string;
+  categoryType?: CategoryType;
 }
 
 export interface PointsTableRow {

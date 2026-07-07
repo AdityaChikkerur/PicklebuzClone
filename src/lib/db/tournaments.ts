@@ -259,7 +259,7 @@ export async function createTournament(
         timeout_duration: form.timeoutDuration,
         is_public: form.isPublic,
         status: "upcoming",
-        format: "knockout",
+        format: form.format,
       })
       .select("id")
       .single();
@@ -460,6 +460,29 @@ export async function updateRegistrationStatus(
       );
     }
 
+    return ok(true);
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** Persist seed assignment for knockout bracket generation. */
+export async function updateRegistrationSeed(
+  registrationId: string,
+  seed: number | null
+): Promise<DbResult<boolean>> {
+  if (!isSupabaseConfigured() || !isUuid(registrationId)) {
+    return ok(true);
+  }
+
+  try {
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("tournament_registrations")
+      .update({ seed: seed && seed > 0 ? seed : null })
+      .eq("id", registrationId);
+
+    if (error) throw error;
     return ok(true);
   } catch (e) {
     return fail(e);

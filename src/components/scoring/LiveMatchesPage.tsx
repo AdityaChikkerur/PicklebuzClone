@@ -12,9 +12,19 @@ import { MultiMatchLiveGrid } from "@/components/scoring/MultiMatchLiveGrid";
 import { useLiveMatches } from "@/hooks/useLiveMatches";
 import { cancelMatchByCreator } from "@/lib/db/matches";
 import { formatRelativeTime } from "@/lib/utils";
+import { CATEGORY_TYPE_LABELS } from "@/types/tournament";
+import type { MatchTypeFilter } from "@/types/match";
+
+const TYPE_FILTERS: { id: MatchTypeFilter; label: string }[] = [
+  { id: "all", label: "All" },
+  { id: "singles", label: CATEGORY_TYPE_LABELS.singles },
+  { id: "doubles", label: CATEGORY_TYPE_LABELS.doubles },
+  { id: "mixed", label: CATEGORY_TYPE_LABELS.mixed },
+];
 
 export function LiveMatchesPage() {
-  const { matches, loading, error, reload } = useLiveMatches();
+  const [typeFilter, setTypeFilter] = useState<MatchTypeFilter>("all");
+  const { matches, loading, error, reload } = useLiveMatches(typeFilter);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
 
   const handleCancel = useCallback(
@@ -59,6 +69,23 @@ export function LiveMatchesPage() {
             Follow multiple courts at once. Open &quot;Score&quot; in separate tabs to
             run simultaneous matches — each court updates in real time.
           </p>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {TYPE_FILTERS.map((filter) => (
+            <button
+              key={filter.id}
+              type="button"
+              onClick={() => setTypeFilter(filter.id)}
+              className={`rounded-lg px-3 py-1 text-xs font-semibold ${
+                typeFilter === filter.id
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {filter.label}
+            </button>
+          ))}
         </div>
 
         {error && (
