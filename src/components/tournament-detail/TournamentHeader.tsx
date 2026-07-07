@@ -23,6 +23,8 @@ interface TournamentHeaderProps {
   tournament: TournamentDetail;
   onRegister?: () => void;
   onStatusChange?: () => void;
+  onManageSchedule?: () => void;
+  onManagePlayers?: () => void;
 }
 
 function statusVariant(
@@ -46,6 +48,8 @@ export function TournamentHeader({
   tournament,
   onRegister,
   onStatusChange,
+  onManageSchedule,
+  onManagePlayers,
 }: TournamentHeaderProps) {
   const [statusBusy, setStatusBusy] = useState(false);
   const spotsLeft = tournament.maxParticipants - tournament.registeredCount;
@@ -237,10 +241,31 @@ export function TournamentHeader({
         {tournament.isOrganizer &&
           tournament.status !== "cancelled" &&
           tournament.status !== "completed" && (
-            <div className="flex flex-wrap gap-2 border-t border-border pt-4">
-              <p className="w-full text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <div className="flex flex-col gap-3 border-t border-border pt-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Organizer actions
               </p>
+              <div className="flex flex-wrap gap-2">
+                {onManageSchedule && (
+                  <button
+                    type="button"
+                    onClick={onManageSchedule}
+                    className="btn-primary text-xs"
+                  >
+                    Schedule & fixtures
+                  </button>
+                )}
+                {onManagePlayers && (
+                  <button
+                    type="button"
+                    onClick={onManagePlayers}
+                    className="btn-outline text-xs"
+                  >
+                    Players & admins
+                  </button>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
               {tournament.status !== "live" && (
                 <button
                   type="button"
@@ -267,6 +292,7 @@ export function TournamentHeader({
               >
                 Cancel tournament
               </button>
+              </div>
             </div>
           )}
       </div>
