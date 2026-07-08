@@ -34,11 +34,11 @@ export const metadata: Metadata = {
   ...buildPageMetadata(),
   icons: {
     icon: [
-      { url: "/icon", type: "image/png", sizes: "32x32" },
+      { url: "/icon.png", type: "image/png", sizes: "32x32" },
       { url: "/icons/icon.svg", type: "image/svg+xml" },
     ],
-    apple: [{ url: "/apple-icon", type: "image/png", sizes: "180x180" }],
-    shortcut: ["/icon"],
+    apple: [{ url: "/apple-icon.png", type: "image/png", sizes: "180x180" }],
+    shortcut: ["/icon.png"],
   },
   manifest: "/manifest.webmanifest",
   appleWebApp: {
