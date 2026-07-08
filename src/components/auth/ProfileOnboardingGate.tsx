@@ -7,10 +7,11 @@ import { ProfileOnboardingModal } from "./ProfileOnboardingModal";
 /** Blocks the app until phone, city, and avatar are saved to Supabase. */
 export function ProfileOnboardingGate() {
   const loading = useAuthStore((s) => s.loading);
+  const connectionError = useAuthStore((s) => s.connectionError);
   const user = useAuthStore((s) => s.user);
   const profile = useAuthStore((s) => s.profile);
 
-  if (!isSupabaseConfigured() || loading || !user || !profile) {
+  if (!isSupabaseConfigured() || loading || !user || !profile || connectionError) {
     return null;
   }
 

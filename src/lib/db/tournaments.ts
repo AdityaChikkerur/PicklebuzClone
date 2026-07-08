@@ -190,7 +190,10 @@ async function loadTournamentBundle(
     .eq("id", tournamentId)
     .maybeSingle();
 
-  if (error || !row) return null;
+  if (error || !row) {
+    if (error) throw error;
+    return null;
+  }
 
   const { data: categories } = await supabase
     .from("tournament_categories")

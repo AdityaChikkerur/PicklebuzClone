@@ -46,11 +46,13 @@ export async function fetchOrEnsureProfile(
   supabase: SupabaseClient,
   user: User
 ): Promise<Profile> {
-  const { data: profileData } = await supabase
+  const { data: profileData, error } = await supabase
     .from("profiles")
     .select("*")
     .eq("id", user.id)
     .maybeSingle();
+
+  if (error) throw error;
 
   if (profileData) {
     return mapDbProfile(profileData as DbProfileRow);

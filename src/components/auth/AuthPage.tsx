@@ -1,7 +1,12 @@
 "use client";
 
 import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { AppLogo } from "@/components/ui/AppLogo";
+import {
+  formatSupabaseConnectionError,
+  isLegacyApiKeyDisabledError,
+} from "@/lib/auth/supabaseErrors";
 import { AuthBrandPanel } from "./AuthBrandPanel";
 import { GoogleSSOButton } from "./GoogleSSOButton";
 
@@ -12,6 +17,33 @@ function AuthFormFallback() {
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         <div className="absolute inset-0 rounded-full glow-neon-sm opacity-40" />
       </div>
+    </div>
+  );
+}
+
+function AuthErrorBanner() {
+  const searchParams = useSearchParams();
+  const rawError = searchParams.get("error");
+
+  if (!rawError) return null;
+
+  const message = formatSupabaseConnectionError(decodeURIComponent(rawError));
+  const isKeyIssue = isLegacyApiKeyDisabledError(decodeURIComponent(rawError));
+
+  return (
+    <div
+      role="alert"
+      className="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+    >
+      <p className="font-semibold">Sign-in failed</p>
+      <p className="mt-1">{message}</p>
+      {isKeyIssue ? (
+        <p className="mt-2 text-xs text-destructive/90">
+          Update <code className="rounded bg-destructive/10 px-1">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> in
+          Vercel to your <code className="rounded bg-destructive/10 px-1">sb_publishable_...</code> key, then
+          redeploy.
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -43,6 +75,7 @@ export function AuthPage() {
               </div>
 
               <Suspense fallback={<AuthFormFallback />}>
+                <AuthErrorBanner />
                 <GoogleSSOButton />
               </Suspense>
             </div>

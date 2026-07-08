@@ -4,10 +4,8 @@ import { useEffect } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase";
 import { readPersistedDemoAuth } from "@/lib/auth/persistDemoAuth";
-import {
-  buildFallbackProfile,
-  fetchOrEnsureProfile,
-} from "@/lib/auth/hydrateSession";
+import { formatSupabaseConnectionError } from "@/lib/auth/supabaseErrors";
+import { fetchOrEnsureProfile } from "@/lib/auth/hydrateSession";
 import { isSupabaseConfigured } from "@/lib/auth/isSupabaseConfigured";
 import { useAuthStore } from "@/store/authStore";
 
@@ -16,6 +14,7 @@ export function AuthHydration() {
   const setUser = useAuthStore((s) => s.setUser);
   const setProfile = useAuthStore((s) => s.setProfile);
   const setLoading = useAuthStore((s) => s.setLoading);
+  const setConnectionError = useAuthStore((s) => s.setConnectionError);
 
   useEffect(() => {
     if (!isSupabaseConfigured()) {
@@ -37,19 +36,24 @@ export function AuthHydration() {
       if (!session?.user) {
         setUser(null);
         setProfile(null);
+        setConnectionError(null);
         setLoading(false);
         return;
       }
 
       try {
+        setConnectionError(null);
         const profile = await fetchOrEnsureProfile(supabase, session.user);
         if (cancelled) return;
         setUser(session.user);
         setProfile(profile);
-      } catch {
+      } catch (error) {
         if (cancelled) return;
         setUser(session.user);
-        setProfile(buildFallbackProfile(session.user));
+        setProfile(null);
+        setConnectionError(formatSupabaseConnectionError(
+          error instanceof Error ? error.message : String(error)
+        ));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -72,7 +76,7 @@ export function AuthHydration() {
       cancelled = true;
       subscription.unsubscribe();
     };
-  }, [setUser, setProfile, setLoading]);
+  }, [setUser, setProfile, setLoading, setConnectionError]);
 
   return null;
 }

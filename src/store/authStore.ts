@@ -7,9 +7,11 @@ interface AuthState {
   user: User | null;
   profile: Profile | null;
   loading: boolean;
+  connectionError: string | null;
   setUser: (user: User | null) => void;
   setProfile: (profile: Profile | null) => void;
   setLoading: (loading: boolean) => void;
+  setConnectionError: (connectionError: string | null) => void;
   clearAuth: () => void;
   signOut: () => Promise<void>;
 }
@@ -18,6 +20,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   profile: null,
   loading: true,
+  connectionError: null,
 
   setUser: (user) => set({ user }),
 
@@ -25,10 +28,13 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   setLoading: (loading) => set({ loading }),
 
-  clearAuth: () => set({ user: null, profile: null, loading: false }),
+  setConnectionError: (connectionError) => set({ connectionError }),
+
+  clearAuth: () =>
+    set({ user: null, profile: null, loading: false, connectionError: null }),
 
   signOut: async () => {
     await performSignOut();
-    set({ user: null, profile: null, loading: false });
+    set({ user: null, profile: null, loading: false, connectionError: null });
   },
 }));
